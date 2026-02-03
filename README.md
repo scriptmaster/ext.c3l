@@ -1,2 +1,176 @@
-# ext
-Extended library for C3 language
+# ext.c3l
+
+An extended library for the C3 programming language, providing essential system-level functionality, networking capabilities, and cross-platform C header bindings.
+
+## Overview
+
+`ext.c3l` bridges the gap between C3 and system-level programming by providing:
+- Comprehensive C header bindings (POSIX and Win32)
+- High-level networking APIs (TCP, UDP, DNS)
+- File system and I/O utilities
+- Regular expression support
+
+## Why ext library?
+
+C3 standard library is minimalistic, lacks something. Ext library fills the gap, and it's extremly lightweight.
+
+## Installation
+
+### Prerequisites
+
+First, install the `c3l` library manager:
+
+```bash
+git clone https://github.com/konimarti/c3l
+cd c3l
+sudo make install
+```
+
+### Adding ext.c3l to Your Project
+
+In your C3 project directory and fetch the library:
+
+```bash
+c3l fetch https://github.com/nomota/ext.c3l
+```
+
+This will download the library as a zip-packed file: `lib/ext.c3l`.
+
+And in your `project.json`
+```json
+    "dependancies": [ "ext" ],
+```
+
+Now it's ready to be used in your project.
+
+
+## Features
+
+### C Header Bindings (`src/libc/*.h.c3`)
+
+Provides bridge modules to C header files for both POSIX and Windows platforms:
+
+| C Header | C3 Module | Import Statement |
+|----------|-----------|------------------|
+| `stdio.h` | `stdio.h.c3` | `import stdio;` |
+| `unistd.h` | `unistd.h.c3` | `import unistd;` |
+| `netinet/in.h` | `netinet.in.h.c3` | `import netinet::in;` |
+| `winsock2.h` | `winsock2.h.c3` | `import winsock2;` |
+| ... | ... | ... |
+
+
+Import your familiar C header files.
+
+```c3
+import stdio;
+import string;
+import sys::time; // POSIX
+import netinet::in; // POSIX
+import unistd; // POSIX
+
+import io; // Win32
+import process; // Win32
+import winsock2; // Win32
+import ws2tcpip; // Win32
+
+sidio::printf("Hello\n");
+
+__wsa_startup()!;
+UdpSocket? sock = (UdpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_DGRAM, winsock2::IPPROTO_UDP);
+```
+
+- More about [C Header bindings](src/libc/README.md)
+
+### Networking (`src/net/*.c3`)
+
+High-level networking capabilities including TCP, UDP, and DNS:
+
+Example:
+```c3
+import ext::net::udp;
+import ext::net::tcp;
+
+UdpSock? sock = udp::new_bind(port);
+
+isz? UdpSocket.recvfrom(sock, char[] msgbuf, char[] ip, ushort* port);
+
+```
+
+- More about [Networking APIs](src/net/README.md)
+
+
+### I/O Operations (`src/io/*.c3`)
+
+File system operations including stat, directory handling, and file utilities:
+
+```c3
+import ext::io::stat;
+import ext::io::file;
+
+bool exists = stat::file_exists(filename);
+
+long? mtime = stat::last_modified);
+
+CFile fp = file::open(filename, "r+");
+```
+
+- More about [I/O Operations](src/io/README.md)
+
+### Regular Expressions (`src/regex/*.c3`)
+
+Regex support for C3 based on C regex library.
+
+- More about [Regular Expressions](src/regex/README.md)
+
+
+## Usage Example
+
+```c3
+import ext::net::udp;
+import ext::io::stat;
+import stdio;
+
+fn int main()
+{
+    // Check if a configuration file exists
+    if (stat::file_exists("config.ini"))
+    {
+        stdio::printf("Configuration found!\n");
+    }
+    
+    // Create a UDP server
+    UdpSock? server = udp::new_bind(8080);
+    
+    stdio::printf("UDP server listening on port 8080\n");
+    
+    return 0;
+}
+```
+
+## Platform Support
+
+- **POSIX** systems (Linux, macOS, BSD variants)
+- **Windows** (Win32 API support)
+
+Cross-platform compatibility is a primary goal, with platform-specific implementations abstracted behind unified APIs where possible.
+
+## Contributing
+
+Contributions are welcome! When submitting pull requests:
+
+1. Ensure cross-platform compatibility
+2. Update relevant README files in sub-libraries
+3. Follow existing code style and conventions
+4. Test on both POSIX and Windows platforms when applicable
+
+## Repository
+
+GitHub: [https://github.com/nomota/ext.c3l](https://github.com/nomota/ext.c3l)
+
+## License
+
+MIT License
+
+---
+
+For detailed documentation on specific modules, please refer to the README files in each subdirectory under `src/`.
