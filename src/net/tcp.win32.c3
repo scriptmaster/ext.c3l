@@ -11,10 +11,9 @@ module ext::net::tcp @if(env::WIN32);
 import winsock2;
 import ws2tcpip;
 import ext::net;
+import errno;
 
 typedef TcpSocket = inline winsock2::Socket;
-
-faultdef SOCKET_ERR, BIND_ERR, LISTEN_ERR, ACCEPT_ERR, CONNECT_ERR, NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, FCNTL_ERR, CLOSE_ERR, READ_ERR, EOF, WSA_STARTUP_ERR;
 
 fn void? __wsa_startup() 
 {
@@ -23,7 +22,7 @@ fn void? __wsa_startup()
     winsock2::WSAData wsa_data;
     int result = winsock2::wsa_startup(0x0202, &wsa_data);
     if (result != 0) {
-        return WSA_STARTUP_ERR~;
+        return errno::get_fault()~;
     }
     net::__wsa_initialized = true;
 }
@@ -42,7 +41,7 @@ fn TcpSocket? new()
     TcpSocket sock = (TcpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_STREAM, winsock2::IPPROTO_TCP);
     
     if (sock == winsock2::INVALID_SOCKET) {
-        return SOCKET_ERR~;
+        return errno::get_fault()~;
     }
     return sock;
 }
@@ -59,7 +58,7 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
     } else {
         winsock2::InAddr addr;
         if (ws2tcpip::inet_pton(winsock2::AF_INET, opt_ip.ptr, &addr) <= 0) {
-            return PTON_ERR~;
+            return errno::get_fault()~;
         }
         adr.sin_addr = addr;
     }
@@ -67,12 +66,12 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
     adr.sin_port = winsock2::htons(port);
 
     if (winsock2::bind(sock, (winsock2::SockAddr*)&adr, $sizeof(adr)) == winsock2::SOCKET_ERROR) {
-        return BIND_ERR~;
+        return errno::get_fault()~;
     }
     
     int r = winsock2::listen(sock, backlog);
     if (r == winsock2::SOCKET_ERROR) {
-        return LISTEN_ERR~;
+        return errno::get_fault()~;
     }
     
     return 0;
@@ -80,10 +79,7 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
 
 fn TcpSocket? new_listen(ushort port, String opt_ip = "*", int backlog = 10)
 {
-    TcpSocket? sock = new();
-    if (catch err = sock) {
-        return err~;
-    }
+    TcpSocket sock = new()!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -101,11 +97,11 @@ fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
     
     TcpSocket s = (TcpSocket)winsock2::accept(sock, (winsock2::SockAddr*)&adr, &size);
     if (s == winsock2::INVALID_SOCKET) {
-        return ACCEPT_ERR~;
+        return errno::get_fault()~;
     }
     if (ip != &__null__ && port != null) {
         if (ws2tcpip::inet_ntop(winsock2::AF_INET, &(adr.sin_addr), ip.ptr, (ulong)ip.len) == null) {
-            return NTOP_ERR~;
+            return errno::get_fault()~;
         }
         *port = winsock2::ntohs(adr.sin_port);
     }
@@ -121,22 +117,19 @@ fn void? TcpSocket.connect(sock, String ip, ushort port)
 
     winsock2::InAddr addr;
     if (ws2tcpip::inet_pton(winsock2::AF_INET, ip.ptr, &addr) <= 0) {
-        return PTON_ERR~;
+        return errno::get_fault()~;
     }
     adr.sin_addr = addr;
     
     int r = winsock2::connect(sock, (winsock2::SockAddr*)&adr, $sizeof(adr));
     if (r == winsock2::SOCKET_ERROR) {
-        return CONNECT_ERR~;
+        return errno::get_fault()~;
     }
 }
 
 fn TcpSocket? new_connect(String ip, ushort port)
 {
-    TcpSocket? sock = new();
-    if (catch err = sock) {
-        return err~;
-    }
+    TcpSocket sock = new()!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -150,7 +143,7 @@ fn isz? TcpSocket.send(sock, char[] buf)
 {
     int n = winsock2::send(sock, buf.ptr, (int)buf.len, 0);
     if (n == winsock2::SOCKET_ERROR) {
-        return SEND_ERR~;
+        return errno::get_fault()~;
     }
     return (isz)n;
 }
@@ -164,7 +157,7 @@ fn isz? TcpSocket.recv(sock, char[] buf)
 {
     int n = winsock2::recv(sock, buf.ptr, (int)(buf.len-1), 0);
     if (n == winsock2::SOCKET_ERROR) {
-        return RECV_ERR~;
+        return errno::get_fault()~;
     }
     buf[n] = 0;
     return (isz)n;
@@ -182,7 +175,7 @@ fn isz? TcpSocket.readline(sock, char[] line)
         char c;
         int r = winsock2::recv(sock, &c, 1, 0);
         if (r == winsock2::SOCKET_ERROR) {
-            return READ_ERR~;
+            return errno::get_fault()~;
         }
         if (r == 0) break;
 
@@ -192,7 +185,7 @@ fn isz? TcpSocket.readline(sock, char[] line)
         if (c == '\n') break;
     }
     if (n == 0) {
-        return EOF~;
+        return errno::EOF~;
     }
     line[n] = '\0';
     return n;
@@ -203,14 +196,14 @@ fn void? TcpSocket.set_non_blocking(sock)
     uint mode = 1; // non-blocking mode
     int r = winsock2::ioctlsocket(sock, winsock2::FIONBIO, &mode);
     if (r == winsock2::SOCKET_ERROR) {
-        return FCNTL_ERR~;
+        return errno::get_fault()~;
     }
 }
 
-fn void? TcpSocket.close(sock)
+fn void? TcpSocket.close(sock) @maydiscard
 {
     int r = winsock2::closesocket(sock);
     if (r == winsock2::SOCKET_ERROR) {
-        return CLOSE_ERR~;
+        return errno::get_fault()~;
     }
 }

@@ -1,23 +1,80 @@
 
 # ext::net - High-Level Networking Library for C3
 
-A modern, ergonomic networking library for the [C3 programming language](https://c3-lang.org/), providing simplified abstractions over raw socket APIs with comprehensive TCP and UDP support.
+A modern, ergonomic networking library for the [C3 programming language](https://c3-lang.org/), providing simplified abstractions over raw socket APIs with comprehensive TCP and UDP, DNS lookup support.
 
 ## Overview
 
 `ext::net` provides high-level networking capabilities, offering an intuitive API for common networking patterns while maintaining the performance and control of system-level programming.
 
-## Features
 
-- **TCP Socket Support**: Full-featured TCP client/server operations
-- **UDP Socket Support**: Datagram-based communication
-- **Idiomatic C3**: Leverages C3's optional returns and error handling
-- **Non-Blocking I/O**: Support for asynchronous operations
-- **Type-Safe**: Strong typing with inline type aliases
-- **Easy to Use**: Simple API for common networking tasks
+## API Reference
 
+### TCP Module (`ext::net::tcp`)
 
-## Quick Start
+```c3
+import ext::net::tcp;
+
+typedef TcpSocket = inline int;
+
+faultdef SOCKET_ERR, BIND_ERR, LISTEN_ERR, ACCEPT_ERR, CONNECT_ERR, 
+         NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, FCNTL_ERR, 
+         CLOSE_ERR, READ_ERR, EOF;
+
+TcpSocket? sock = tcp::new();
+int? r = server.listen(ushort port, String opt_ip = "*", int backlog = 10); // sets reuse_addr
+TcpSocket? server = tcp::new_listen(ushort port, String opt_ip = "*", int backlog = 10); // sets reuse_addr
+
+void? sock.connect(String ip, ushort port);
+TcpSocket? client = tcp::new_connect(String ip, ushort port);
+TcpSocket? sock = server.accept(char[] ip = &__null__, ushort* port = null);
+
+isz? n = sock.send(char[] buf);
+isz? n = sock.recv(char[] buf);
+isz? n = sock.write(char[] buf);
+isz? n = socket.read(char[] buf);
+isz? n = sock.readline(char[] line);
+
+void? sock.set_non_blocking();
+
+void? socket.close();
+```
+
+### UDP Module (`ext::net::udp`)
+
+```c3
+import ext::net::udp;
+
+typedef UdpSocket = inline int;
+
+faultdef SOCKET_ERR, BIND_ERR, RECVFROM_ERR, SENDTO_ERR, 
+         NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, 
+         FCNTL_ERR, CLOSE_ERR;
+
+UdpSocket? sock = udp::new();
+void? sock.bind(ushort port, String opt_ip = "*"); // missing in std lib
+UdpSocket? server = udp::new_bind(ushort port, String ip = "*"); // missing in std lib
+
+isz? n = sock.recvfrom(char[] msgbuf, char[] ip, ushort* port); // missing in stdlib
+isz? n = sock.sendto(char[] msgbuf, String ip, ushort port); // missing is std lib
+
+isz? n = sock.send(char[] buf);
+isz? n = sock.recv(char[] buf);
+
+void? sock.set_non_blocking();
+
+void? sock.close();
+```
+
+### DNS module (`ext::net::dns`)
+
+```c3 
+import ext::net::dns;
+import std::collections::list;
+
+List{String}? ips =  dns::get_addrinfo(Allocator mem, String host);
+ips.free();
+```
 
 ### TCP Server Example
 
@@ -151,171 +208,8 @@ fn void main()
 }
 ```
 
-## API Reference
 
-### TCP Module (`ext::net::tcp`)
 
-#### Types
-
-```c3
-typedef TcpSocket = inline int;
-```
-
-#### Error Faults
-
-```c3
-faultdef SOCKET_ERR, BIND_ERR, LISTEN_ERR, ACCEPT_ERR, CONNECT_ERR, 
-         NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, FCNTL_ERR, 
-         CLOSE_ERR, READ_ERR, EOF;
-```
-
-#### Functions
-
-**Socket Creation**
-
-```c3
-TcpSocket? sock = tcp::new();
-```
-Creates a new TCP socket.
-
-```c3
-TcpSocket? server = tcp::new_listen(ushort port, String opt_ip = "*", int backlog = 10);
-```
-Creates a TCP socket, binds it to the specified port, and starts listening. Returns a ready-to-use server socket.
-
-```c3
-TcpSocket? client = tcp::new_connect(String ip, ushort port);
-```
-Creates a TCP socket and connects to the specified address. Returns a connected client socket.
-
-**Server Operations**
-
-```c3
-int? r = server.listen(ushort port, String opt_ip = "*", int backlog = 10);
-```
-Binds the socket to an address and starts listening for connections.
-
-```c3
-TcpSocket? sock = server.accept(char[] ip = &__null__, ushort* port = null);
-```
-Accepts an incoming connection. Optionally retrieves the client's IP address and port.
-
-**Client Operations**
-
-```c3
-void? sock.connect(String ip, ushort port);
-```
-Connects the socket to a remote address.
-
-**Data Transfer**
-
-```c3
-isz? n = sock.send(char[] buf);
-```
-Sends data through the socket. Returns the number of bytes sent.
-
-```c3
-isz? n = sock.recv(char[] buf);
-```
-Receives data from the socket. Returns the number of bytes received.
-
-```c3
-isz? n = sock.write(char[] buf);
-```
-Alias for `send()`.
-
-```c3
-isz? n = socket.read(char[] buf);
-```
-Alias for `recv()`.
-
-```c3
-isz? n = sock.readline(char[] line);
-```
-Reads a line from the socket (up to `\n` or buffer size). Returns `EOF` fault when connection closes.
-
-**Socket Configuration**
-
-```c3
-void? sock.set_non_blocking();
-```
-Sets the socket to non-blocking mode.
-
-```c3
-void? socket.close();
-```
-Closes the socket.
-
-### UDP Module (`ext::net::udp`)
-
-#### Types
-
-```c3
-typedef UdpSocket = inline int;
-```
-
-#### Error Faults
-
-```c3
-faultdef SOCKET_ERR, BIND_ERR, RECVFROM_ERR, SENDTO_ERR, 
-         NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, 
-         FCNTL_ERR, CLOSE_ERR;
-```
-
-#### Functions
-
-**Socket Creation**
-
-```c3
-UdpSocket? sock = udp::new();
-```
-Creates a new UDP socket.
-
-```c3
-UdpSocket? server = udp::new_bind(ushort port, String ip = "*");
-```
-Creates a UDP socket and binds it to the specified port. Returns a ready-to-use socket.
-
-**Binding**
-
-```c3
-void? sock.bind(ushort port, String opt_ip = "*");
-```
-Binds the socket to an address.
-
-**Data Transfer**
-
-```c3
-isz? n = sock.recvfrom(char[] msgbuf, char[] ip, ushort* port);
-```
-Receives a datagram and retrieves the sender's address.
-
-```c3
-isz? n = sock.sendto(char[] msgbuf, String ip, ushort port);
-```
-Sends a datagram to the specified address.
-
-```c3
-isz? n = sock.send(char[] buf);
-```
-Sends data through a connected UDP socket.
-
-```c3
-isz? n = sock.recv(char[] buf);
-```
-Receives data from a connected UDP socket.
-
-**Socket Configuration**
-
-```c3
-void? sock.set_non_blocking();
-```
-Sets the socket to non-blocking mode.
-
-```c3
-void? sock.close();
-```
-Closes the socket.
 
 ## Error Handling
 

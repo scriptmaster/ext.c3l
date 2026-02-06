@@ -7,16 +7,15 @@ import netinet::in;
 import sys::socket;
 import unistd;
 import fcntl;
+import errno;
 
 typedef TcpSocket = inline int;
-
-faultdef SOCKET_ERR, BIND_ERR, LISTEN_ERR, ACCEPT_ERR, CONNECT_ERR, NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, FCNTL_ERR, CLOSE_ERR, READ_ERR, EOF;
 
 fn TcpSocket? new() 
 {
     TcpSocket sock = (TcpSocket)socket::socket(socket::PF_INET, socket::SOCK_STREAM, 0);
     if (sock == -1) {
-        return SOCKET_ERR~;
+        return errno::get_fault()~;
     }
     return sock;
 }
@@ -33,28 +32,25 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
     if (opt_ip == "*") {
         adr.sin_addr.s_addr = in::htonl(in::INADDR_ANY);
     } else if (in::inet_pton(socket::AF_INET, opt_ip.ptr, &adr.sin_addr) == 0) {
-        return PTON_ERR~;
+        return errno::get_fault()~;
     }
     
     adr.sin_port = in::htons(port);
 
     if (socket::bind(sock, (SockAddr*)&adr, $sizeof(adr)) == -1) {
-        return BIND_ERR~;
+        return errno::get_fault()~;
     }
     
     int r = socket::listen(sock, backlog);
     if (r < 0) {
-        return LISTEN_ERR~;
+        return errno::get_fault()~;
     }
     return r;
 }
 
 fn TcpSocket? new_listen(ushort port, String opt_ip = "*", int backlog = 10)
 {
-    TcpSocket? sock = new();
-    if (catch err = sock) {
-        return err~;
-    }
+    TcpSocket sock = new()!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -72,11 +68,11 @@ fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
     
     TcpSocket s = (TcpSocket)socket::accept(sock, (SockAddr*)&adr, &size);
     if (s < 0) {
-        return ACCEPT_ERR~;
+        return errno::get_fault()~;
     }
     if (ip != &__null__ && port != null) {
         if (in::inet_ntop(socket::AF_INET, &(adr.sin_addr), ip.ptr, ip.len) == null) {
-            return NTOP_ERR~;
+            return errno::get_fault()~;
         }
         *port = in::ntohs(adr.sin_port);
     }
@@ -87,26 +83,22 @@ fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
 fn void? TcpSocket.connect(sock, String ip, ushort port)
 {
     SockAddrIn adr;
-    //string::memset(&adr, 0, $sizeof(adr));
     adr.sin_family = socket::AF_INET;
     adr.sin_port = in::htons(port);
 
     if (in::inet_pton(socket::AF_INET, ip.ptr, &adr.sin_addr) == 0) {
-        return PTON_ERR~;
+        return errno::get_fault()~;
     }
     
     int r = socket::connect(sock, (SockAddr*)&adr, $sizeof(adr));
     if (r < 0) {
-        return CONNECT_ERR~;
+        return errno::get_fault()~;
     }
 }
 
 fn TcpSocket? new_connect(String ip, ushort port)
 {
-    TcpSocket? sock = new();
-    if (catch err = sock) {
-        return err~;
-    }
+    TcpSocket sock = new()!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -120,21 +112,21 @@ fn isz? TcpSocket.send(sock, char[] buf)
 {
     isz n = socket::send(sock, buf.ptr, buf.len, 0);
     if (n < 0) {
-        return SEND_ERR~;
+        return errno::get_fault()~;
     }
     return n;
 }
 
 macro isz? TcpSocket.write(sock, char[] buf) 
 {
-    return sock.send(buf);
+    return sock.send(buf)!;
 }
 
 fn isz? TcpSocket.recv(sock, char[] buf) 
 {
     isz n = socket::recv(sock, buf.ptr, buf.len-1, 0);
     if (n < 0) {
-        return RECV_ERR~;
+        return errno::get_fault()~;
     }
     buf[n] = 0;
     return n;
@@ -142,7 +134,7 @@ fn isz? TcpSocket.recv(sock, char[] buf)
 
 macro isz? TcpSocket.read(sock, char[] buf) 
 {
-    return sock.read(buf);
+    return sock.recv(buf)!;
 }
 
 
@@ -153,7 +145,7 @@ fn isz? TcpSocket.readline(sock, char[] line)
         char c;
         isz r = socket::recv(sock, &c, 1, 0);
         if (r < 0) {
-            return READ_ERR~;
+            return errno::get_fault()~;
         }
         if (r == 0) break;
 
@@ -163,7 +155,7 @@ fn isz? TcpSocket.readline(sock, char[] line)
         if (c == '\n') break;
     }
     if (n == 0) {
-        return EOF~;
+        return errno::EOF~;
     }
     line[n] = '\0';
     return n;
@@ -173,18 +165,18 @@ fn void? TcpSocket.set_non_blocking(sock)
 {
     int flags = fcntl::fcntl(sock, fcntl::F_GETFL, 0);
     if (flags < 0) {
-        return FCNTL_ERR~;
+        return errno::get_fault()~;
     }
     int r = fcntl::fcntl(sock, fcntl::F_SETFL, flags | fcntl::O_NONBLOCK);
     if (r < 0) {
-        return FCNTL_ERR~;
+        return errno::get_fault()~;
     }
 }
 
-fn void? TcpSocket.close(sock)
+fn void? TcpSocket.close(sock) @maydiscard
 {
     int r = unistd::close(sock);
     if (r < 0) {
-        return CLOSE_ERR~;
+        return errno::get_fault()~;
     }
 }

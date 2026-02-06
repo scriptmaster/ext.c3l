@@ -5,6 +5,8 @@ module stdio;
 alias Size = usz;
 alias CFile = void*;
 
+const int EOF = -1;
+
 // Standard I/O
 
 extern fn int printf(char* format, ...);

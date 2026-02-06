@@ -2,21 +2,24 @@
 // std/io/os/stat.posix.c3
 //
 // This module provides following functions for Posix systems.
-// file_exists() file_size() last_modified() 
+// exists() size() last_modified() 
 // is_dir() is_file() is_link() 
 // is_readable() is_writeable()
 // is_executable()
 // read_link()
-
+// umask(), change_mode()
 
 module ext::io::stat @if(!env::WIN32); // Posix
 
-import libc;
+import errno;
 
-// extern fn CInt libc::stat(char* path, Stat* buf) ;
+extern fn CInt stat(char* path, Stat* buf) ;
 extern fn CInt lstat(char* path, Stat* buf);
 extern fn CInt access(char* path, CInt mode);
 extern fn CLong readlink(char* path, char* buf, CULong bufsize);
+
+extern fn Mode_t umask(Mode_t mode) @maydiscard;
+extern fn CInt chmod(char *file, Mode_t mode);
 
 // File mode constants
 const CUInt S_IFMT   = 0o170000;  // Bit mask for file type
@@ -47,77 +50,32 @@ const CInt X_OK = 1;  // Execute permission
 
 const int MAX_PATH = 1024;
 
-// Detailed fault definitions
-faultdef 
-    PATH_NOT_FOUND,      // ENOENT: File or directory doesn't exist
-    PERMISSION_DENIED,   // EACCES: Permission denied
-    NOT_A_DIRECTORY,     // ENOTDIR: Component in path is not a directory
-    IS_A_DIRECTORY,      // EISDIR: Path is a directory when file expected
-    TOO_MANY_LINKS,      // ELOOP: Too many symbolic links
-    PATH_TOO_LONG,       // ENAMETOOLONG: Path or component too long
-    FILE_TOO_LARGE,      // EOVERFLOW: File size cannot be represented
-    IO_ERROR,            // EIO: I/O error occurred
-    INVALID_ARG,    // EINVAL: Invalid argument
-    GENERAL_ERR        // Other errors
-    ;
-
-// Helper macro to convert String to ZString safely
-macro ZString? path_to_zstring(String path, char[] buffer)
+fn char*? path_to_cstr(String path, char[] buffer) @inline
 {
-    if (path.len >= buffer.len) return PATH_TOO_LONG~;
+    if (path.len == 0) return errno::E_INVALID~;
+    if (path.len >= buffer.len) return errno::E_ARG_TOO_BIG~;
     buffer[0:path.len] = path[0:path.len];
     buffer[path.len] = 0;  // Add null terminator
-    return (ZString)&buffer[0];
+    return buffer.ptr;
 }
 
-// Helper function to convert errno to appropriate fault
-fn fault errno_to_fault()
-{
-    Errno err = libc::errno();
-    
-    switch (err)
-    {
-        case errno::ENOENT:
-            return PATH_NOT_FOUND;
-        case errno::EACCES:
-            return PERMISSION_DENIED;
-        case errno::ENOTDIR:
-            return NOT_A_DIRECTORY;
-        case errno::EISDIR:
-            return IS_A_DIRECTORY;
-        case errno::ELOOP:
-            return TOO_MANY_LINKS;
-        case errno::ENAMETOOLONG:
-            return PATH_TOO_LONG;
-        case errno::EOVERFLOW:
-            return FILE_TOO_LARGE;
-        case errno::EIO:
-            return IO_ERROR;
-        case errno::EINVAL:
-            return INVALID_ARG;
-        default:
-            return GENERAL_ERR;
-    }
-}
-
-fn ulong? file_size(String path)
+fn long? size(String path)
 {
     char[MAX_PATH] p2; 
-    ZString zpath = path_to_zstring(path, &p2)!;
+    char* zpath = path_to_cstr(path, &p2)!;
     
     Stat st;
-    if (libc::stat(zpath, &st) != 0) {
-        return errno_to_fault()~;
+    if (stat(zpath, &st) != 0) {
+        return errno::get_fault()~;
     }
     
-    return (ulong)st.st_size;
+    return (long)st.st_size;
 }
 
-fn bool file_exists(String path)
+fn bool exists(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;;
     
     return access(zpath, F_OK) == 0;
 }
@@ -125,11 +83,10 @@ fn bool file_exists(String path)
 fn bool is_dir(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;
     
     Stat st;
-    if (libc::stat(zpath, &st) != 0) return false;
+    if (stat(zpath, &st) != 0) return false;
     
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
@@ -137,11 +94,10 @@ fn bool is_dir(String path)
 fn bool is_file(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;
     
     Stat st;
-    if (libc::stat(zpath, &st) != 0) return false;
+    if (stat(zpath, &st) != 0) return false;
     
     return (st.st_mode & S_IFMT) == S_IFREG;
 }
@@ -149,8 +105,7 @@ fn bool is_file(String path)
 fn bool is_link(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;
     
     Stat st;
     // lstat doesn't follow symbolic links
@@ -162,11 +117,11 @@ fn bool is_link(String path)
 fn long? last_modified(String path)
 {
     char[MAX_PATH] p2; 
-    ZString zpath = path_to_zstring(path, &p2)!;
+    char* zpath = path_to_cstr(path, &p2)!;
     
     Stat st;
-    if (libc::stat(zpath, &st) != 0) {
-        return errno_to_fault()~;
+    if (stat(zpath, &st) != 0) {
+        return errno::get_fault()~;
     }
     
     return st.st_mtime;  // Macro handles platform differences
@@ -175,8 +130,7 @@ fn long? last_modified(String path)
 fn bool is_readable(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;
     
     return access(zpath, R_OK) == 0;
 }
@@ -184,8 +138,7 @@ fn bool is_readable(String path)
 fn bool is_writeable(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;
     
     return access(zpath, W_OK) == 0;
 }
@@ -193,8 +146,7 @@ fn bool is_writeable(String path)
 fn bool is_executable(String path)
 {
     char[MAX_PATH] p2; 
-    ZString? zpath = path_to_zstring(path, &p2);
-    if (catch zpath) return false;
+    char* zpath = path_to_cstr(path, &p2) ?? return false;
     
     return access(zpath, X_OK) == 0;
 }
@@ -202,21 +154,27 @@ fn bool is_executable(String path)
 fn usz? read_link(String path, char[] output)
 {
     char[MAX_PATH] p2; 
-    ZString zpath = path_to_zstring(path, &p2)!;
+    char* zpath = path_to_cstr(path, &p2)!;
     
     // Check for empty buffer
-    if (output.len == 0) {
-        return INVALID_ARG~;
-    }
-    
+    if (output.len == 0) return errno::E_INVALID~;
+
     CLong n = readlink(zpath, output.ptr, (CULong)output.len-1);
-    
     if (n < 0) {
-        return errno_to_fault()~;
+        return errno::get_fault()~;
     }
     
     output[n] = 0;
     return (usz)n;
+}
+
+fn void? change_mode(String file, Mode_t mode) @maydiscard
+{
+    char[MAX_PATH] p2; 
+    char* zpath = path_to_cstr(file, &p2)!;
+    
+    int r = chmod(zpath, mode);
+    if (r != 0) return errno::get_fault()~;
 }
 
 /*
@@ -224,7 +182,7 @@ module stat::test;
 
 import std::io;
 
-fn void test_libc::stat()
+fn void test_stat()
 {
     // Test with detailed error handling
     ulong? size = io::file_size("test.txt");
@@ -297,7 +255,7 @@ fn void test_libc::stat()
                     io::printfn("Cannot read link: %s", err);
             }
         } else {
-            io::printfn("Link target: %s", (ZString)target.ptr);
+            io::printfn("Link target: %s", (char*)target.ptr);
         }
     }
     

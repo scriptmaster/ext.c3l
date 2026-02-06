@@ -1,6 +1,6 @@
 # libc - C Standard Header Bindings for C3
 
-A comprehensive collection of C standard library header bindings for the [C3 programming language](https://c3-lang.org/), providing cross-platform system programming capabilities.
+A comprehensive collection of C header bindings for the [C3 programming language](https://c3-lang.org/), providing cross-platform system programming capabilities.
 
 ## Overview
 
@@ -25,6 +25,7 @@ Import the modules you need in your C3 source files:
 import stdio;
 import unistd;
 import sys::socket;
+import errno;
 ```
 
 Access functions and constants using the module namespace:
@@ -57,10 +58,14 @@ fn void init_networking()
 import sys::socket;
 import netinet::in;
 import unistd;
+import errno;
 
-fn int create_server_socket(ushort port) 
+fn int? create_server_socket(ushort port) 
 {
     int sockfd = socket::socket(socket::AF_INET, socket::SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        return errno::get_fault()~;
+    }
     // ... bind, listen, etc.
     return sockfd;
 }
@@ -122,6 +127,7 @@ extern fn int wsa_startup(ushort version_required, WSAData* wsa_data) @cname("WS
 | `sys::wait` | Process waiting |
 | `time` | Time and date functions |
 | `unistd` | POSIX operating system API |
+| `errno` | provides `errno()` and `get_fault()` |
 
 ### Windows Headers
 
@@ -141,6 +147,7 @@ extern fn int wsa_startup(ushort version_required, WSAData* wsa_data) @cname("WS
 | `winioctl` | Windows device I/O control codes and structures |
 | `winsock2` | Windows Sockets 2 |
 | `ws2tcpip` | Windows Sockets TCP/IP functions |
+| `errno` | provides `errno()` and `get_fault()` |
 
 ## Module Naming Convention
 
