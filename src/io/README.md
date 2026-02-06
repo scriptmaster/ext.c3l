@@ -8,7 +8,7 @@ Cross-platform file/directory operations in C3, filling the gap of missing piece
 |--------|-------------|
 | `ext::io::stat` | File stat operations: exists(), size(), is_(file/dir/link), is_(readable/writable/executable), read_link(), last_modified(), change_mode() |
 | `ext::io::file` | File operations: fopen(), fclose(), fread(), fwrite(), fprintf(), read(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
-| `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file() |
+| `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode() |
 
 Back to [ext.c3l](../../README.md) library.
 
@@ -89,7 +89,6 @@ Available functions are:
 ```c3
 import ext::io::dir;
 
-
 String? cwd = dir::get_cur_dir(char[] buf); // returns String representation of buf
 void? dir::change_dir(String path) @maydiscard;
 void? dir::make_dir(String path, bool recursive = false, CUInt mode = 0o755) @maydiscard;
@@ -107,6 +106,7 @@ usz? n = dir::read_link(String path, char[] output); // missing in std lib
 void? dir::change_mode(String path, Mode_t mode) @maydiscard; // missing in std lib
 ```
 
+### Example
 
 ```c3
 import ext::io::stat;
@@ -114,7 +114,7 @@ import std::io;
 
 fn void check_file(String path) 
 {
-    if (stat::file_exists(path)) {
+    if (stat::exists(path)) {
         io::printfn("File exists: %s", path);
         
         if (stat::is_dir(path)) {
@@ -122,7 +122,7 @@ fn void check_file(String path)
         } else if (stat::is_file(path)) {
             io::printfn("  Type: File");
             
-            ulong? size = stat::file_size(path);
+            ulong? size = stat::size(path);
             if (catch size) {
                 io::printn("  Cannot get file size");
             } else {

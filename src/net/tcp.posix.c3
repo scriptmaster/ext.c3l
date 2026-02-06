@@ -1,4 +1,4 @@
-// tcp.c3
+// tcp.c3 - IPv4/IPv6 Support
 
 module ext::net::tcp @if(!env::WIN32);
 
@@ -11,9 +11,18 @@ import errno;
 
 typedef TcpSocket = inline int;
 
-fn TcpSocket? new() 
+fn int detect_ip_version(String ip) 
 {
-    TcpSocket sock = (TcpSocket)socket::socket(socket::PF_INET, socket::SOCK_STREAM, 0);
+    foreach (c : ip) {
+        if (c == ':') return socket::AF_INET6;
+    }
+    return socket::AF_INET;
+}
+
+fn TcpSocket? new(int version = socket::AF_INET) 
+{
+    int family = (int)version;
+    TcpSocket sock = (TcpSocket)socket::socket(family, socket::SOCK_STREAM, 0);
     if (sock == -1) {
         return errno::get_fault()~;
     }
@@ -26,19 +35,40 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
     int optlen = $sizeof(option);
     socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEADDR, (void*)&option, optlen);
 
-    SockAddrIn adr;
-    //string::memset(&adr, 0, $sizeof(adr));
-    adr.sin_family = socket::AF_INET;
-    if (opt_ip == "*") {
-        adr.sin_addr.s_addr = in::htonl(in::INADDR_ANY);
-    } else if (in::inet_pton(socket::AF_INET, opt_ip.ptr, &adr.sin_addr) == 0) {
-        return errno::get_fault()~;
-    }
+    int version = detect_ip_version(opt_ip);
     
-    adr.sin_port = in::htons(port);
-
-    if (socket::bind(sock, (SockAddr*)&adr, $sizeof(adr)) == -1) {
-        return errno::get_fault()~;
+    if (version == socket::AF_INET6) {
+        SockAddrIn6 adr;
+        string::memset(&adr, 0, $sizeof(adr));
+        adr.sin6_family = socket::AF_INET6;
+        
+        if (opt_ip == "::") {
+            adr.sin6_addr = in::in6addr_any;
+        } else if (in::inet_pton(socket::AF_INET6, opt_ip.ptr, &adr.sin6_addr) != 1) {
+            return errno::get_fault()~;
+        }
+        
+        adr.sin6_port = in::htons(port);
+        
+        if (socket::bind(sock, (SockAddr*)&adr, $sizeof(adr)) == -1) {
+            return errno::get_fault()~;
+        }
+    } else {
+        SockAddrIn adr;
+        string::memset(&adr, 0, $sizeof(adr));
+        adr.sin_family = socket::AF_INET;
+        
+        if (opt_ip == "*") {
+            adr.sin_addr.s_addr = in::htonl(in::INADDR_ANY);
+        } else if (in::inet_pton(socket::AF_INET, opt_ip.ptr, &adr.sin_addr) != 1) {
+            return errno::get_fault()~;
+        }
+        
+        adr.sin_port = in::htons(port);
+        
+        if (socket::bind(sock, (SockAddr*)&adr, $sizeof(adr)) == -1) {
+            return errno::get_fault()~;
+        }
     }
     
     int r = socket::listen(sock, backlog);
@@ -50,7 +80,8 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
 
 fn TcpSocket? new_listen(ushort port, String opt_ip = "*", int backlog = 10)
 {
-    TcpSocket sock = new()!;
+    int version = detect_ip_version(opt_ip);
+    TcpSocket sock = new(version)!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -63,18 +94,28 @@ fn TcpSocket? new_listen(ushort port, String opt_ip = "*", int backlog = 10)
 char[1] __null__;
 fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
 {
-    SockAddrIn adr;
+    SockAddrStorage adr;
     SockLen size = $sizeof(adr);
     
     TcpSocket s = (TcpSocket)socket::accept(sock, (SockAddr*)&adr, &size);
     if (s < 0) {
         return errno::get_fault()~;
     }
+    
     if (ip != &__null__ && port != null) {
-        if (in::inet_ntop(socket::AF_INET, &(adr.sin_addr), ip.ptr, ip.len) == null) {
-            return errno::get_fault()~;
+        if (adr.ss_family == socket::AF_INET6) {
+            SockAddrIn6* adr6 = (SockAddrIn6*)&adr;
+            if (in::inet_ntop(socket::AF_INET6, &(adr6.sin6_addr), ip.ptr, ip.len) == null) {
+                return errno::get_fault()~;
+            }
+            *port = in::ntohs(adr6.sin6_port);
+        } else {
+            SockAddrIn* adr4 = (SockAddrIn*)&adr;
+            if (in::inet_ntop(socket::AF_INET, &(adr4.sin_addr), ip.ptr, ip.len) == null) {
+                return errno::get_fault()~;
+            }
+            *port = in::ntohs(adr4.sin_port);
         }
-        *port = in::ntohs(adr.sin_port);
     }
     
     return s;
@@ -82,23 +123,43 @@ fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
 
 fn void? TcpSocket.connect(sock, String ip, ushort port)
 {
-    SockAddrIn adr;
-    adr.sin_family = socket::AF_INET;
-    adr.sin_port = in::htons(port);
-
-    if (in::inet_pton(socket::AF_INET, ip.ptr, &adr.sin_addr) == 0) {
-        return errno::get_fault()~;
-    }
+    int version = detect_ip_version(ip);
     
-    int r = socket::connect(sock, (SockAddr*)&adr, $sizeof(adr));
-    if (r < 0) {
-        return errno::get_fault()~;
+    if (version == socket::AF_INET6) {
+        SockAddrIn6 adr;
+        string::memset(&adr, 0, $sizeof(adr));
+        adr.sin6_family = socket::AF_INET6;
+        adr.sin6_port = in::htons(port);
+        
+        if (in::inet_pton(socket::AF_INET6, ip.ptr, &adr.sin6_addr) != 1) {
+            return errno::get_fault()~;
+        }
+        
+        int r = socket::connect(sock, (SockAddr*)&adr, $sizeof(adr));
+        if (r < 0) {
+            return errno::get_fault()~;
+        }
+    } else {
+        SockAddrIn adr;
+        string::memset(&adr, 0, $sizeof(adr));
+        adr.sin_family = socket::AF_INET;
+        adr.sin_port = in::htons(port);
+        
+        if (in::inet_pton(socket::AF_INET, ip.ptr, &adr.sin_addr) != 1) {
+            return errno::get_fault()~;
+        }
+        
+        int r = socket::connect(sock, (SockAddr*)&adr, $sizeof(adr));
+        if (r < 0) {
+            return errno::get_fault()~;
+        }
     }
 }
 
 fn TcpSocket? new_connect(String ip, ushort port)
 {
-    TcpSocket sock = new()!;
+    int version = detect_ip_version(ip);
+    TcpSocket sock = new(version)!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -161,7 +222,7 @@ fn isz? TcpSocket.readline(sock, char[] line)
     return n;
 }
 
-fn void? TcpSocket.set_non_blocking(sock) 
+fn void? TcpSocket.set_non_blocking(sock) @maydiscard
 {
     int flags = fcntl::fcntl(sock, fcntl::F_GETFL, 0);
     if (flags < 0) {

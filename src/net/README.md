@@ -1,29 +1,29 @@
 
 # ext::net - High-Level Networking Library for C3
 
-A modern, ergonomic networking library for the [C3 programming language](https://c3-lang.org/), providing simplified abstractions over raw socket APIs with comprehensive TCP and UDP, DNS lookup support.
+A networking library for the [C3 programming language](https://c3-lang.org/), providing simplified abstractions over raw socket APIs with comprehensive TCP and UDP, DNS lookup support.
 
-## Overview
+## Available Modules
 
-`ext::net` provides high-level networking capabilities, offering an intuitive API for common networking patterns while maintaining the performance and control of system-level programming.
-
-
-## API Reference
+| Module | Description |
+|--------|-------------|
+| `ext::io::tcp` | TCP operations: new(), new_listen(), listen(), connect(), accept(), send(), recv(), read(), write(), readline(), set_non_blocking(), close()|
+| `ext::io::udp` | UDP operations: new(), new_bind(), bind(), send(), recv(), sendto(), recvfrom(), set_non_blocking(), close() |
+| `ext::io::dns` | DNS operations: get_addrinfo() |
 
 ### TCP Module (`ext::net::tcp`)
+
+* [tcp.posix.c3](tcp.posix.c3)
+* [tcp.win32.c3](tcp.win32.c3)
+
+Available functions:
 
 ```c3
 import ext::net::tcp;
 
-typedef TcpSocket = inline int;
-
-faultdef SOCKET_ERR, BIND_ERR, LISTEN_ERR, ACCEPT_ERR, CONNECT_ERR, 
-         NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, FCNTL_ERR, 
-         CLOSE_ERR, READ_ERR, EOF;
-
-TcpSocket? sock = tcp::new();
-int? r = server.listen(ushort port, String opt_ip = "*", int backlog = 10); // sets reuse_addr
-TcpSocket? server = tcp::new_listen(ushort port, String opt_ip = "*", int backlog = 10); // sets reuse_addr
+TcpSocket? sock = tcp::new(int version = AF_INET);
+int? r = sock.listen(ushort port, String opt_ip = "*", int backlog = 10); // sets reuse_addr, "::" for AF_INET6
+TcpSocket? sock = tcp::new_listen(ushort port, String opt_ip = "*", int backlog = 10); // sets reuse_addr, "::" for AF_INET6
 
 void? sock.connect(String ip, ushort port);
 TcpSocket? client = tcp::new_connect(String ip, ushort port);
@@ -32,28 +32,27 @@ TcpSocket? sock = server.accept(char[] ip = &__null__, ushort* port = null);
 isz? n = sock.send(char[] buf);
 isz? n = sock.recv(char[] buf);
 isz? n = sock.write(char[] buf);
-isz? n = socket.read(char[] buf);
+isz? n = sock.read(char[] buf);
 isz? n = sock.readline(char[] line);
 
-void? sock.set_non_blocking();
+void? sock.set_non_blocking() @maydiscard;
 
-void? socket.close();
+void? socket.close() @maydiscard;
 ```
 
 ### UDP Module (`ext::net::udp`)
 
+* [udp.posix.c3](udp.posix.c3)
+* [udp.win32.c3](udp.win32.c3)
+
+Available functions:
+
 ```c3
 import ext::net::udp;
 
-typedef UdpSocket = inline int;
-
-faultdef SOCKET_ERR, BIND_ERR, RECVFROM_ERR, SENDTO_ERR, 
-         NTOP_ERR, PTON_ERR, SEND_ERR, RECV_ERR, 
-         FCNTL_ERR, CLOSE_ERR;
-
-UdpSocket? sock = udp::new();
-void? sock.bind(ushort port, String opt_ip = "*"); // missing in std lib
-UdpSocket? server = udp::new_bind(ushort port, String ip = "*"); // missing in std lib
+UdpSocket? sock = udp::new(int version = AF_INET);
+void? sock.bind(ushort port, String opt_ip = "*"); // sets reuse_addr, "::" for AF_INET6 // missing in std lib
+UdpSocket? sock = udp::new_bind(ushort port, String ip = "*"); // sets reuse_addr, "::" for AF_INET6 // missing in std lib
 
 isz? n = sock.recvfrom(char[] msgbuf, char[] ip, ushort* port); // missing in stdlib
 isz? n = sock.sendto(char[] msgbuf, String ip, ushort port); // missing is std lib
@@ -61,18 +60,25 @@ isz? n = sock.sendto(char[] msgbuf, String ip, ushort port); // missing is std l
 isz? n = sock.send(char[] buf);
 isz? n = sock.recv(char[] buf);
 
-void? sock.set_non_blocking();
+void? sock.set_non_blocking() @maydiscard;
 
-void? sock.close();
+void? sock.close() @maydiscard;
 ```
 
 ### DNS module (`ext::net::dns`)
+
+* [dns.posix.c3](dns.posix.c3)
+* [dns.win32.c3](dns.win32.c3)
+
+Available functions:
 
 ```c3 
 import ext::net::dns;
 import std::collections::list;
 
-List{String}? ips =  dns::get_addrinfo(Allocator mem, String host);
+List{String}? ips =  dns::get_addrinfo(Allocator allocx, String host); // should properly free() result
+
+foreach (e: ips) { e.free(); }
 ips.free();
 ```
 

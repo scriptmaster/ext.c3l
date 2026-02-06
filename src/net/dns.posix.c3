@@ -12,6 +12,9 @@ import netinet::in;
 import sys::socket;
 import std::collections::list;
 
+<*
+  should properly free returned List
+*>
 List{String}? get_addrinfo(Allocator allocx, String host)
 {
     char[128] hostname;

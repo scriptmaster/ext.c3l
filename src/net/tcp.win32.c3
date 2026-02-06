@@ -1,5 +1,5 @@
 
-// tcp.win32.c3 - Windows implementation
+// tcp.win32.c3 - Windows implementation with IPv4/IPv6 support
 
 module ext::net @if(env::WIN32);
 
@@ -35,10 +35,20 @@ fn void __wsa_cleanup()
     }
 }
 
-fn TcpSocket? new() 
+fn int detect_ip_version(String ip) 
+{
+    foreach (c : ip) {
+        if (c == ':') return winsock2::AF_INET6;
+    }
+    return winsock2::AF_INET;
+}
+
+fn TcpSocket? new(int version = winsock2::AF_INET) 
 {
     __wsa_startup()!;
-    TcpSocket sock = (TcpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_STREAM, winsock2::IPPROTO_TCP);
+    int family = (int)version;
+    TcpSocket sock = (TcpSocket)winsock2::socket(family, winsock2::SOCK_STREAM, 
+        family == winsock2::AF_INET6 ? winsock2::IPPROTO_IPV6 : winsock2::IPPROTO_TCP);
     
     if (sock == winsock2::INVALID_SOCKET) {
         return errno::get_fault()~;
@@ -51,22 +61,48 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
     int option = 1;
     winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&option, $sizeof(option));
     
-    winsock2::SockAddrIn adr;
-    adr.sin_family = winsock2::AF_INET;
-    if (opt_ip == "*") {
-        adr.sin_addr.s_addr = winsock2::htonl(winsock2::INADDR_ANY);
-    } else {
-        winsock2::InAddr addr;
-        if (ws2tcpip::inet_pton(winsock2::AF_INET, opt_ip.ptr, &addr) <= 0) {
+    int version = detect_ip_version(opt_ip);
+    
+    if (version == winsock2::AF_INET6) {
+        winsock2::SockAddrIn6 adr;
+        adr.sin6_family = winsock2::AF_INET6;
+        
+        if (opt_ip == "::") {
+            // Bind to all IPv6 addresses
+            winsock2::In6Addr any_addr;
+            // Set to in6addr_any equivalent (all zeros)
+            for (int i = 0; i < 16; i++) {
+                any_addr.u.byte[i] = 0;
+            }
+            adr.sin6_addr = any_addr;
+        } else if (ws2tcpip::inet_pton(winsock2::AF_INET6, opt_ip.ptr, &adr.sin6_addr) <= 0) {
             return errno::get_fault()~;
         }
-        adr.sin_addr = addr;
-    }
-    
-    adr.sin_port = winsock2::htons(port);
+        
+        adr.sin6_port = winsock2::htons(port);
+        
+        if (winsock2::bind(sock, (winsock2::SockAddr*)&adr, $sizeof(adr)) == winsock2::SOCKET_ERROR) {
+            return errno::get_fault()~;
+        }
+    } else {
+        winsock2::SockAddrIn adr;
+        adr.sin_family = winsock2::AF_INET;
+        
+        if (opt_ip == "*") {
+            adr.sin_addr.s_addr = winsock2::htonl(winsock2::INADDR_ANY);
+        } else {
+            winsock2::InAddr addr;
+            if (ws2tcpip::inet_pton(winsock2::AF_INET, opt_ip.ptr, &addr) <= 0) {
+                return errno::get_fault()~;
+            }
+            adr.sin_addr = addr;
+        }
+        
+        adr.sin_port = winsock2::htons(port);
 
-    if (winsock2::bind(sock, (winsock2::SockAddr*)&adr, $sizeof(adr)) == winsock2::SOCKET_ERROR) {
-        return errno::get_fault()~;
+        if (winsock2::bind(sock, (winsock2::SockAddr*)&adr, $sizeof(adr)) == winsock2::SOCKET_ERROR) {
+            return errno::get_fault()~;
+        }
     }
     
     int r = winsock2::listen(sock, backlog);
@@ -79,7 +115,8 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
 
 fn TcpSocket? new_listen(ushort port, String opt_ip = "*", int backlog = 10)
 {
-    TcpSocket sock = new()!;
+    int version = detect_ip_version(opt_ip);
+    TcpSocket sock = new(version)!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -92,18 +129,28 @@ fn TcpSocket? new_listen(ushort port, String opt_ip = "*", int backlog = 10)
 char[1] __null__;
 fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
 {
-    winsock2::SockAddrIn adr;
+    winsock2::SockAddrStorage adr;
     int size = $sizeof(adr);
     
     TcpSocket s = (TcpSocket)winsock2::accept(sock, (winsock2::SockAddr*)&adr, &size);
     if (s == winsock2::INVALID_SOCKET) {
         return errno::get_fault()~;
     }
+    
     if (ip != &__null__ && port != null) {
-        if (ws2tcpip::inet_ntop(winsock2::AF_INET, &(adr.sin_addr), ip.ptr, (ulong)ip.len) == null) {
-            return errno::get_fault()~;
+        if (adr.ss_family == winsock2::AF_INET6) {
+            winsock2::SockAddrIn6* adr6 = (winsock2::SockAddrIn6*)&adr;
+            if (ws2tcpip::inet_ntop(winsock2::AF_INET6, &(adr6.sin6_addr), ip.ptr, (ulong)ip.len) == null) {
+                return errno::get_fault()~;
+            }
+            *port = winsock2::ntohs(adr6.sin6_port);
+        } else {
+            winsock2::SockAddrIn* adr4 = (winsock2::SockAddrIn*)&adr;
+            if (ws2tcpip::inet_ntop(winsock2::AF_INET, &(adr4.sin_addr), ip.ptr, (ulong)ip.len) == null) {
+                return errno::get_fault()~;
+            }
+            *port = winsock2::ntohs(adr4.sin_port);
         }
-        *port = winsock2::ntohs(adr.sin_port);
     }
     
     return s;
@@ -111,25 +158,43 @@ fn TcpSocket? TcpSocket.accept(sock, char[] ip = &__null__, ushort* port = null)
 
 fn void? TcpSocket.connect(sock, String ip, ushort port)
 {
-    winsock2::SockAddrIn adr;
-    adr.sin_family = winsock2::AF_INET;
-    adr.sin_port = winsock2::htons(port);
-
-    winsock2::InAddr addr;
-    if (ws2tcpip::inet_pton(winsock2::AF_INET, ip.ptr, &addr) <= 0) {
-        return errno::get_fault()~;
-    }
-    adr.sin_addr = addr;
+    int version = detect_ip_version(ip);
     
-    int r = winsock2::connect(sock, (winsock2::SockAddr*)&adr, $sizeof(adr));
-    if (r == winsock2::SOCKET_ERROR) {
-        return errno::get_fault()~;
+    if (version == winsock2::AF_INET6) {
+        winsock2::SockAddrIn6 adr;
+        adr.sin6_family = winsock2::AF_INET6;
+        adr.sin6_port = winsock2::htons(port);
+        
+        if (ws2tcpip::inet_pton(winsock2::AF_INET6, ip.ptr, &adr.sin6_addr) <= 0) {
+            return errno::get_fault()~;
+        }
+        
+        int r = winsock2::connect(sock, (winsock2::SockAddr*)&adr, $sizeof(adr));
+        if (r == winsock2::SOCKET_ERROR) {
+            return errno::get_fault()~;
+        }
+    } else {
+        winsock2::SockAddrIn adr;
+        adr.sin_family = winsock2::AF_INET;
+        adr.sin_port = winsock2::htons(port);
+
+        winsock2::InAddr addr;
+        if (ws2tcpip::inet_pton(winsock2::AF_INET, ip.ptr, &addr) <= 0) {
+            return errno::get_fault()~;
+        }
+        adr.sin_addr = addr;
+        
+        int r = winsock2::connect(sock, (winsock2::SockAddr*)&adr, $sizeof(adr));
+        if (r == winsock2::SOCKET_ERROR) {
+            return errno::get_fault()~;
+        }
     }
 }
 
 fn TcpSocket? new_connect(String ip, ushort port)
 {
-    TcpSocket sock = new()!;
+    int version = detect_ip_version(ip);
+    TcpSocket sock = new(version)!;
     defer (catch err) {
         (void) sock.close();
     }
@@ -191,7 +256,7 @@ fn isz? TcpSocket.readline(sock, char[] line)
     return n;
 }
 
-fn void? TcpSocket.set_non_blocking(sock) 
+fn void? TcpSocket.set_non_blocking(sock) @maydiscard 
 {
     uint mode = 1; // non-blocking mode
     int r = winsock2::ioctlsocket(sock, winsock2::FIONBIO, &mode);
