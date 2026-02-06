@@ -15,9 +15,9 @@ Back to [ext.c3l](../../README.md) library.
 ### File Status Operations
 
 Three abstraction for status operations.
-* `[stat.def.c3](stat.def.c3)` : cross-platform definition of `struct Stat`
-* `[stat.posix.c3](stat.posix.c3)` : functions for posix systems.
-* `[stat.win32.c3](stat.win32.c3)` : functions for win32 systems.
+* [stat.def.c3](stat.def.c3) : cross-platform definition of `struct Stat`
+* [stat.posix.c3](stat.posix.c3) : functions for posix systems.
+* [stat.win32.c3](stat.win32.c3) : functions for win32 systems.
 
 Available functions are:
 
@@ -41,8 +41,8 @@ void? stat::change_mode(String path, Mode_t mode) @maydiscard; // missing in std
 ### File Operations
 
 Abstraction for file operations.
-* `[file.posix.c3](file.posix.c3)` : functions for posix systems.
-* `[file.win32.c3](file.win32.c3)` : functions for win32 systems.
+* [file.posix.c3](file.posix.c3) : functions for posix systems.
+* [file.win32.c3](file.win32.c3) : functions for win32 systems.
 
 Available functions are:
 
@@ -80,9 +80,9 @@ void? file::change_mode(String file, Mode_t mode) @maydiscard; // missing in std
 ### Directory/folder Operations
 
 Abstraction for dir operations.
-* `[dir.def.c3](dir.def.c3)` : cross-platform definition of `struct Dir/DirEnt`
-* `[dir.posix.c3](dir.posix.c3)` : functions for posix systems.
-* `[dir.win32.c3](dir.win32.c3)` : functions for win32 systems.
+* [dir.def.c3](dir.def.c3) : cross-platform definition of `struct Dir/DirEnt`
+* [dir.posix.c3](dir.posix.c3) : functions for posix systems.
+* [dir.win32.c3](dir.win32.c3) : functions for win32 systems.
 
 Available functions are:
 

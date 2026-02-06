@@ -5,7 +5,7 @@ An extended library for the C3 programming language, providing essential system-
 ## Overview
 
 `ext.c3l` bridges the gap between C3 and system-level programming by providing:
-- Comprehensive C header bindings (POSIX and Win32)
+- C header bindings (POSIX and Win32)
 - High-level networking APIs (TCP, UDP, DNS)
 - File system and I/O utilities
 - Regular expression support
@@ -107,11 +107,11 @@ File system operations including stat, directory handling, and file utilities:
 import ext::io::stat;
 import ext::io::file;
 
-bool exists = stat::file_exists(filename);
+bool exists = stat::exists(filename);
 
 long? mtime = stat::last_modified);
 
-CFile fp = file::open(filename, "r+");
+FFile fp = file::fopen(filename, "r+");
 ```
 
 - More about [I/O Operations](src/io/README.md)
