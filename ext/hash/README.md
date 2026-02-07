@@ -1,6 +1,6 @@
 # ext::hash - Extended Hash functions
 
-Hash functions that are not found in dtd library
+Hash functions that are not found in C3 std library
 
 ## Available Modules
 
