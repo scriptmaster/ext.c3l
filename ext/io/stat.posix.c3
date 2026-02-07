@@ -13,12 +13,12 @@ module ext::io::stat @if(!env::WIN32); // Posix
 
 import errno;
 
-extern fn CInt stat(char* path, Stat* buf) ;
+// extern fn CInt stat(char* path, Stat* buf) ;
 extern fn CInt lstat(char* path, Stat* buf);
 extern fn CInt access(char* path, CInt mode);
 extern fn CLong readlink(char* path, char* buf, CULong bufsize);
 
-extern fn Mode_t umask(Mode_t mode) @maydiscard;
+extern fn Mode_t umask(Mode_t mode);
 extern fn CInt chmod(char *file, Mode_t mode);
 
 // File mode constants
@@ -75,7 +75,8 @@ fn long? size(String path)
 fn bool exists(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;;
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
     
     return access(zpath, F_OK) == 0;
 }
@@ -83,8 +84,9 @@ fn bool exists(String path)
 fn bool is_dir(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;
-    
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
+   
     Stat st;
     if (stat(zpath, &st) != 0) return false;
     
@@ -94,8 +96,9 @@ fn bool is_dir(String path)
 fn bool is_file(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;
-    
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
+   
     Stat st;
     if (stat(zpath, &st) != 0) return false;
     
@@ -105,8 +108,9 @@ fn bool is_file(String path)
 fn bool is_link(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;
-    
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
+  
     Stat st;
     // lstat doesn't follow symbolic links
     if (lstat(zpath, &st) != 0) return false;
@@ -130,24 +134,27 @@ fn long? last_modified(String path)
 fn bool is_readable(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;
-    
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
+
     return access(zpath, R_OK) == 0;
 }
 
 fn bool is_writeable(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;
-    
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
+   
     return access(zpath, W_OK) == 0;
 }
 
 fn bool is_executable(String path)
 {
     char[MAX_PATH] p2; 
-    char* zpath = path_to_cstr(path, &p2) ?? return false;
-    
+    char*? zpath = path_to_cstr(path, &p2);
+    if (catch err = zpath) return false;
+
     return access(zpath, X_OK) == 0;
 }
 

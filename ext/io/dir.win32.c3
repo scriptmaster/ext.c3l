@@ -1,55 +1,26 @@
 // dir.win32.c3
-//
-// This module provides directory operations for Windows systems.
+
 // get_cur_dir() change_dir() make_dir() remove_dir()
-// list_dir() is_dir() is_file()
+// list_dir() is_dir() is_file() change_mode()
 
 module ext::io::dir @if(env::WIN32);
 
 import errno;
+import windows;
 import std::io;
 import ext::io::stat;
+import std::collections::list;
 
 const int MAX_PATH = 1024;
 
-extern fn CULong getCurrentDirectoryW(CULong nBufferLength, Char16* lpBuffer) @cname("GetCurrentDirectoryW");
-extern fn CBool setCurrentDirectoryW(WString lpPathName) @cname("SetCurrentDirectoryW");
-extern fn CBool createDirectoryW(WString lpPathName, void* lpSecurityAttributes) @cname("CreateDirectoryW");
-extern fn CBool removeDirectoryW(WString lpPathName) @cname("RemoveDirectoryW");
-
-// findFile structures and functions
-struct Win32FindDataW
-{
-    CULong dwFileAttributes;
-    CULong ftCreationTime_low;
-    CULong ftCreationTime_high;
-    CULong ftLastAccessTime_low;
-    CULong ftLastAccessTime_high;
-    CULong ftLastWriteTime_low;
-    CULong ftLastWriteTime_high;
-    CULong nFileSizeHigh;
-    CULong nFileSizeLow;
-    CULong dwReserved0;
-    CULong dwReserved1;
-    Char16[260] cFileName;
-    Char16[14] cAlternateFileName;
-}
-
-const CULong FILE_ATTRIBUTE_DIRECTORY = 0x10;
-const CULong INVALID_HANDLE_VALUE = 0xFFFFFFFF;
-
-extern fn void* findFirstFileW(WString lpFileName, Win32FindDataW* lpfindFileData) @cname("FindFirstFileW");
-extern fn CBool findNextFileW(void* hfindFile, Win32FindDataW* lpfindFileData) @cname("FindNextFileW");
-extern fn CBool findClose(void* hfindFile) @cname("FindClose");
-
 fn Char16*? utf8to16(String path, Char16[] wpath) 
 {
-    if (path.len == 0) return errno::E_INVALID?;
+    if (path.len == 0) return errno::F_BAD_LENGTH~;
 
     Char16[] p2 = path.to_utf16(tmem)!;
     defer free(p2);
     
-    if (p2.len >= wpath.len-1) return errno::E_ARG_TOO_BIG~;
+    if (p2.len >= wpath.len-1) return errno::F_BAD_LENGTH~;
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
@@ -59,9 +30,9 @@ fn Char16*? utf8to16(String path, Char16[] wpath)
 fn String? u16to8(Char16[] from, char[] buf)
 {
     String s = string::from_utf16(tmem, from)!;
-    defer s.free();
+    defer s.free(tmem);
     
-    if (s.len >= buf.len+1) return errno::E_ARG_TOO_BIG~;
+    if (s.len >= buf.len+1) return errno::F_BAD_LENGTH~;
     
     buf[0:s.len] = s[0:s.len];
     buf[s.len] = 0;
@@ -76,13 +47,13 @@ fn String? u16to8(Char16[] from, char[] buf)
 fn String? get_cur_dir(char[] buf)
 {
     Char16[MAX_PATH] wbuf;
-    CULong len = getCurrentDirectoryW(wbuf.len, wbuf.ptr);
+    CULong len = windows::getCurrentDirectoryW(wbuf.len, &wbuf[0]);
     if (len == 0) {
         return errno::get_fault()~;
     }
     
     if (len >= wbuf.len) {
-        return errno::E_ARG_TOO_BIG~;
+        return errno::F_BAD_LENGTH~;
     }
     
     return u16to8(wbuf[0:len], buf)!;
@@ -93,7 +64,7 @@ fn void? change_dir(String path) @maydiscard
     Char16[MAX_PATH] p2;
     Char16* wpath = utf8to16(path, &p2)!;
     
-    if (!setCurrentDirectoryW(wpath)) {
+    if (!windows::setCurrentDirectoryW(wpath)) {
         return errno::get_fault()~;
     }
 }
@@ -104,8 +75,8 @@ fn void? make_dir(String path, bool recursive = false, CUInt mode = 0o755) @mayd
     Char16* wpath = utf8to16(path, &p2)!;
     
     if (!recursive) {
-        if (!createDirectoryW(wpath, null)) {
-            if (errno::errno() != errno::EEXISTS) { // ERROR_ALREADY_EXISTS
+        if (!windows::createDirectoryW(wpath, null)) {
+            if (errno::errno() != errno::ERROR_ALREADY_EXISTS) { // ERROR_ALREADY_EXISTS
                 return errno::get_fault()~;
             }
         }
@@ -167,7 +138,7 @@ fn void? make_dir(String path, bool recursive = false, CUInt mode = 0o755) @mayd
             temp[i] = 0;
             
             // Try to create directory (ignore ERROR_ALREADY_EXISTS)
-            if (!createDirectoryW((WString)&temp[0], null)) {
+            if (!windows::createDirectoryW((WString)&temp[0], null)) {
                 if (errno::errno() != errno::ERROR_ALREADY_EXISTS) { // ERROR_ALREADY_EXISTS
                     return errno::get_fault()~;
                 }
@@ -184,7 +155,7 @@ fn void? remove_dir(String path) @maydiscard
     Char16[MAX_PATH] p2;
     Char16* wpath = utf8to16(path, &p2)!;
     
-    if (!removeDirectoryW(wpath)) {
+    if (!windows::removeDirectoryW(wpath)) {
         return errno::get_fault()~;
     }
 }
@@ -194,35 +165,35 @@ returned List{String} must be freed properly
 *>
 fn List{String}? list_dir(Allocator allocx, String path)
 {
-    if (path.len+2 >= MAX_PATH) return errno::E_ARG_TOO_BIG~;
+    if (path.len+2 >= MAX_PATH) return errno::F_BAD_LENGTH~;
 
     // create search pattern (path\*)
     
     char[MAX_PATH] p1;
     p1[0:path.len] = path[0:path.len];
     usz pos = path.len;
-    if (p1[pos-1] != '/' and p1[pos-1] != '\\') {
+    if (p1[pos-1] != '/' && p1[pos-1] != '\\') {
         p1[pos++] = '\\';
     }
     p1[pos] = '*';
     
     Char16[MAX_PATH + 2] p2;
-    Char16* spath = utf8to16(p1[0..pos], &p2)!;
+    Char16* spath = utf8to16((String)p1[0..pos], &p2)!;
 
-    Win32FindDataW find_data;
-    void* handle = findFirstFileW(spath, &find_data);
+    windows::Win32FindDataW find_data;
+    windows::Handle handle = windows::findFirstFileW(spath, &find_data);
     
-    if (handle == (void*)INVALID_HANDLE_VALUE) {
+    if (handle == windows::INVALID_HANDLE_VALUE) {
         return errno::get_fault()~;
     }
-    defer findClose(handle);
+    defer windows::findClose(handle);
     
     // Use a dynamic list
     List{String} entries;
     entries.init(allocx);
     defer (catch err) {
         foreach (e : entries) {
-            e.free();
+            e.free(allocx);
         }
         entries.free();
     }
@@ -230,9 +201,11 @@ fn List{String}? list_dir(Allocator allocx, String path)
     while (true) {
         // Skip "." and ".."
         Char16* wname = &find_data.cFileName[0];
-
+        usz n = 0;
+        while (wname[n] != 0) { n++; }
+        
         char[MAX_PATH] name_buf;
-        String name_str = u16to8(wname, &name_buf)!;
+        String name_str = u16to8(wname[:n], &name_buf)!;
         
         if (name_str != "." && name_str != "..") {
             String name_copy = name_str.copy(allocx);
@@ -240,8 +213,8 @@ fn List{String}? list_dir(Allocator allocx, String path)
         }
         
         // get next file
-        if (!findNextFileW(handle, &find_data)) {
-            if (errno::errno() == errno::NO_MORE_FILES) { // ERROR_NO_MORE_FILES
+        if (!windows::findNextFileW(handle, &find_data)) {
+            if (errno::errno() == errno::ERROR_NO_MORE_FILES) { // ERROR_NO_MORE_FILES
                 break;
             }
             return errno::get_fault()~;

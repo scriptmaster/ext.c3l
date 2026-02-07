@@ -11,6 +11,9 @@ A networking library for the [C3 programming language](https://c3-lang.org/), pr
 | `ext::io::udp` | UDP operations: new(), new_bind(), bind(), send(), recv(), sendto(), recvfrom(), set_non_blocking(), close() |
 | `ext::io::dns` | DNS operations: get_addrinfo() |
 
+Back to [ext.c3l](../../README.md) library.
+
+
 ### TCP Module (`ext::net::tcp`)
 
 * [tcp.posix.c3](tcp.posix.c3)
@@ -81,6 +84,8 @@ List{String}? ips =  dns::get_addrinfo(Allocator allocx, String host); // should
 foreach (e: ips) { e.free(); }
 ips.free();
 ```
+
+Back to [ext.c3l](../../README.md) library.
 
 ### TCP Server Example
 
@@ -214,9 +219,6 @@ fn void main()
 }
 ```
 
-
-
-
 ## Error Handling
 
 `ext_net` uses C3's optional return types for error handling. All functions that can fail return optional types (`?`).
@@ -297,10 +299,10 @@ fn void? handle_client(TcpSocket sock)
 
 The library includes comprehensive test examples in the `examples/` directory:
 
-- `tcpserver.c3` - TCP echo server implementation
-- `tcpclient.c3` - TCP client example
-- `udpserver.c3` - UDP echo server implementation  
-- `udpclient.c3` - UDP client example
+- [tcpserver.c3](../../examples/tcpserver.c3) - TCP echo server implementation
+- [tcpclient.c3](../../examples/tcpserver.c3) - TCP client example
+- [udpserver.c3](../../examples/udpserver.c3) - UDP echo server implementation  
+- [udpclient.c3](../../examples/udpclient.c3) - UDP client example
 
 Run the tests to verify installation and see usage examples:
 
@@ -312,3 +314,4 @@ make tcpserver
 make tcpclient
 ```
 
+Back to [ext.c3l](../../README.md) library.

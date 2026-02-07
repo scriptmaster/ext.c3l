@@ -34,7 +34,7 @@ bool b = stat::is_readable(String psth); // missing in std lib
 bool b = stat::is_writeable(String path); // missing in std lib
 bool b = stat::is_executable(String path); // missing in std lib
 usz? n = stat::read_link(String path, char[] output); // missing in std lib
-Mode_t prev = stat::umask(Mode_t mode) @maydiscard; // missing in std lib
+Mode_t prev = stat::umask(Mode_t mode); // missing in std lib
 void? stat::change_mode(String path, Mode_t mode) @maydiscard; // missing in std lib
 ```
 
@@ -106,6 +106,8 @@ usz? n = dir::read_link(String path, char[] output); // missing in std lib
 void? dir::change_mode(String path, Mode_t mode) @maydiscard; // missing in std lib
 ```
 
+Back to [ext.c3l](../../README.md) library.
+
 ### Example
 
 ```c3
@@ -136,4 +138,6 @@ fn void check_file(String path)
     }
 }
 ```
+
+Back to [ext.c3l](../../README.md) library.
 

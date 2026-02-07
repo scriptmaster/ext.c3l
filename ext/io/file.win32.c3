@@ -8,15 +8,15 @@ import windows;
 import errno;
 import ext::io::stat;
 
-typedef FFile = windows::Handle;
+alias FFile = windows::Handle;
 
 fn Char16*? utf8to16(String path, Char16[] wpath) 
 {
-    if (path.le  == 0) return errno::E_INVALID~;
+    if (path.len == 0) return errno::F_INVAL~;
     Char16[] p2 = path.to_utf16(mem)!;
     defer free(p2);
     
-    if (p2.len >= wpath.len-1) return errno::E_ARG_TOO_BIG~;
+    if (p2.len >= wpath.len-1) return errno::F_BAD_LENGTH~;
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
@@ -33,7 +33,7 @@ fn FFile? fopen(String fname, String fmode)
     uint creation = windows::OPEN_EXISTING;
     
     // Simple mode parsing (r, w, a, r+, w+, a+)
-    if (fmode.len == 0) return errno::E_INVALID~;
+    if (fmode.len == 0) return errno::F_INVAL~;
     if (fmode[0] == 'r') {
         access = windows::GENERIC_READ;
         if (fmode.len > 1 && fmode[1] == '+') {
@@ -52,7 +52,7 @@ fn FFile? fopen(String fname, String fmode)
             access |= windows::GENERIC_READ;
         }
     } else {
-        return errno::E_INVALID~;
+        return errno::F_INVAL~;
     }
     
     FFile fp = windows::createFileW(name, access, windows::FILE_SHARE_READ | windows::FILE_SHARE_WRITE, null, creation, windows::FILE_ATTRIBUTE_NORMAL, null);
@@ -69,7 +69,7 @@ fn FFile? fopen(String fname, String fmode)
 fn usz? FFile.fread(&self, char[] buf)
 {
     uint bytes_read;
-    bool success = windows::readFile(self, buf.ptr, (uint)buf.len, &bytes_read, null);
+    windows::Bool success = windows::readFile(self, buf.ptr, (uint)buf.len, &bytes_read, null);
     if (!success) return errno::get_fault()~;
     if (bytes_read == 0) return errno::EOF~;
     return (usz)bytes_read;
@@ -103,7 +103,7 @@ fn usz? FFile.freadline(&self, char[] buf)
     while (idx < buf.len - 1) {
         char c;
         uint bytes_read;
-        bool success = windows::readFile(self, &c, 1, &bytes_read, null);
+        windows::Bool success = windows::readFile(self, &c, 1, &bytes_read, null);
         if (!success) return errno::get_fault()~;
         if (bytes_read == 0) {
             if (idx == 0) return errno::EOF~;
@@ -119,7 +119,7 @@ fn usz? FFile.freadline(&self, char[] buf)
 fn usz? FFile.fwrite(&self, char[] buf)
 {
     uint bytes_written;
-    bool success = windows::writeFile(self, buf.ptr, (uint)buf.len, &bytes_written, null);
+    windows::Bool success = windows::writeFile(self, buf.ptr, (uint)buf.len, &bytes_written, null);
     if (!success) return errno::get_fault()~;
     return (usz)bytes_written;
 }
@@ -134,15 +134,16 @@ fn void FFile.fflush(&self)
     windows::flushFileBuffers(self);
 }
 
-fn usz? FFile.fprintf(&self, String fmt, args...) => @pool()
+fn usz? FFile.fprintf(&self, String fmt, args...)
 {
     // Format to temporary buffer
-    DString str = dstring::temp_new();
+    DString str = dstring::temp();
+    defer str.free();
     str.appendf(fmt, ...args);
     
     // Write formatted string
     uint bytes_written;
-    bool success = windows::writeFile(self, str.str_view().ptr, (uint)str.len(), &bytes_written, null);
+    windows::Bool success = windows::writeFile(self, str.str_view().ptr, (uint)str.len(), &bytes_written, null);
     if (!success) return errno::get_fault()~;
     return (usz)bytes_written;
 }
@@ -154,17 +155,17 @@ fn void? FFile.fseek(&self, long pos, int whence) @maydiscard
         case 0: move_method = windows::FILE_BEGIN;
         case 1: move_method = windows::FILE_CURRENT;
         case 2: move_method = windows::FILE_END;
-        default: return FSEEK_ERR~;
+        default: return errno::F_INVAL~;
     }
     
-    bool ok = windows::setFilePointerEx(self, pos, null, move_method);
+    windows::Bool ok = windows::setFilePointerEx(self, pos, null, move_method);
     if (! ok) return errno::get_fault()~;
 }
 
 fn long? FFile.ftell(&self)
 {
     long pos;
-    bool success = windows::setFilePointerEx(self, 0, &pos, windows::FILE_CURRENT);
+    windows::Bool success = windows::setFilePointerEx(self, 0, &pos, windows::FILE_CURRENT);
     if (!success) return errno::get_fault()~;
     return pos;
 }
@@ -174,7 +175,7 @@ fn void? remove(String fname) @maydiscard
     Char16[512] namebuf;
     Char16* name = utf8to16(fname, &namebuf)!;
 
-    bool success = windows::deleteFileW(name);
+    windows::Bool success = windows::deleteFileW(name);
     if (!success) return errno::get_fault()~;
 }
 
@@ -186,7 +187,7 @@ fn void? rename(String fname, String fname2) @maydiscard
     Char16[512] namebuf2;
     Char16* name2 = utf8to16(fname2, &namebuf2)!;
     
-    bool success = windows::moveFileW(name, name2);
+    windows::Bool success = windows::moveFileW(name, name2);
     if (!success) return errno::get_fault()~;
 }
 

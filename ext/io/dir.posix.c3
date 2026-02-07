@@ -9,7 +9,7 @@ module ext::io::dir @if(!env::WIN32); // Posix
 import errno;
 import dirent;
 import ext::io::stat;
-
+import std::collections::list;
 const int MAX_PATH = 1024;
 
 // Additional POSIX functions not in dirent module
@@ -21,7 +21,7 @@ extern fn CInt rmdir(char* path);
 
 fn char*? path_to_cstr(String path, char[] buffer)
 {
-    if (path.len+1 >= buffer.len) return errno::E_ARG_TOO_BIG~;
+    if (path.len+1 >= buffer.len) return errno::E_NAME_TOO_LONG~;
     buffer[0:path.len] = path[0:path.len];
     buffer[path.len] = 0;
     return buffer.ptr;
@@ -39,7 +39,7 @@ fn String? get_cur_dir(char[] buf)
         return errno::get_fault()~;
     }
     
-    return result.str_view();
+    return ((ZString)result).str_view();
 }
 
 fn void? change_dir(String path) @maydiscard
@@ -95,7 +95,7 @@ fn void? make_dir(String path, bool recursive = false, CUInt mode = 0o755) @mayd
             temp[i] = 0;
             
             // Try to create directory (ignore EEXIST)
-            if (mkdir(temp.ptr, mode) != 0) {
+            if (mkdir(&temp[0], mode) != 0) {
                 if (errno::errno() != errno::EEXIST) {
                     return errno::get_fault()~;
                 }
@@ -135,12 +135,13 @@ fn List{String}? list_dir(Allocator allocx, String path)
     List{String} entries;
     entries.init(allocx);
     defer (catch err) {
-        foreach (e : entries) { e.free(); }
+        foreach (e : entries) { e.free(allocx); }
         entries.free();
     }
     
     dirent::DirEnt* entry;
-    while (result = dirent::readdir(dir)) {
+    while ((entry = dirent::readdir(dir))) 
+    {
         // Skip "." and ".."
         char* name = (char*)&entry.d_name[0];
         String name_str = ((ZString)name).str_view();

@@ -46,7 +46,9 @@ Now it's ready to be used in your project.
 
 ## Features
 
-### C Header Bindings (`src/libc/*.h.c3`)
+### C Header Bindings 
+
+* [ext/libc](ext/libc)
 
 Provides bridge modules to C header files for both POSIX and Windows platforms:
 
@@ -79,48 +81,56 @@ __wsa_startup()!;
 UdpSocket? sock = (UdpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_DGRAM, winsock2::IPPROTO_UDP);
 ```
 
-- More about [C Header bindings](src/libc/README.md)
+- More about [C Header bindings](ext/libc/README.md)
 
-### Networking (`src/net/*.c3`)
+### Networking 
+
+* [ext/net](ext/net)
 
 High-level networking capabilities including TCP, UDP, and DNS:
 
-Example:
-```c3
-import ext::net::udp;
-import ext::net::tcp;
+| Module | Description |
+|--------|-------------|
+| `ext::io::tcp` | TCP operations: new(), new_listen(), listen(), connect(), accept(), send(), recv(), read(), write(), readline(), set_non_blocking(), close()|
+| `ext::io::udp` | UDP operations: new(), new_bind(), bind(), send(), recv(), sendto(), recvfrom(), set_non_blocking(), close() |
+| `ext::io::dns` | DNS operations: get_addrinfo() |
 
-UdpSock? sock = udp::new_bind(port);
-
-isz? UdpSocket.recvfrom(sock, char[] msgbuf, char[] ip, ushort* port);
-
-```
-
-- More about [Networking APIs](src/net/README.md)
+Ba
+- More about [Networking APIs](ext/net/README.md)
 
 
-### I/O Operations (`src/io/*.c3`)
+### I/O Operations
+
+* [ext/io](ext/io)
 
 File system operations including stat, directory handling, and file utilities:
 
-```c3
-import ext::io::stat;
-import ext::io::file;
+|Module | Description |
+|--------|-------------|
+| `ext::io::stat` | File stat operations: exists(), size(), is_(file/dir/link), is_(readable/writable/executable), read_link(), last_modified(), change_mode() |
+| `ext::io::file` | File operations: fopen(), fclose(), fread(), fwrite(), fprintf(), read(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
+| `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode() |
 
-bool exists = stat::exists(filename);
+- More about [I/O Operations](ext/io/README.md)
 
-long? mtime = stat::last_modified);
+### Hash Operations
 
-FFile fp = file::fopen(filename, "r+");
-```
+* [ext/hash](ext/hash)
 
-- More about [I/O Operations](src/io/README.md)
+| Module | Description |
+|--------|-------------|
+| `ext::hash::murmur` | MurmurHash3 functions: hash3_x86_32(), hash3_x86_128(), hash3_x64_128() |
+| `ext::hash::city` | CityHash functions: hash64(), hash64_with_seed(), hash128(), hash128_with_seed(), hash128_crc(), hash128_ rc_with_seed() |
 
-### Regular Expressions (`src/regex/*.c3`)
+- More about [Hash Operations](ext/hash/README.md)
+
+
+### Regular Expressions
 
 Regex support for C3 based on C regex library.
 
-- More about [Regular Expressions](src/regex/README.md)
+* [ext/regex](ext/regex)
+- More about [Regular Expressions](ext/regex/README.md)
 
 
 ## Usage Example
@@ -173,4 +183,4 @@ MIT License
 
 ---
 
-For detailed documentation on specific modules, please refer to the README files in each subdirectory under `src/`.
+For detailed documentation on specific modules, please refer to the README files in each subdirectory under `ext/`.

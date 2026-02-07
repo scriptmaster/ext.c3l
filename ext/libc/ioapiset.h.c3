@@ -212,6 +212,19 @@ extern fn Bool postQueuedCompletionStatus(
 
 
 // REPARSE_DATA_BUFFER for symbolic links and mount points
+struct ReparseDataBuffer {
+    CUInt reparseTag;
+    ushort reparseDataLength;
+    ushort reserved;
+    ushort substituteNameOffset;
+    ushort substituteNameLength;
+    ushort printNameOffset;
+    ushort printNameLength;
+    CUInt flags;
+    ushort[1] pathBuffer;
+}
+
+/*
 struct ReparseDataBuffer
 {
     CUInt reparse_tag;
@@ -247,6 +260,7 @@ struct ReparseDataBuffer
         }
     }
 }
+*/
 
 const CUInt MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024;
 const CUInt SYMLINK_FLAG_RELATIVE = 0x00000001;

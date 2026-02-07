@@ -117,6 +117,34 @@ const Dword VOLUME_NAME_NONE = 0x4;
 // =======================================
 // File API Structures
 // =======================================
+struct Win32FileAttributeData {
+    Dword dwFileAttributes;
+    Dword ftCreationTime_low;
+    Dword ftCreationTime_high;
+    Dword ftLastAccessTime_low;
+    Dword ftLastAccessTime_high;
+    Dword ftLastWriteTime_low;
+    Dword ftLastWriteTime_high;
+    Dword nFileSizeHigh;
+    Dword nFileSizeLow;
+}
+
+struct Win32FindDataW {
+    Dword dwFileAttributes;
+    Dword ftCreationTime_low;
+    Dword ftCreationTime_high;
+    Dword ftLastAccessTime_low;
+    Dword ftLastAccessTime_high;
+    Dword ftLastWriteTime_low;
+    Dword ftLastWriteTime_high;
+    Dword nFileSizeHigh;
+    Dword nFileSizeLow;
+    Dword dwReserved0;
+    Dword dwReserved1;
+    ushort[260] cFileName;
+    ushort[14] cAlternateFileName;
+}
+
 
 // Overlapped structure for async I/O
 struct Overlapped {

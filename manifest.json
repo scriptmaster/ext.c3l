@@ -1,6 +1,6 @@
 {
   "provides" : "ext",
-  "sources" : [ "src/**" ],
+  "sources" : [ "ext/**" ],
   "linklib-dir" : "linked-libs",
   "targets" : {
     "android-aarch64" : {

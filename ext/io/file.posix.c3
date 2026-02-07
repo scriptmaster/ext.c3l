@@ -26,7 +26,7 @@ fn FFile? fopen(String fname, String fmode)
     char[16] modebuf;
     char* mode = scopy(&modebuf, fmode)!;
     
-    FFile fp = stdio::fopen(name, mode);
+    FFile fp = (FFile)stdio::fopen(name, mode);
     if (fp == null) return errno::get_fault()~;
     
     return fp;
@@ -67,7 +67,7 @@ fn usz? FFile.freadline(&self, char[] buf)
     usz idx = 0;
     while (idx < buf.len - 1) {
         ichar c = stdio::fgetc(self);
-        if (c == stdio::errno::EOF) {
+        if (c == stdio::EOF) {
             if (stdio::ferror(self)) return errno::get_fault()~;
             if (idx == 0) return errno::EOF~;
             break;
@@ -101,7 +101,7 @@ fn usz? FFile.fprintf(&self, String fmt, args...)
     char[2048] fmtbuf;
     char* format = scopy(&fmtbuf, fmt)!;
     
-    int n = stdio::fprintf(self, format, ...args);
+    int n = stdio::fprintf(self, format, args);
     if (n < 0) return errno::get_fault()~;
     return (usz) n;
 }

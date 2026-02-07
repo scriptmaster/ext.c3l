@@ -36,7 +36,9 @@ extern fn int fputs(char* s, CFile stream);
 
 extern fn Size fread(void* ptr, Size size, Size nmemb, CFile stream);
 extern fn Size fwrite(void* ptr, Size size, Size nmemb, CFile stream);
-
+extern fn int ferror(CFile stream);
+extern fn char fgetc(CFile stream);
+extern fn int feof(CFile stream);
 // File Positioning
 
 enum Whence: int (int val) {

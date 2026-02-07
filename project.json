@@ -5,7 +5,7 @@
   "dependencies": [ ],
   "authors": [ "Nomota <hiongun@gmail.com>" ],
   "version": "0.1.0",
-  "sources": [ "src/**" ],
+  "sources": [ "ext/**" ],
   "test-sources": [ "test/**" ],
   // "c-sources": [ "csource/**" ],
   // "c-include-dirs": [ "csource/include" ],.

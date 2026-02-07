@@ -2,16 +2,16 @@
 
 module ext::io::stat @if(!env::WIN32);
 
-extern fn CInt stat(ZString path, Stat* stat);
+extern fn CInt stat(char* path, Stat* stat);
 
 module ext::io::stat @if(env::WIN32);
 
 extern fn CInt _wstat(Char16* path, Stat* stat) @if(env::ARCH_32_BIT) @private;
 extern fn CInt _wstat64(Char16* path, Stat* stat) @if(env::ARCH_64_BIT) @private;
 
-fn isz utf8to16(ZString zpath, Char16[] wpath) @private
+fn isz u8to16(char* zpath, Char16[] wpath) 
 {
-    String path = zpath.str_view();
+    String path = ((ZString)zpath).str_view();
     Char16[]? p2 = path.to_utf16(mem);
     if (catch err = p2) return -1;
     defer free(p2);
@@ -24,10 +24,10 @@ fn isz utf8to16(ZString zpath, Char16[] wpath) @private
 }
 
 
-fn CInt stat(ZString path, Stat* stbuf) 
+fn CInt stat(char* path, Stat* stbuf) 
 {
     Char16[520] wpath;
-    isz n = utf8to16(path, &wpath);
+    isz n = u8to16(path, &wpath);
     if (n < 0) return -1;
     
     $if env::ARCH_32_BIT:
