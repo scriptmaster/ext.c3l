@@ -4,7 +4,7 @@
 
 module example;
 
-import city;
+import ext::hash::city;
 import std::io;
 
 fn void main()

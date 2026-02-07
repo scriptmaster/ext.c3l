@@ -49,14 +49,14 @@ fn ulong rotl64(ulong x, char r) @inline
 // Block read - if your platform needs to do endian-swapping or can only
 // handle aligned reads, do the conversion here
 
-fn uint getblock32(char* p, int i) @inline
+fn uint getblock32(char* p, uint i) @inline
 {
     uint r;
     libc::memcpy(&r, p+i, uint.sizeof);
     return r;
 }
 
-fn ulong getblock64(char* p, int i) @inline
+fn ulong getblock64(char* p, uint i) @inline
 {
     ulong r = *(p+i*4);
     libc::memcpy(&r, p+i, ulong.sizeof);
@@ -91,10 +91,10 @@ fn ulong fmix64(ulong k) @inline
 
 //-----------------------------------------------------------------------------
 
-fn uint hash3_x86_32(char* key, usz len, uint seed)
+fn uint hash3_x86_32(char* key, uint len, uint seed)
 {
     char* data = key;
-    int nblocks = len / 4;
+    uint nblocks = len / 4;
     
     uint h1 = seed;
     
@@ -106,7 +106,7 @@ fn uint hash3_x86_32(char* key, usz len, uint seed)
     
     // uint* blocks = (uint*)(data + nblocks * 4);
     
-    for (int i = 0; i < nblocks; i++)
+    for (uint i = 0; i < nblocks; i++)
     {
         uint k1 = getblock32(data, i);
         
@@ -155,10 +155,10 @@ fn uint hash3_x86_32(char* key, usz len, uint seed)
 
 //-----------------------------------------------------------------------------
 
-fn uint128 hash3_x86_128(char* key, usz le , uint seed)
+fn uint128 hash3_x86_128(char* key, uint len, uint seed)
 {
     char* data = key;
-    int nblocks = len / 16;
+    uint nblocks = len / 16;
     
     uint h1 = seed;
     uint h2 = seed;
@@ -175,7 +175,7 @@ fn uint128 hash3_x86_128(char* key, usz le , uint seed)
     
     // uint* blocks = (uint*)(data + nblocks * 16);
     
-    for (int i = 0; i < nblocks; i++)
+    for (uint i = 0; i < nblocks; i++)
     {
         uint k1 = getblock32(data, i * 4 + 0);
         uint k2 = getblock32(data, i * 4 + 1);
@@ -285,10 +285,10 @@ fn uint128 hash3_x86_128(char* key, usz le , uint seed)
 
 //-----------------------------------------------------------------------------
 
-fn uint128 hash3_x64_128(char* key, usz len, uint seed)
+fn uint128 hash3_x64_128(char* key, uint len, uint seed)
 {
     char* data = key;
-    int nblocks = len / 16;
+    uint nblocks = len / 16;
     
     ulong h1 = seed;
     ulong h2 = seed;
@@ -301,7 +301,7 @@ fn uint128 hash3_x64_128(char* key, usz len, uint seed)
     
     // ulong* blocks = (ulong*)data;
     
-    for (int i = 0; i < nblocks; i++)
+    for (uint i = 0; i < nblocks; i++)
     {
         ulong k1 = getblock64(data, i * 2 + 0);
         ulong k2 = getblock64(data, i * 2 + 1);

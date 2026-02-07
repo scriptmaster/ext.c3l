@@ -43,7 +43,9 @@ fn void? UdpSocket.bind(sock, ushort port, String opt_ip = "*")
         adr.sin6_family = socket::AF_INET6;
         
         if (opt_ip == "::") {
-            adr.sin6_addr = in::in6addr_any;
+            // adr.sin6_addr = in::in6addr_any;
+            string::memset(&adr.sin6_addr, 0, In6Addr.sizeof);
+
         } else if (in::inet_pton(socket::AF_INET6, opt_ip.ptr, &adr.sin6_addr) != 1) {
             return errno::get_fault()~;
         }

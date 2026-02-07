@@ -22,7 +22,7 @@ fn void main(String[] args)
 
     while (true) {
         io::printf(">> ");
-        String? line = io::readline(mem);
+        String? line = io::readline(tmem);
         if (catch err = line) {
             io::printfn("%s", err);
             break;
@@ -42,5 +42,6 @@ fn void main(String[] args)
         }
 
         stdio::printf("%s\n", &buf[0]);
+        line.free(tmem);
     }
 }

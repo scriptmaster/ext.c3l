@@ -9,6 +9,14 @@ build-all:
 	@make udpclient
 	@make tcpserver
 	@make tcpclient
+	@make murmurtest
+	@make cityexample
+
+murmurtest:
+	@c3c compile examples/murmurtest.c3 ext/hash/*.c3 ext/libc/*.c3 -o build/murmurtest
+
+cityexample:
+	@c3c compile examples/cityexample.c3 ext/hash/*.c3 ext/libc/*.c3 -o build/cityexample
 
 tcpclient:
 	@c3c compile examples/tcpclient.c3 ext/net/tcp*.c3 ext/libc/*.c3 -o build/tcpclient

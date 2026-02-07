@@ -1,39 +1,14 @@
 
 // tcp.win32.c3 - Windows implementation with IPv4/IPv6 support
 
-module ext::net @if(env::WIN32);
-
-bool __wsa_initialized @if(! $defined(__wsa_initialized))
-    = false;
-
 module ext::net::tcp @if(env::WIN32);
 
 import winsock2;
 import ws2tcpip;
-import ext::net;
+import ext::net::wsa;
 import errno;
 
 typedef TcpSocket = inline winsock2::Socket;
-
-fn void? __wsa_startup() 
-{
-    if (net::__wsa_initialized) return;
-    
-    winsock2::WSAData wsa_data;
-    int result = winsock2::wsa_startup(0x0202, &wsa_data);
-    if (result != 0) {
-        return errno::get_fault()~;
-    }
-    net::__wsa_initialized = true;
-}
-
-fn void __wsa_cleanup() 
-{
-    if (net::__wsa_initialized) {
-        winsock2::wsa_cleanup();
-        net::__wsa_initialized = false;
-    }
-}
 
 fn int detect_ip_version(String ip) 
 {
@@ -45,7 +20,8 @@ fn int detect_ip_version(String ip)
 
 fn TcpSocket? new(int version = winsock2::AF_INET) 
 {
-    __wsa_startup()!;
+    wsa::startup()!;
+    
     int family = (int)version;
     TcpSocket sock = (TcpSocket)winsock2::socket(family, winsock2::SOCK_STREAM, 
         family == winsock2::AF_INET6 ? winsock2::IPPROTO_IPV6 : winsock2::IPPROTO_TCP);
