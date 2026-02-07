@@ -43,7 +43,7 @@ fn ulong _mm_crc32_u64(ulong crc, ulong data)
 
 
 // Requires len >= 240
-fn void hash256_crc_long(char* s, usz len, uint seed, ulong* result)
+fn void hash256_crc_long(char* s, uint len, uint seed, ulong* result)
 {
   ulong a = city::fetch64(s + 56) + city::K0;
   ulong b = city::fetch64(s + 96) + city::K0;
@@ -141,7 +141,7 @@ fn void hash256_crc_long(char* s, usz len, uint seed, ulong* result)
 }
 
 // Requires len < 240
-fn void hash256_crc_short(char* s, usz len, ulong* result)
+fn void hash256_crc_short(char* s, uint len, ulong* result)
 {
   char[240] buf;
   libc::memcpy(&buf, s, len);
@@ -149,7 +149,7 @@ fn void hash256_crc_short(char* s, usz len, ulong* result)
   hash256_crc_long(&buf, 240, ~(uint)len, result);
 }
 
-fn void hash256_crc(char* s, usz len, ulong* result)
+fn void hash256_crc(char* s, uint len, ulong* result)
 {
   if (len >= 240) {
     hash256_crc_long(s, len, 0, result);
@@ -158,7 +158,7 @@ fn void hash256_crc(char* s, usz len, ulong* result)
   }
 }
 
-fn uint128 hash128_crc_with_seed(char* s, usz len, uint128 seed)
+fn uint128 hash128_crc_with_seed(char* s, uint len, uint128 seed)
 {
   if (len <= 900) {
     return city::hash128_with_seed(s, len, seed);
@@ -173,7 +173,7 @@ fn uint128 hash128_crc_with_seed(char* s, usz len, uint128 seed)
   }
 }
 
-fn uint128 hash128_crc(char* s, usz len)
+fn uint128 hash128_crc(char* s, uint len)
 {
   if (len <= 900) {
     return city::hash128(s, len);

@@ -112,7 +112,7 @@ fn ulong hash_len16(ulong u, ulong v) @inline
   return hash128to64(result);
 }
 
-fn ulong hash_len0to16(char* s, usz len)
+fn ulong hash_len0to16(char* s, uint len)
 {
   if (len > 8) {
     ulong a = fetch64(s);
@@ -134,7 +134,7 @@ fn ulong hash_len0to16(char* s, usz len)
   return K2;
 }
 
-fn ulong hash_len17to32(char* s, usz len)
+fn ulong hash_len17to32(char* s, uint len)
 {
   ulong a = fetch64(s) * K1;
   ulong b = fetch64(s + 8);
@@ -170,7 +170,7 @@ fn uint128 weak_hash_len32_with_seeds(char* s, ulong a, ulong b)
 }
 
 // Return an 8-byte hash for 33 to 64 bytes
-fn ulong hash_len33to64(char* s, usz len)
+fn ulong hash_len33to64(char* s, uint len)
 {
   ulong z = fetch64(s + 24);
   ulong a = fetch64(s) + (len + fetch64(s + len - 16)) * K0;
@@ -195,7 +195,7 @@ fn ulong hash_len33to64(char* s, usz len)
 }
 
 // Main CityHash64 function
-fn ulong hash64(char* s, usz len)
+fn ulong hash64(char* s, uint len)
 {
   if (len <= 32) {
     if (len <= 16) {
@@ -240,19 +240,19 @@ fn ulong hash64(char* s, usz len)
             hash_len16(uint128_high64(v), uint128_high64(w)) + x);
 }
 
-fn ulong hash64_with_seed(char* s, usz len, ulong seed)
+fn ulong hash64_with_seed(char* s, uint len, ulong seed)
 {
   return hash64_with_seeds(s, len, K2, seed);
 }
 
-fn ulong hash64_with_seeds(char* s, usz len, ulong seed0, ulong seed1)
+fn ulong hash64_with_seeds(char* s, uint len, ulong seed0, ulong seed1)
 {
   return hash_len16(hash64(s, len) - seed0, seed1);
 }
 
 // A subroutine for CityHash128(). Returns a decent 128-bit hash for strings
 // of any length representable in signed long. Based on City and Murmur.
-fn uint128 city_murmur(char* s, usz len, uint128 seed)
+fn uint128 city_murmur(char* s, uint len, uint128 seed)
 {
   ulong a = uint128_low64(seed);
   ulong b = uint128_high64(seed);
@@ -288,7 +288,7 @@ fn uint128 city_murmur(char* s, usz len, uint128 seed)
   return ((uint128)second << 64) | (uint128)first;
 }
 
-fn uint128 hash128_with_seed(char* s, usz len, uint128 seed)
+fn uint128 hash128_with_seed(char* s, uint len, uint128 seed)
 {
   if (len < 128) {
     return city_murmur(s, len, seed);
@@ -371,7 +371,7 @@ fn uint128 hash128_with_seed(char* s, usz len, uint128 seed)
   return ((uint128)second << 64) | (uint128)first;
 }
 
-fn uint128 hash128(char* s, usz len)
+fn uint128 hash128(char* s, uint len)
 {
   if (len >= 16) {
     ulong first = fetch64(s) ^ K3;
