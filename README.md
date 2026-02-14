@@ -66,6 +66,7 @@ Import your familiar C header files.
 ```c3
 import stdio;
 import string;
+import errno; // provides errno(), get_fault()
 import sys::time; // POSIX
 import netinet::in; // POSIX
 import unistd; // POSIX
@@ -77,7 +78,9 @@ import ws2tcpip; // Win32
 
 sidio::printf("Hello\n");
 
-__wsa_startup()!;
+winsock2::WSAData wsa_data;
+int result = winsock2::wsa_startup(0x0202, &wsa_data);
+
 UdpSocket? sock = (UdpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_DGRAM, winsock2::IPPROTO_UDP);
 ```
 
@@ -95,7 +98,7 @@ High-level networking capabilities including TCP, UDP, and DNS:
 | `ext::io::udp` | UDP operations: new(), new_bind(), bind(), send(), recv(), sendto(), recvfrom(), set_non_blocking(), close() |
 | `ext::io::dns` | DNS operations: get_addrinfo() |
 
-Ba
+
 - More about [Networking APIs](ext/net/README.md)
 
 
@@ -143,7 +146,7 @@ import stdio;
 fn int main()
 {
     // Check if a configuration file exists
-    if (stat::file_exists("config.ini"))
+    if (stat::exists("config.ini"))
     {
         stdio::printf("Configuration found!\n");
     }
