@@ -30,9 +30,9 @@
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(ar) (sizeof(ar) / sizeof((ar)[0]))
 #endif
-
+#define SLRE_DEBUG 1
 #ifdef SLRE_DEBUG
-#define DBG(x) printf x
+#define DBG(x) printf("%s,%d: ", __FILE__, __LINE__); printf x
 #else
 #define DBG(x)
 #endif

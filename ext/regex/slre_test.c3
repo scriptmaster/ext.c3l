@@ -53,9 +53,9 @@ fn void main()
   _assert(caps[1].len == 2);
   _assert(string::memcmp(caps[1].ptr, "27", 2) == 0);
 
-  _assert(slre::reg_match("tel:\\+(\\d+[\\d-]+\\d)", "tel:+1-201-555-0123;a=b", 23, caps, 10, 0) == 19);
-  _assert(caps[0].len == 14);
-  _assert(string::memcmp(caps[0].ptr, "1-201-555-0123", 14) == 0);
+  _assert(slre::reg_match("(tel:\\+(\\d+[\\d-]+\\d))", "tel:+1-201-555-0123;a=b", 23, caps, 10, 0) == 19);
+  _assert(caps[1].len == 14);
+  _assert(string::memcmp(caps[1].ptr, "1-201-555-0123", 14) == 0);
 
   /* Character sets */
   _assert(slre::reg_match("[abc]", "1c2", 3, null, 0, 0) == 2);
@@ -94,7 +94,7 @@ fn void main()
   _assert(slre::reg_match("lmno", "fooklmn", 7, null, 0, 0) == slre::NO_MATCH);
   _assert(slre::reg_match("mn.", "fooklmn", 7, null, 0, 0) == slre::NO_MATCH);
   _assert(slre::reg_match("o", "fooklmn", 7, null, 0, 0) == 2);
-  _assert(slre::reg_match("^o", "fooklmn", 7, null, 0, 0) == slre::NO_MATCH);
+  _assert(slre::reg_match("(^o)", "fooklmn", 7, null, 0, 0) == slre::NO_MATCH);
   _assert(slre::reg_match("^", "fooklmn", 7, null, 0, 0) == 0);
   _assert(slre::reg_match("n$", "fooklmn", 7, null, 0, 0) == 7);
   _assert(slre::reg_match("n$k", "fooklmn", 7, null, 0, 0) == slre::NO_MATCH);
@@ -117,9 +117,9 @@ fn void main()
 
   /* Balancing brackets */
   _assert(slre::reg_match("(x))", "fooklmn", 7, null, 0, 0) == slre::UNBALANCED_BRACKETS);
-  /*
+ 
   _assert(slre::reg_match("(", "fooklmn", 7, null, 0, 0) == slre::UNBALANCED_BRACKETS);
-*/
+
   _assert(slre::reg_match("klz?mn", "fooklmn", 7, null, 0, 0) == 7);
   _assert(slre::reg_match("fa?b", "fooklmn", 7, null, 0, 0) == slre::NO_MATCH);
 

@@ -13,6 +13,7 @@ struct RegEx {
     usz re_erroffset; // Error offset
     void* re_extra;   // Extra data
     uint re_flags;    // Flags
+    void*[10] others;
 }
 
 struct RegMatch {

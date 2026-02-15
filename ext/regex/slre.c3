@@ -29,7 +29,7 @@ const int MAX_BRACKETS = 100;
 
 macro void dbg(String fmt, args...)
 {
-  //io::printf("%s,%s: ", $$FILE, $$LINE); io::printf(fmt, ...args);
+  // io::printf("%s,%s: ", $$FILE, $$LINE); io::printf(fmt, ...args);
 }
 
 macro String _str(char* s) 
@@ -84,11 +84,15 @@ macro bool is_metacharacter(char *s) {
   return string::strchr(META, *s) != null;
 }
 
-macro int op_len(char *re) {
+macro int __op_len(char *re) {
   return (re[0] == '\\' && re[1] == 'x') ? 4 : (re[0] == '\\') ? 2 : 1;
 }
 
-macro int set_len(char *re, int re_len) {
+macro int op_len(char *re) {
+  return re[0] == '\\' ? (re[1] == 'x' ? 4 : 2) : 1;
+}
+
+macro int __set_len(char *re, int re_len) {
   int len = 0;
 
   while (len < re_len && re[len] != ']') {
@@ -98,8 +102,23 @@ macro int set_len(char *re, int re_len) {
   return len <= re_len ? len + 1 : -1;
 }
 
+macro int set_len(char *re, int re_len) {
+  int len = 0;
+
+  while (len < re_len) {
+    len += op_len(re + len);
+    if ( re[len] == ']' ) return len + 1;
+  }
+
+  return -1;
+}
+
 macro int get_op_len(char *re, int re_len) {
   return re[0] == '[' ? set_len(re + 1, re_len - 1) + 1 : op_len(re);
+}
+
+macro int __get_op_len(char *re, int re_len) {
+  return re[0] == '[' ? set_len(re + 1, re_len - 1) : op_len(re);
 }
 
 macro bool is_quantifier(char *re) {
@@ -337,7 +356,7 @@ fn int proc_branch(char *s, int s_len, RegexInfo *info, int bi) {
       (int) (info.branches[b.branches + i].schlong - p);
     dbg("%d %d [%.*s] [%.*s]\n", bi, i, len, _str(p), s_len, _str(s));
     result = match_in(p, len, s, s_len, info, bi);
-    dbg("doh <- %d\n", result);
+    dbg("proc_branch <- %d\n", result);
   } while (result <= 0 && i++ < b.num_branches);  /* At least 1 iteration */
 
   return result;
@@ -345,7 +364,7 @@ fn int proc_branch(char *s, int s_len, RegexInfo *info, int bi) {
 
 fn int match(char *s, int s_len, RegexInfo *info) {
   int result = -1;
-  bool is_anchored = (info.brackets[0].ptr[0] == '^');
+  bool is_anchored = (info.brackets[0].ptr[0] == '^') || (info.brackets[0].ptr[0] == '(' && info.brackets[0].ptr[1] == '^');
 
   for (int i = 0; i <= s_len; i++) {
     result = proc_branch(s + i, s_len - i, info, 0);
@@ -401,7 +420,7 @@ fn int compile(char *re, int re_len, RegexInfo *info) {
   /* Make a single pass over regex string, memorize brackets and branches */
   for (i = 0; i < re_len; i += step) {
     step = get_op_len(re + i, re_len - i);
-
+    if (step <= 0) return UNBALANCED_BRACKETS;
     if (re[i] == '|') {
       if (info.num_branches >= (int) array_size(info.branches)) return TOO_MANY_BRANCHES;
       info.branches[info.num_branches].bracket_index =
@@ -410,7 +429,16 @@ fn int compile(char *re, int re_len, RegexInfo *info) {
       info.branches[info.num_branches].schlong = &re[i];
       info.num_branches++;
     } else if (re[i] == '\\') {
-      if (i >= re_len - 1) return INVALID_METACHARACTER;
+      dbg("i:%d, re_len:%d\n", i, re_len);
+      if (i >= (re_len - 1)) return INVALID_METACHARACTER;
+      if (i >= (re_len - 2)) {
+        if (re[i+1] == ')') {
+          if (info.brackets[info.num_brackets-1].len == -1) {
+            return INVALID_METACHARACTER;
+          }
+        }
+      }
+            
       if (re[i + 1] == 'x') {
         /* Hex digit specification must follow */
         if (re[i + 1] == 'x' && i >= re_len - 3) return INVALID_METACHARACTER;
@@ -437,7 +465,7 @@ fn int compile(char *re, int re_len, RegexInfo *info) {
     }
   }
 
-  if (depth != 0) UNBALANCED_BRACKETS;
+  if (depth != 0) return UNBALANCED_BRACKETS;
   setup_branch_points(info);
 
   return 0; // ok
