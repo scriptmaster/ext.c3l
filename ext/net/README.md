@@ -11,8 +11,8 @@ A networking library for the [C3 programming language](https://c3-lang.org/), pr
 | `ext::io::udp` | UDP operations: new(), new_bind(), bind(), send(), recv(), sendto(), recvfrom(), set_non_blocking(), close() |
 | `ext::io::dns` | DNS operations: get_addrinfo() |
 
+This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
-
 
 ### TCP Module (`ext::net::tcp`)
 

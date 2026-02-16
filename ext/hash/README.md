@@ -9,6 +9,7 @@ Hash functions that are not found in C3 std library
 | `ext::hash::murmur` | MurmurHash3 functions: hash3_x86_32(), hash3_x86_128(), hash3_x64_128() |
 | `ext::hash::city` | CityHash functions: hash64(), hash64_with_seed(), hash128(), hash128_with_seed(), hash128_crc(), hash128_ rc_with_seed() |
 
+This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
 
 ### MurmurHash3 module

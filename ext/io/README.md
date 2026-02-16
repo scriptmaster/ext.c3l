@@ -10,6 +10,7 @@ Cross-platform file/directory operations in C3, filling the gap of missing piece
 | `ext::io::file` | File operations: fopen(), fclose(), fread(), fwrite(), fprintf(), read(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
 | `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode() |
 
+This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
 
 ### File Status Operations

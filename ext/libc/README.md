@@ -149,6 +149,9 @@ extern fn int wsa_startup(ushort version_required, WSAData* wsa_data) @cname("WS
 | `ws2tcpip` | Windows Sockets TCP/IP functions |
 | `errno` | provides `errno()` and `get_fault()` |
 
+This is a part of extended C3 library.
+Back to [ext.c3l](../../README.md) library.
+
 ## Module Naming Convention
 
 C header files are mapped to C3 modules using the following pattern:
@@ -166,3 +169,5 @@ C header files are mapped to C3 modules using the following pattern:
 - **Cross-Platform Development**: Write portable system code targeting multiple platforms
 - **Low-Level Libraries**: Build system-level C3 libraries and tools
 
+This is a part of extended C3 library.
+Back to [ext.c3l](../../README.md) library.

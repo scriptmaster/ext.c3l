@@ -11,6 +11,7 @@ The library is based on SLRE (Super Light Regular Expression).
 | `ext::regex` | RegEx operations: new_compile(), match(), group(), free(), replace(), split(), reg_match(), reg_replace(), reg_split();|
 | `slre` | SLRE operations: compile(), match(), reg_match(), reg_replace() |
 
+This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
 
 ### API Functions
@@ -189,7 +190,7 @@ Gets a capture group from the last match.
   io::printfn("Username: %s", username.s);
   ```
 
-#### `fn List{int[2]}? RegEx.find_all(&self, String str);`
+#### `fn List{int[2]} RegEx.find_all(&self, String str);`
 Finds all matches in a string.
 - **Parameters:**
   - `str`: String to search in
@@ -200,7 +201,7 @@ Finds all matches in a string.
   defer matches.free();
   ```
 
-#### `fn String? RegEx.replace(&self, Allocator, String expr, String str, int n = 0);`
+#### `fn String? RegEx.replace(&self, Allocator, String str, String sub, int n = 0);`
 Replaces matches with a replacement string.
 - **Parameters:**
   - `allocx`: Allocator for result string
