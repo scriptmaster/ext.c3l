@@ -58,5 +58,9 @@ uint128 h = city::hash128_crc_with_seed(char* s, uint len, uint128 seed);
 void h = city::hash256_crc(char* s, uint len, ulong* result);
 ```
 
+### Example codes 
+
+* [../../examples/hash](../../examples/hash)
+
 Back to [ext.c3l](../../README.md) library.
 

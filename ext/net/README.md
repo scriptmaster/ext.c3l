@@ -87,6 +87,10 @@ ips.free();
 
 Back to [ext.c3l](../../README.md) library.
 
+### Example codes
+
+* [../../examples/net](../../examples/net)
+
 ### TCP Server Example
 
 ```c3

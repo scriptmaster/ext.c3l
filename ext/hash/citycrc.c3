@@ -59,7 +59,7 @@ fn void hash256_crc_long(char* s, uint len, uint seed, ulong* result)
   
   // 240 bytes of input per iter
   usz iters = len / 240;
-  len -= iters * 240;
+  len -= (uint)iters * 240;
   
   while (iters > 0) {
     // Macro-like inline block repeated 6 times
@@ -145,7 +145,7 @@ fn void hash256_crc_short(char* s, uint len, ulong* result)
 {
   char[240] buf;
   libc::memcpy(&buf, s, len);
-  libc::memset(&buf[len], 0, 240 - len);
+  libc::memset(&buf[len], 0, (usz)(240 - len));
   hash256_crc_long(&buf, 240, ~(uint)len, result);
 }
 
