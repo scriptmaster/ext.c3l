@@ -60,7 +60,7 @@ fn fault err_fault(int err) @private
     return GENERAL_ERROR;
 }
 
-fn String brace(Allocator allocx, String expr) 
+fn String brace(Allocator allocx, String expr) @private
 {
     String x = (String)allocator::alloc_array(allocx, char, expr.len+2);
     x[0] = '(';

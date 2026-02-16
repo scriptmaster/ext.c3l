@@ -1,4 +1,4 @@
-# C3 RegEx Library - User Guide
+# C3 RegEx Library 
 
 ## Overview
 This document explains how to use the RegEx library for the C3 programming language. 
@@ -133,6 +133,7 @@ parts.free()
 - `\d` - Digit (0-9)
 - `\w` - Word character (a-z, A-Z, _)
 - `\s` - Whitespace character
+- `\S` - Non-space character
 
 ### Grouping
 - `(pattern)` - Capture group
@@ -151,7 +152,7 @@ parts.free()
 
 ### Functions
 
-#### `new_compile(Allocator, String, bool = false) -> RegEx*?`
+#### `fn RegEx*? new_compile(Allocator, String expr, bool ignore_case = false);`
 Compiles a regular expression pattern.
 - **Parameters:**
   - `allocx`: Allocator to use for memory allocation
@@ -164,7 +165,7 @@ Compiles a regular expression pattern.
   defer reg.free();
   ```
 
-#### `RegEx.match(&self, String, int* = null, int* = null) -> int?`
+#### `fn int? RegEx.match(&self, String str, int* start = null, int* end = null);`
 Matches the pattern against a string.
 - **Parameters:**
   - `str`: String to match against
@@ -177,7 +178,7 @@ Matches the pattern against a string.
   int result = reg.match("test 123", &start, &len)!;
   ```
 
-#### `RegEx.group(&self, int) -> RegMatch?`
+#### `fn RegMatch? RegEx.group(&self, int idx);`
 Gets a capture group from the last match.
 - **Parameters:**
   - `idx`: Group index (0 = full match, 1+ = capture groups)
@@ -188,7 +189,7 @@ Gets a capture group from the last match.
   io::printfn("Username: %s", username.s);
   ```
 
-#### `RegEx.find_all(&self, String) -> List{int[2]}`
+#### `fn List{int[2]}? RegEx.find_all(&self, String str);`
 Finds all matches in a string.
 - **Parameters:**
   - `str`: String to search in
@@ -199,7 +200,7 @@ Finds all matches in a string.
   defer matches.free();
   ```
 
-#### `RegEx.replace(&self, Allocator, String, String, int = 0) -> String?`
+#### `fn String? RegEx.replace(&self, Allocator, String expr, String str, int n = 0);`
 Replaces matches with a replacement string.
 - **Parameters:**
   - `allocx`: Allocator for result string
@@ -213,7 +214,7 @@ Replaces matches with a replacement string.
   defer result.free(mem);
   ```
 
-#### `RegEx.split(&self, Allocator, String, int = 0) -> List{String}?`
+#### `fn List{String}? RegEx.split(&self, Allocator, String str, int n = 0);`
 Splits a string by the pattern.
 - **Parameters:**
   - `allocx`: Allocator for result list
@@ -228,14 +229,14 @@ Splits a string by the pattern.
 
 ### Convenience Functions
 
-#### `reg_match(String, String, int* = null, int* = null, bool = false) -> bool?`
+#### `fn bool? reg_match(String expr, String str, int* start = null, int* end = null, bool ignore_case = false);`
 One-shot pattern matching without creating a RegEx object.
 - **Example:**
   ```c3
   bool matched = regex::reg_match("\\d+", "test 123")!;
   ```
 
-#### `reg_replace(Allocator, String, String, String, int = 0, bool = false) -> String?`
+#### `fn String? reg_replace(Allocator, String expr, String str, String sub, int n = 0, bool ignore_case = false);`
 One-shot string replacement.
 - **Example:**
   ```c3
@@ -243,7 +244,7 @@ One-shot string replacement.
   defer result.free(mem);
   ```
 
-#### `reg_split(Allocator, String, String, int = 0, bool = false) -> List{String}?`
+#### `fn List{String}? reg_split(Allocator, String expr, String str, int n = 0, bool ignore_case = false);`
 One-shot string splitting.
 - **Example:**
   ```c3
