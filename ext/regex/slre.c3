@@ -80,7 +80,7 @@ struct RegexInfo {
 
 
 macro bool is_metacharacter(char *s) {
-  const char *META = "^$().[]*+?|\\Ssdbfnrtv";
+  const char *META = "^$().[]*+?|\\Ssdbfnrtvw";
   return string::strchr(META, *s) != null;
 }
 
@@ -129,6 +129,10 @@ macro bool isdigit(char c) {
   return '0' <= c && c <= '9';
 }
 
+macro bool isword(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
 macro bool isxdigit(char c) {
   return ('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
 }
@@ -159,6 +163,7 @@ fn int match_op(char *re, char *s, RegexInfo *info) {
         case 'S': if (isspace(*s)) return NO_MATCH; result++;
         case 's': if (!isspace(*s)) return NO_MATCH; result++;
         case 'd': if (!isdigit(*s)) return NO_MATCH; result++;
+        case 'w': if (!isword(*s)) return NO_MATCH; result++;
         case 'b': if (*s != '\b') return NO_MATCH; result++;
         case 'f': if (*s != '\f') return NO_MATCH; result++;
         case 'n': if (*s != '\n') return NO_MATCH; result++;

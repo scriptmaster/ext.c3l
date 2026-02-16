@@ -186,6 +186,7 @@ fn String? RegEx.replace(&self, Allocator allocx, String str, String sub, int n 
 {
     DString result;
     result.init(allocx);
+    defer result.free();
     
     List{int[2]} lst = self.find_all(str);
     defer lst.free();
@@ -205,7 +206,7 @@ fn String? RegEx.replace(&self, Allocator allocx, String str, String sub, int n 
         // warn("result: %s", result.str_view());
     }
 
-    return result.str_view();
+    return result.copy_str(allocx);
 }
 
 <*

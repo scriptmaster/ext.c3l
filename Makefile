@@ -34,6 +34,7 @@ udpserver:
 clean:
 	@rm -rf ./build/*
 	@rm -rf ./ext/*/obj
+	@cd ./ext/regex && make clean
 
 push:
 	@make clean

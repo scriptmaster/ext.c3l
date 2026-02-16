@@ -15,16 +15,16 @@ clean:
 	-@rm -f regex_example
 
 
-slre:
+slre: slre.c slre_test.c
 	cc slre.c slre_test.c -o slre
 
-slre_test:
+slre_test: slre.c3 slre_test.c3
 	c3c compile slre.c3 slre_test.c3 ../libc/*.c3 -o slre_test
 
-regex_test:
+regex_test: regex.c3 regex_test.c3
 	c3c compile slre.c3 regex.c3 regex_test.c3 ../libc/*.c3 -o regex_test
 
-regex_example:
+regex_example: regex.c3 regex_example.c3
 	c3c compile slre.c3 regex.c3 regex_example.c3 ../libc/*.c3 -o regex_example
 
 
