@@ -76,9 +76,12 @@ bool matched = regex::reg_match("pattern", text, &start, &len)!;
 
 ### 3. Capture Groups
 ```c3
+RegEx* reg = regex::new_compile(`(\d\d\d\d)-(\d\d)-(\d\d)`)!; // \d{4} not supported
+int n = reg.match("at 2026-04-04, spring");
 RegMatch match = reg.group(0)!;  // Full match, match.s the whole matched substring
-RegMatch group1 = reg.group(1)!; // First group, group1.s first () part
-RegMatch group2 = reg.group(2)!; // Second group, group2.s second () part
+RegMatch group1 = reg.group(1)!; // First group, group1.s first () part, YYYY
+RegMatch group2 = reg.group(2)!; // Second group, group2.s second () part, mm
+RegMatch group3 = reg.group(3)!; // Second group, group3.s second () part, dd
 ```
 
 ### 4. Find All Matches

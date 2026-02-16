@@ -132,6 +132,12 @@ File system operations including stat, directory handling, and file utilities:
 
 Regex support for C3 based on C regex library.
 
+| Module | Description |
+|--------|-------------|
+| `ext::regex` | RegEx operations: new_compile(), match(), group(), free(), replace(), split(), reg_match(), reg_replace(), reg_split();|
+| `slre` | SLRE operations: compile(), match(), reg_match(), reg_replace() |
+
+
 * [ext/regex](ext/regex)
 - More about [Regular Expressions](ext/regex/README.md)
 
