@@ -1,14 +1,16 @@
 
 // file.win32.c3
 
-module ext::io::file @if(env::WIN32);
+module ext::io::cfile @if(env::WIN32);
 
-import std::io;
 import windows;
 import errno;
 import ext::io::stat;
 
-alias FFile = windows::Handle;
+struct File
+{
+    windows::Handle fp;
+}
 
 fn Char16*? utf8to16(String path, Char16[] wpath) 
 {
@@ -20,10 +22,11 @@ fn Char16*? utf8to16(String path, Char16[] wpath)
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
+    
     return wpath.ptr;
 }
 
-fn FFile? fopen(String fname, String fmode) 
+fn File? open(String fname, String fmode) 
 {
     Char16[512] namebuf;
     Char16* name = utf8to16(fname, &namebuf)!;
@@ -55,55 +58,42 @@ fn FFile? fopen(String fname, String fmode)
         return errno::F_INVAL~;
     }
     
-    FFile fp = windows::createFileW(name, access, windows::FILE_SHARE_READ | windows::FILE_SHARE_WRITE, null, creation, windows::FILE_ATTRIBUTE_NORMAL, null);
-    if (fp == windows::INVALID_HANDLE_VALUE) return errno::get_fault()~;
+    File f;
+    f.fp = windows::createFileW(name, access, windows::FILE_SHARE_READ | windows::FILE_SHARE_WRITE, null, creation, windows::FILE_ATTRIBUTE_NORMAL, null);
+    if (f.fp == windows::INVALID_HANDLE_VALUE) return errno::get_fault()~;
     
     // For append mode, seek to end
     if (fmode[0] == 'a') {
-        windows::setFilePointerEx(fp, 0, null, windows::FILE_END);
+        windows::setFilePointerEx(f.fp, 0, null, windows::FILE_END);
     }
     
-    return fp;
+    return f;
 }
 
-fn usz? FFile.fread(&self, char[] buf)
+fn usz? File.read(&self, char[] buf) @dynamic
 {
     uint bytes_read;
-    windows::Bool success = windows::readFile(self, buf.ptr, (uint)buf.len, &bytes_read, null);
+    windows::Bool success = windows::readFile(self.fp, buf.ptr, (uint)buf.len, &bytes_read, null);
     if (!success) return errno::get_fault()~;
     if (bytes_read == 0) return errno::EOF~;
     return (usz)bytes_read;
 }
 
-fn char[]? read(Allocator allocx, String file)
+fn char? File.read_byte(&self) @dynamic
 {
-    long n = size(file)!;
-    
-    char[] buf = allocator::new_array(allocx, char, n);
-    defer (catch err) { free(buf); }
-    
-    FFile fp = fopen(file, "r")!;
-    defer fp.fclose();
-    long i = 0;
-    while (i < n) {
-        usz? r = fp.fread(buf[i..n-1]);
-        if (catch err = r) {
-            if (err == errno::EOF) break;
-            return err~;
-        }
-        i += r;
-    }
-    assert(i == n);
-    return buf;
+    char c;
+    uint read;
+    if (!windows::readFile(self.fp, &c, 1, &read, null) || read == 0) return errno::EOF~;
+    return c;
 }
 
-fn usz? FFile.freadline(&self, char[] buf)
+fn usz? File.readline(&self, char[] buf)
 {
     usz idx = 0;
     while (idx < buf.len - 1) {
         char c;
         uint bytes_read;
-        windows::Bool success = windows::readFile(self, &c, 1, &bytes_read, null);
+        windows::Bool success = windows::readFile(self.fp, &c, 1, &bytes_read, null);
         if (!success) return errno::get_fault()~;
         if (bytes_read == 0) {
             if (idx == 0) return errno::EOF~;
@@ -116,25 +106,34 @@ fn usz? FFile.freadline(&self, char[] buf)
     return idx;
 }
 
-fn usz? FFile.fwrite(&self, char[] buf)
+fn usz? File.write(&self, char[] buf) @dynamic
 {
     uint bytes_written;
-    windows::Bool success = windows::writeFile(self, buf.ptr, (uint)buf.len, &bytes_written, null);
+    windows::Bool success = windows::writeFile(self.fp, buf.ptr, (uint)buf.len, &bytes_written, null);
     if (!success) return errno::get_fault()~;
     return (usz)bytes_written;
 }
 
-fn void FFile.fclose(&self)
+fn void? File.write_byte(&self, char c) @dynamic
 {
-    windows::closeHandle(self);
+    uint written;
+    if (!windows::writeFile(self.fp, &c, 1, &written, null) || written == 0)
+    {
+        return errno::get_fault()~;
+    }
 }
 
-fn void FFile.fflush(&self)
+fn void? File.close(&self) @dynamic @maydiscard
 {
-    windows::flushFileBuffers(self);
+    windows::closeHandle(self.fp);
 }
 
-fn usz? FFile.fprintf(&self, String fmt, args...)
+fn void File.flush(&self)
+{
+    windows::flushFileBuffers(self.fp);
+}
+
+fn usz? File.printf(&self, String fmt, args...)
 {
     // Format to temporary buffer
     DString str = dstring::temp();
@@ -143,12 +142,12 @@ fn usz? FFile.fprintf(&self, String fmt, args...)
     
     // Write formatted string
     uint bytes_written;
-    windows::Bool success = windows::writeFile(self, str.str_view().ptr, (uint)str.len(), &bytes_written, null);
+    windows::Bool success = windows::writeFile(self.fp, str.str_view().ptr, (uint)str.len(), &bytes_written, null);
     if (!success) return errno::get_fault()~;
     return (usz)bytes_written;
 }
 
-fn void? FFile.fseek(&self, long pos, int whence) @maydiscard
+fn usz? File.seek(&self, long pos, int whence) @dynamic @maydiscard
 {
     uint move_method;
     switch (whence) {
@@ -158,16 +157,57 @@ fn void? FFile.fseek(&self, long pos, int whence) @maydiscard
         default: return errno::F_INVAL~;
     }
     
-    windows::Bool ok = windows::setFilePointerEx(self, pos, null, move_method);
+    windows::Bool ok = windows::setFilePointerEx(self.fp, pos, null, move_method);
     if (! ok) return errno::get_fault()~;
+    return self.tell();
 }
 
-fn long? FFile.ftell(&self)
+fn long? File.tell(&self) @dynamic
 {
     long pos;
-    windows::Bool success = windows::setFilePointerEx(self, 0, &pos, windows::FILE_CURRENT);
+    windows::Bool success = windows::setFilePointerEx(self.fp, 0, &pos, windows::FILE_CURRENT);
     if (!success) return errno::get_fault()~;
     return pos;
+}
+
+fn bool File.eof(&self) 
+{
+    long pos = windows::setFilePointer(self.fp, 0, null, windows::FILE_CURRENT);
+    long size = windows::getFileSize(self.fp, null);
+    return pos >= size;
+}
+
+fn char[]? load(Allocator allocx, String file)
+{
+    long n = size(file)!;
+    
+    char[] buf = allocator::new_array(allocx, char, n);
+    defer (catch err) { free(buf); }
+    
+    File fp = open(file, "r")!;
+    defer fp.close();
+    long i = 0;
+    while (i < n) {
+        usz? r = fp.read(buf[i..n-1]);
+        if (catch err = r) {
+            if (err == errno::EOF) break;
+            return err~;
+        }
+        i += r;
+    }
+    assert(i == n);
+    return buf;
+}
+
+fn void? save(String filename, char[] data)
+{
+	File file = open(filename, "wb")!;
+	defer (void)file.close();
+	while (data.len)
+	{
+		usz written = file.write(data)!;
+		data = data[written..];
+	}
 }
 
 fn void? remove(String fname) @maydiscard
@@ -193,15 +233,15 @@ fn void? rename(String fname, String fname2) @maydiscard
 
 fn void? copy(String fname, String fname2) @maydiscard
 {
-    char[] buf = read(tmem, fname)!;
+    char[] buf = load(tmem, fname)!;
     defer free(buf);
     
-    FFile fp = fopen(fname2, "w")!;
-    defer fp.fclose();
+    File fp = open(fname2, "w")!;
+    defer fp.close();
     
     long i = 0;
     while (i < buf.len) {
-        usz r = fp.fwrite(buf[i..buf.len-1])!;
+        usz r = fp.write(buf[i..buf.len-1])!;
         i += r;
     }
 }

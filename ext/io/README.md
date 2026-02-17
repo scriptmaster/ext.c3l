@@ -2,12 +2,12 @@
 
 Cross-platform file/directory operations in C3, filling the gap of missing pieces in the standard library.
 
-## Available Modules
+### Available modules
 
 | Module | Description |
 |--------|-------------|
 | `ext::io::stat` | File stat operations: exists(), size(), is_(file/dir/link), is_(readable/writable/executable), read_link(), last_modified(), change_mode() |
-| `ext::io::file` | File operations: fopen(), fclose(), fread(), fwrite(), fprintf(), read(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
+| `ext::io::cfile` | File operations: open(), close(), read(), read_byte(), write(), write_byte(), printf(), seek(), tell(), eof(), load(), save(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
 | `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode() |
 
 This is a part of extended C3 library.
@@ -48,34 +48,38 @@ Abstraction for file operations.
 Available functions are:
 
 ```c3
-import ext::io::file;
+import ext::io::cfile;
 
-FFile fp = file::fopen(String file, String mode);
-usz? n = fp.fread(char[] buf);
-usz? n = fp.fwrite(char[] buf);
+cfile::File? fp = cfile::open(String file, String mode);
+usz? n = fp.read(char[] buf) @dynamic;
+char? c = fp.read_byte() @dynamic;
+usz? n = fp.write(char[] buf) @dynamic;
+void? fp.write_byte(char c) @dynamic;
 usz? n = fp.readline(char[] buf);
-usz? n = fp.fprintf(String format, args...);
-void fp.fflush();
-void fp.fclose();
-void? fp.fseek(long pos, int whence) maydiscard;
-long? pos = fp.ftell();
+usz? n = fp.printf(String format, args...);
+void fp.flush();
+void fp.close();
+usz? fp.seek(long pos, int whence) maydiscard;
+long? pos = fp.tell();
+bool b = fp.eof();
 
-char[]? buf = file::read(Allocator allocx, String file); // read whole file at once, must free(buf) later
-void? file::remove(String file) @maydiscard;
-void? file::rename(String file, String target) @maydiscard;
-void? file::copy(String file, String target) @maydiscard;
+char[]? buf = cfile::load(Allocator allocx, String file); // read whole file at once, must free(buf) later
+void? cfile::save(String filename, char[] buf);
+void? cfile::remove(String file) @maydiscard;
+void? cfile::rename(String file, String target) @maydiscard;
+void? cfile::copy(String file, String target) @maydiscard;
 
-bool b = file::exists(String file);
-long? n = file::size(String file);
-long? mtime = file::last_modified(String file); // missing in std lib
-bool b = file::is_dir(String file);
-bool b = file::is_file(String file);
-bool b = file::is_link(String file); // missing in std lib
-bool b = file::is_readable(String file); // missing in std lib
-bool b = file::is_writeable(String file); // missing in std lib
-bool b = file::is_executable(String file); // missing in std lib
-usz? n = file::read_link(String file, char[] output); // missing in std lib
-void? file::change_mode(String file, Mode_t mode) @maydiscard; // missing in std lib
+bool b = cfile::exists(String file);
+long? n = cfile::size(String file);
+long? mtime = cfile::last_modified(String file); // missing in std lib
+bool b = cfile::is_dir(String file);
+bool b = cfile::is_file(String file);
+bool b = cfile::is_link(String file); // missing in std lib
+bool b = cfile::is_readable(String file); // missing in std lib
+bool b = cfile::is_writeable(String file); // missing in std lib
+bool b = cfile::is_executable(String file); // missing in std lib
+usz? n = cfile::read_link(String file, char[] output); // missing in std lib
+void? cfile::change_mode(String file, Mode_t mode) @maydiscard; // missing in std lib
 ```
 
 ### Directory/folder Operations

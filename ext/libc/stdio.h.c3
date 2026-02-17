@@ -22,7 +22,6 @@ extern fn CFile fopen(char* filename, char* mode);
 extern fn CFile fdopen(int fd, char* mode);
 extern fn int fclose(CFile stream);
 extern fn int fflush(CFile stream);
-
 extern fn int remove(char* filename);
 extern fn int rename(char* oldname, char* newname);
 
@@ -38,6 +37,7 @@ extern fn Size fread(void* ptr, Size size, Size nmemb, CFile stream);
 extern fn Size fwrite(void* ptr, Size size, Size nmemb, CFile stream);
 extern fn int ferror(CFile stream);
 extern fn char fgetc(CFile stream);
+extern fn int fputc(char c, CFile stream);
 extern fn int feof(CFile stream);
 // File Positioning
 

@@ -8,13 +8,14 @@ build-all:
 	@cd ./examples/regex && make build
 	@cd ./examples/net && make build
 	@cd ./examples/hash && make build
-
+	@cd ./examples/io && make build
 clean:
 	@rm -rf ./build/*
 	@rm -rf ./ext/*/obj
 	@cd ./examples/regex && make clean
 	@cd ./examples/net && make clean
 	@cd ./examples/hash && make clean
+	@cd ./examples/io && make clean
 
 push:
 	@make clean

@@ -108,10 +108,10 @@ High-level networking capabilities including TCP, UDP, and DNS:
 
 File system operations including stat, directory handling, and file utilities:
 
-|Module | Description |
+| Module | Description |
 |--------|-------------|
 | `ext::io::stat` | File stat operations: exists(), size(), is_(file/dir/link), is_(readable/writable/executable), read_link(), last_modified(), change_mode() |
-| `ext::io::file` | File operations: fopen(), fclose(), fread(), fwrite(), fprintf(), read(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
+| `ext::io::cfile` | File operations: open(), close(), read(), read_byte(), write(), write_byte(), printf(), seek(), tell(), eof(), load(), save(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
 | `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode() |
 
 - More about [I/O Operations](ext/io/README.md)

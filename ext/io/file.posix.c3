@@ -1,12 +1,15 @@
 // file.posix.c3
 
-module ext::io::file @if(!env::WIN32);
+module ext::io::cfile @if(!env::WIN32);
 
 import errno;
 import stdio;
 import ext::io::stat;
 
-typedef FFile = inline CFile;
+struct File 
+{
+    CFile fp;
+}
 
 fn char*? scopy(char[] buf, String str) @inline
 {
@@ -18,7 +21,7 @@ fn char*? scopy(char[] buf, String str) @inline
     return buf.ptr;
 }
 
-fn FFile? fopen(String fname, String fmode) 
+fn File? open(String fname, String fmode) 
 {
     char[256] namebuf;
     char* name = scopy(&namebuf, fname)!;
@@ -26,49 +29,28 @@ fn FFile? fopen(String fname, String fmode)
     char[16] modebuf;
     char* mode = scopy(&modebuf, fmode)!;
     
-    FFile fp = (FFile)stdio::fopen(name, mode);
-    if (fp == null) return errno::get_fault()~;
+    File file;
+    file.fp = (CFile)stdio::fopen(name, mode);
+    if (file.fp == null) return errno::get_fault()~;
     
-    return fp;
+    return file;
 }
 
-fn usz? FFile.fread(&self, char[] buf)
+fn usz? File.read(&self, char[] buf) @dynamic
 {
-    usz n = stdio::fread(buf.ptr, 1, buf.len, self);
-    if (stdio::ferror(self)) return errno::get_fault()~;
-    if (n == 0 && stdio::feof(self)) return errno::EOF~;
+    usz n = stdio::fread(buf.ptr, 1, buf.len, self.fp);
+    if (stdio::ferror(self.fp)) return errno::get_fault()~;
+    if (n == 0 && stdio::feof(self.fp)) return errno::EOF~;
     return n;
 }
 
-fn char[]? read(Allocator allocx, String file)
-{
-    long n = size(file)!;
-
-    char[] buf = allocator::alloc_array(allocx, char, n);
-    defer (catch err) { free(buf); }
-    
-    FFile fp = fopen(file, "r")!;
-    defer fp.fclose();
-    long i = 0;
-    while (i < n) {
-        usz? r = fp.fread(buf[i..n-1]);
-        if (catch err = r) {
-            if (err == errno::EOF) break;
-            return err~;
-        }
-        i += r;
-    }
-    assert(n == i);
-    return buf;
-}
-
-fn usz? FFile.freadline(&self, char[] buf)
+fn usz? File.readline(&self, char[] buf)
 {
     usz idx = 0;
     while (idx < buf.len - 1) {
-        ichar c = stdio::fgetc(self);
+        ichar c = stdio::fgetc(self.fp);
         if (c == stdio::EOF) {
-            if (stdio::ferror(self)) return errno::get_fault()~;
+            if (stdio::ferror(self.fp)) return errno::get_fault()~;
             if (idx == 0) return errno::EOF~;
             break;
         }
@@ -79,44 +61,98 @@ fn usz? FFile.freadline(&self, char[] buf)
     return idx;
 }
 
-fn usz? FFile.fwrite(&self, char[] buf)
+fn char? File.read_byte(&self) @dynamic
 {
-    usz n = stdio::fwrite(buf.ptr, 1, buf.len, self);
-    if (stdio::ferror(self)) return errno::get_fault()~;
+	int c = stdio::fgetc(self.fp);
+    if (stdio::ferror(self.fp)) return errno::get_fault()~;
+    if (stdio::feof(self.fp)) return errno::EOF~;
+	return (char)c;
+}
+
+fn usz? File.write(&self, char[] buf) @dynamic
+{
+    usz n = stdio::fwrite(buf.ptr, 1, buf.len, self.fp);
+    if (stdio::ferror(self.fp)) return errno::get_fault()~;
     return n;
 }
 
-fn void FFile.fclose(&self)
+fn void? File.write_byte(&self, char c) @dynamic
 {
-    stdio::fclose(self);
+	int r = stdio::fputc(c, self.fp);
+	if (stdio::ferror(self.fp)) return errno::get_fault()~;
+    return;
 }
 
-fn void FFile.fflush(&self)
+fn void File.close(&self)
 {
-    stdio::fflush(self);
+    stdio::fclose(self.fp);
 }
 
-fn usz? FFile.fprintf(&self, String fmt, args...)
+fn void File.flush(&self)
 {
-    char[2048] fmtbuf;
-    char* format = scopy(&fmtbuf, fmt)!;
-    
-    int n = stdio::fprintf(self, format, args);
-    if (n < 0) return errno::get_fault()~;
+    stdio::fflush(self.fp);
+}
+
+fn usz? File.printf(&self, String fmt, args...)
+{
+    DString str = dstring::temp();
+    defer str.free();
+    str.appendf(fmt, ...args);
+
+    usz? n = self.write(str.str_view())!; 
     return (usz) n;
 }
 
-fn void? FFile.fseek(&self, long pos, int whence) @maydiscard
+fn usz? File.seek(&self, long pos, int whence) @maydiscard
 {
-    int n = stdio::fseek(self, pos, whence);
+    int n = stdio::fseek(self.fp, pos, whence);
     if (n != 0) return errno::get_fault()~;
+    return self.tell();
 }
 
-fn long? FFile.ftell(&self)
+fn long? File.tell(&self)
 {
-    long n = stdio::ftell(self);
+    long n = stdio::ftell(self.fp);
     if (n < 0) return errno::get_fault()~;
     return n;
+}
+
+fn bool File.eof(&self) 
+{
+    return stdio::feof(self.fp) != 0;
+}
+
+fn char[]? load(Allocator allocx, String file)
+{
+    long n = size(file)!;
+
+    char[] buf = allocator::alloc_array(allocx, char, n);
+    defer (catch err) { free(buf); }
+    
+    File fp = open(file, "r")!;
+    defer fp.close();
+    long i = 0;
+    while (i < n) {
+        usz? r = fp.read(buf[i..n-1]);
+        if (catch err = r) {
+            if (err == errno::EOF) break;
+            return err~;
+        }
+        i += r;
+    }
+    assert(n == i);
+    return buf;
+}
+
+fn void? save(String filename, char[] data)
+{
+	File file = open(filename, "wb")!;
+	defer (void)file.close();
+	while (data.len)
+	{
+		usz written = file.write(data)!;
+		data = data[written..];
+	}
 }
 
 fn void? remove(String fname) @maydiscard
@@ -140,15 +176,15 @@ fn void? rename(String fname, String fname2) @maydiscard
 
 fn void? copy(String fname, String fname2) @maydiscard
 {
-    char[] buf = read(mem, fname)!;
+    char[] buf = load(mem, fname)!;
     defer free(buf);
     
-    FFile fp = fopen(fname2, "w")!;
-    defer fp.fclose();
+    File fp = open(fname2, "w")!;
+    defer fp.close();
     
     long i = 0;
     while (i < buf.len) {
-        usz r = fp.fwrite(buf[i..buf.len-1])!;
+        usz r = fp.write(buf[i..buf.len-1])!;
         i += r;
     }
 }
