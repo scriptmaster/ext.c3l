@@ -76,8 +76,8 @@ memory (handle base)
 */
 
 /// Create a coroutine in caller-supplied memory (zero-copy).
-alias ThreadFn = fn void();
-fn Fiber create(uint stack_size, ThreadFn threadfn) 
+alias Coroutine = fn void();
+fn Fiber create(uint stack_size, Coroutine coroutine) 
 {
     if (initialized) init();
     if (active_handle == null) {
@@ -106,7 +106,7 @@ fn Fiber create(uint stack_size, ThreadFn threadfn)
         p--;
         *p = (long)(void*)&crash; // return address guard
         p--;
-        *p = (long)(void*)threadfn; // initial instruction pointer
+        *p = (long)(void*)coroutine; // initial instruction pointer
 
         *((long*)handle) = (long)p; // store rsp in handle[0]
     }

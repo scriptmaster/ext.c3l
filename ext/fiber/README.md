@@ -24,13 +24,13 @@ Back to [ext.c3l](../../README.md) library.
 ```c3 
 import ext::thread::fiber;
 
-alias ThreadFn = fn void();
+alias Coroutine = fn void(); // Coroutine
 
-Fiber thr = fiber::active();
-Fiber thr = fiber::create(uint stack_size, ThreadFn threadfn); // 64K < stack_size
-void fiber::switch_to(thr);
+Fiber coro = fiber::active();
+Fiber coro = fiber::create(uint stack_size, Coroutine coroutine); // 64K < stack_size
+void fiber::switch_to(coro);
 void fiber::yield();
-void fiber::delete(thr);
+void fiber::delete(coro);
 ```
 
 Files:

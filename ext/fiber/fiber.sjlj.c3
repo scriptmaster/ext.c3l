@@ -13,11 +13,11 @@ import setjmp;
  */
 
 alias Fiber  = void*;
-alias ThreadFn = fn void();
+alias Coroutine = fn void();
 
 struct FiberStruct {
     SigJmpBuf context;
-    ThreadFn entry;
+    Coroutine entry;
     void*     stack;
 }
 
@@ -38,7 +38,7 @@ fn void springboard(CInt ignored)
 }
 
 // Shared signal-stack setup logic used by both create() and derive().
-fn void init_common(FiberStruct* thread, ThreadFn entry, Stack* stack) 
+fn void init_common(FiberStruct* thread, Coroutine entry, Stack* stack) 
 {
     SigAction handler;
     SigAction old_handler;
@@ -76,7 +76,7 @@ fn Fiber active()
  * Create a coroutine from a pre-allocated memory block.
  * The FiberStruct occupies the front of the block; the remainder is used as the stack.
  */
-fn Fiber derive(void* memory, uint size, ThreadFn entry) 
+fn Fiber derive(void* memory, uint size, Coroutine entry) 
 {
     if (running == null) running = &primary;
 
@@ -105,7 +105,7 @@ fn Fiber derive(void* memory, uint size, ThreadFn entry)
 /**
  * Create a coroutine with heap-allocated memory.
  */
-fn Fiber create(uint stack_size, ThreadFn entry) 
+fn Fiber create(uint stack_size, Coroutine entry) 
 {
     if (running == null) running = &primary;
 

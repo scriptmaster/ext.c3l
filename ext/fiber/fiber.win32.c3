@@ -9,11 +9,11 @@ alias Fiber = void*;
 tlocal Fiber active_ = null;
 tlocal Fiber primary = null;
 
-alias ThreadFn = fn void();
+alias Coroutine = fn void();
 
 fn void thunk(void* coentry) @callconv("stdcall") 
 {
-    ((ThreadFn)coentry)();
+    ((Coroutine)coentry)();
 }
 
 bool initialized = false;
@@ -31,10 +31,10 @@ fn Fiber active()
     return active_;
 }
 
-fn Fiber create(uint stack_size, ThreadFn threadfn) 
+fn Fiber create(uint stack_size, Coroutine coroutine) 
 {
     if (!initialized) init();
-    return winbase::createFiber(stack_size, &thunk, (void*)threadfn);
+    return winbase::createFiber(stack_size, &thunk, (void*)coroutine);
 }
 
 fn void delete(Fiber fiber) 
