@@ -95,7 +95,7 @@ fn void File.flush(&self)
 
 fn usz? File.printf(&self, String fmt, args...)
 {
-    DString str = dstring::temp();
+    DString str; str.init(mem);
     defer str.free();
     str.appendf(fmt, ...args);
 

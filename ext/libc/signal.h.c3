@@ -11,22 +11,22 @@ extern fn int raise(int sig);
 extern fn int kill(int pid, int sig);
 
 // Signal set manipulation
-extern fn int sigemptyset(SigSetPtr* set);
-extern fn int sigfillset(SigSetPtr* set);
-extern fn int sigaddset(SigSetPtr* set, int signum);
-extern fn int sigdelset(SigSetPtr* set, int signum);
-extern fn int sigismember(SigSetPtr* set, int signum);
+extern fn int sigemptyset(SigSet* set);
+extern fn int sigfillset(SigSet* set);
+extern fn int sigaddset(SigSet* set, int signum);
+extern fn int sigdelset(SigSet* set, int signum);
+extern fn int sigismember(SigSet* set, int signum);
 
 // Signal mask and actions
-extern fn int sigprocmask(int how, SigSetPtr* set, SigSetPtr* oldset);
+extern fn int sigprocmask(int how, SigSet* set, SigSet* oldset);
 extern fn int sigaction(int signum, SigAction* act, SigAction* oldact);
-extern fn int sigpending(SigSetPtr* set);
-extern fn int sigsuspend(SigSetPtr* mask);
+extern fn int sigpending(SigSet* set);
+extern fn int sigsuspend(SigSet* mask);
 
 // Signal waiting
-extern fn int sigwait(SigSetPtr* set, int* sig);
-extern fn int sigwaitinfo(SigSetPtr* set, SigInfo* info);
-extern fn int sigtimedwait(SigSetPtr* set, SigInfo* info, TimeSpec* timeout);
+extern fn int sigwait(SigSet* set, int* sig);
+extern fn int sigwaitinfo(SigSet* set, SigInfo* info);
+extern fn int sigtimedwait(SigSet* set, SigInfo* info, TimeSpec* timeout);
 
 // Alternate signal stack
 extern fn int sigaltstack(Stack* ss, Stack* old_ss);
@@ -35,7 +35,7 @@ extern fn int sigaltstack(Stack* ss, Stack* old_ss);
 extern fn int siginterrupt(int sig, int flag);
 
 // Thread signal functions
-extern fn int pthread_sigmask(int how, SigSetPtr* set, SigSetPtr* oldset);
+extern fn int pthread_sigmask(int how, SigSet* set, SigSet* oldset);
 extern fn int pthread_kill(void* thread, int sig);
 
 // Signal queue (realtime)
@@ -182,7 +182,7 @@ const int POLL_PRI = 5; // High priority input available
 const int POLL_HUP = 6; // Device disconnected
 
 // Signal set type
-struct SigSetPtr {
+struct SigSet {
     ulong[16] __val;  // 1024 bits for signal mask
 }
 
@@ -194,7 +194,7 @@ struct SigAction {
         SigHandler sa_handler;
         SigFn sa_sigaction;
     }
-    SigSetPtr sa_mask;
+    SigSet sa_mask;
     int sa_flags;
     Restfn sa_restorer;
 }
@@ -367,7 +367,7 @@ const int CLD_STOPPED = 5;
 const int CLD_CONTINUED = 6;
 
 // Signal set type (Darwin uses 32-bit mask)
-struct SigSetPtr {
+struct SigSet {
     uint __bits;
 }
 
@@ -378,7 +378,7 @@ struct SigAction {
         SigHandler sa_handler;
         SigFn sa_sigaction;
     }
-    SigSetPtr sa_mask;
+    SigSet sa_mask;
     int sa_flags;
 }
 
@@ -529,7 +529,7 @@ const int CLD_STOPPED = 5;
 const int CLD_CONTINUED = 6;
 
 // Signal set type
-struct SigSetPtr {
+struct SigSet {
     uint[4] __bits;
 }
 
@@ -541,7 +541,7 @@ struct SigAction {
         SigFn sa_sigaction;
     }
     int sa_flags;
-    SigSetPtr sa_mask;
+    SigSet sa_mask;
 }
 
 // Signal info structure
@@ -713,7 +713,7 @@ const int CLD_STOPPED = 5;
 const int CLD_CONTINUED = 6;
 
 // Signal set type
-struct SigSetPtr {
+struct SigSet {
     uint[4] __bits;
 }
 
@@ -724,7 +724,7 @@ struct SigAction {
         SigHandler sa_handler;
         SigFn sa_sigaction;
     }
-    SigSetPtr sa_mask;
+    SigSet sa_mask;
     int sa_flags;
 }
 
@@ -883,7 +883,7 @@ const int CLD_STOPPED = 5;
 const int CLD_CONTINUED = 6;
 
 // Signal set type
-struct SigSetPtr {
+struct SigSet {
     uint __bits;
 }
 
@@ -894,7 +894,7 @@ struct SigAction {
         SigHandler sa_handler;
         SigFn sa_sigaction;
     }
-    SigSetPtr sa_mask;
+    SigSet sa_mask;
     int sa_flags;
 }
 

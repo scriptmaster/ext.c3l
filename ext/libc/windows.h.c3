@@ -85,12 +85,8 @@ const Dword ERROR_IO_PENDING = 997;
 // Error handling functions
 extern fn Dword getLastError() @cname("GetLastError");
 extern fn void setLastError(Dword dwErrCode) @cname("SetLastError");
-extern fn Dword formatMessageA(Dword dwFlags, LPCVoid lpSource, Dword dwMessageId,
-    Dword dwLanguageId, LPStr lpBuffer, Dword nSize,
-    void* arguments) @cname("FormatMessageA");
-extern fn Dword formatMessageW(Dword dwFlags, LPCVoid lpSource, Dword dwMessageId,
-    Dword dwLanguageId, LPWStr lpBuffer, Dword nSize,
-    void* arguments) @cname("FormatMessageW");
+extern fn Dword formatMessageA(Dword dwFlags, LPCVoid lpSource, Dword dwMessageId, Dword dwLanguageId, LPStr lpBuffer, Dword nSize, void* arguments) @cname("FormatMessageA");
+extern fn Dword formatMessageW(Dword dwFlags, LPCVoid lpSource, Dword dwMessageId, Dword dwLanguageId, LPWStr lpBuffer, Dword nSize, void* arguments) @cname("FormatMessageW");
 
 // FormatMessage flags
 const Dword FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
@@ -449,13 +445,7 @@ struct StartupInfoW {
 }
 
 // Process functions
-extern fn Bool createProcessA(LPCStr lpApplicationName, LPStr lpCommandLine,
-    SecurityAttributes* lpProcessAttributes,
-    SecurityAttributes* lpThreadAttributes,
-    Bool bInheritHandles, Dword dwCreationFlags,
-    LPVoid lpEnvironment, LPCStr lpCurrentDirectory,
-    StartupInfoA* lpStartupInfo,
-    ProcessInformation* lpProcessInformation) @cname("CreateProcessA");
+extern fn Bool createProcessA(LPCStr lpApplicationName, LPStr lpCommandLine, SecurityAttributes* lpProcessAttributes, SecurityAttributes* lpThreadAttributes, Bool bInheritHandles, Dword dwCreationFlags, LPVoid lpEnvironment, LPCStr lpCurrentDirectory, StartupInfoA* lpStartupInfo, ProcessInformation* lpProcessInformation) @cname("CreateProcessA");
 extern fn Bool createProcessW(LPCWStr lpApplicationName, LPWStr lpCommandLine,
     SecurityAttributes* lpProcessAttributes,
     SecurityAttributes* lpThreadAttributes,

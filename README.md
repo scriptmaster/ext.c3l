@@ -9,6 +9,7 @@ An extended library for the C3 programming language, providing essential system-
 - High-level networking APIs (TCP, UDP, DNS)
 - File system and I/O utilities
 - Regular expression support
+- Fiber coroutine 
 
 ## Why ext library?
 
@@ -140,6 +141,22 @@ Regex support for C3 based on C regex library.
 
 * [ext/regex](ext/regex)
 - More about [Regular Expressions](ext/regex/README.md)
+
+### Fiber coroutine
+
+It provides a lightweight cooperative multitasking system, allowing you to create and switch between multiple execution contexts (fibers) within a single thread.
+
+Based on:
+* X86_64, AARCH64: Assembly code, fast switching
+* Windows: Native Fiber interface
+* Other Posix: based on sigsetjmp() /siglongjmp()
+
+| Module | Description |
+|--------|-------------|
+| `ext::thread::fiber` | Fiber operations: create(), delete(), active(), switch_to(), yield() |
+
+* [ext/fiber](ext/fiber)
+- More about [Fiber Coroutine](ext/fiber/README.md)
 
 
 ## Usage Example

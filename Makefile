@@ -9,6 +9,8 @@ build-all:
 	@cd ./examples/net && make build
 	@cd ./examples/hash && make build
 	@cd ./examples/io && make build
+	@cd ./examples/fiber && make build
+
 clean:
 	@rm -rf ./build/*
 	@rm -rf ./ext/*/obj
@@ -16,6 +18,7 @@ clean:
 	@cd ./examples/net && make clean
 	@cd ./examples/hash && make clean
 	@cd ./examples/io && make clean
+	@cd ./examples/fiber && make clean
 
 push:
 	@make clean

@@ -14,6 +14,8 @@ The library is based on SLRE (Super Light Regular Expression).
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
 
+[SLRE](https://github.com/cesanta/slre/blob/master/README.md)
+
 ### API Functions
 
 ```c3
@@ -40,8 +42,15 @@ import slre;
 RegexInfo info;
 SlreCap[3] caps; // { .ptr, .len } capture () group
 
+info.flags = 0; // slre::IGNORE_CASE 
+info.num_brackets = 0;
+info.num_branches = 0;
+info.num_caps = caps.len;
+info.caps = caps;
+  
 int n = slre::compile(char* expr, int expr_len, RegexInfo* info);
 int n = slre::match(String str, int str_len, RegexInfo *info);
+
 int n = slre::reg_match(char *regexp, char *s, int s_len, SlreCap *caps, int num_caps, int flags);
 char* s2 = slre::reg_replace(char *regex, char *buf, char *sub);
 ```
