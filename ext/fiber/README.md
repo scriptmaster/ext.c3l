@@ -85,7 +85,7 @@ fn void my_coroutine()
 fn void main()
 {
     // Initialize and create a fiber
-    Fiber co = fiber::create(1024 * 64, &my_coroutine);
+    Fiber* co = fiber::create(1024 * 64, &my_coroutine);
 
     // Drive the coroutine by repeatedly switching to it
     for (int step = 0; step < 4; step++)
