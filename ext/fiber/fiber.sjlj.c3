@@ -1,7 +1,7 @@
 
 // fiber.sjlj.c3
 
-module ext::thread::fiber @if(env::POSIX && !env::X86_64 && !env::AARCH64);
+module ext::thread::fiber @if(env::POSIX &&  !env::X86_64 && !env::AARCH64);
 
 import signal;
 import setjmp;
@@ -12,19 +12,18 @@ import setjmp;
  * Original: Based on ideas from a paper by Ralf Engelschall
  */
 
-alias Fiber  = void*;
 alias Coroutine = fn void();
 
-struct FiberStruct {
+struct Fiber {
     SigJmpBuf context;
     Coroutine entry;
-    void*     stack;
+    void* stack;
+    bool done;
 }
 
-tlocal FiberStruct  primary;
-tlocal FiberStruct* creating = null;
-tlocal FiberStruct* running = null;
-
+tlocal Fiber primary;
+tlocal Fiber* running = null;
+tlocal Fiber* creating = null; 
 
 // Signal handler that runs on the new coroutine's stack.
 // If sigsetjmp() returns 0, the stack context has just been saved — return immediately.
@@ -38,14 +37,14 @@ fn void springboard(CInt ignored)
 }
 
 // Shared signal-stack setup logic used by both create() and derive().
-fn void init_common(FiberStruct* thread, Coroutine entry, Stack* stack) 
+fn void init_common(Fiber* fiber, Coroutine entry, Stack* stack) 
 {
     SigAction handler;
     SigAction old_handler;
     Stack old_stack;
 
-    thread.entry = null;
-    thread.stack   = null;
+    // fiber.entry = null;
+    // fiber.stack = null;
 
     stack.ss_flags = 0;
     // stack.ss_sp and stack.ss_size are set by the caller
@@ -54,11 +53,11 @@ fn void init_common(FiberStruct* thread, Coroutine entry, Stack* stack)
         handler.sa_handler = &springboard;
         handler.sa_flags   = signal::SA_ONSTACK;
         signal::sigemptyset(&handler.sa_mask);
-        creating = thread;
+        creating = fiber;
 
         if (signal::sigaction(signal::SIGUSR1, &handler, &old_handler) == 0) {
             if (signal::raise(signal::SIGUSR1) == 0) {
-                thread.entry = entry;
+                fiber.entry = entry;
             }
             signal::sigaltstack(&old_stack, null);
             signal::sigaction(signal::SIGUSR1, &old_handler, null);
@@ -66,88 +65,58 @@ fn void init_common(FiberStruct* thread, Coroutine entry, Stack* stack)
     }
 }
 
-fn Fiber active() 
+fn Fiber* active() 
 {
     if (running == null) running = &primary;
-    return (Fiber)running;
+    return running;
 }
 
-/**
- * Create a coroutine from a pre-allocated memory block.
- * The FiberStruct occupies the front of the block; the remainder is used as the stack.
- */
-fn Fiber derive(void* memory, uint size, Coroutine entry) 
+fn Fiber* create(uint stack_size, Coroutine entry) 
 {
     if (running == null) running = &primary;
 
-    FiberStruct* thread = (FiberStruct*)memory;
-    memory = (char*)memory + FiberStruct.sizeof;
-    size  -= (uint)FiberStruct.sizeof;
+    Fiber* fiber = mem::alloc(Fiber);
+    fiber.done = false;
 
-    if (thread != null) {
-        Stack stack;
-        stack.ss_size = size;
-        thread.stack = memory;
-        stack.ss_sp = memory;
+    Stack stack;
+    stack.ss_size = stack_size;
+    fiber.stack = mem::malloc(stack_size);
+    stack.ss_sp = fiber.stack;
 
-        init_common(thread, entry, &stack);
+    init_common(fiber, entry, &stack);
 
-        if (thread.entry != entry) {
-            // derive uses external memory, so just null out the stack pointer on failure
-            thread.stack = null;
-            thread = null;
-        }
-    }
-
-    return (Fiber)thread;
+    return fiber;
 }
 
-/**
- * Create a coroutine with heap-allocated memory.
- */
-fn Fiber create(uint stack_size, Coroutine entry) 
+fn void delete(Fiber* fiber) 
 {
-    if (running == null) running = &primary;
+    if (fiber == null || fiber == &primary) return;
 
-    FiberStruct* thread = (FiberStruct*)mem::malloc(FiberStruct.sizeof);
-    if (thread != null) {
-        Stack stack;
-        stack.ss_size = stack_size;
-        thread.stack = mem::malloc(stack_size);
-        stack.ss_sp = thread.stack;
-
-        init_common(thread, entry, &stack);
-
-        if (thread.entry != entry) {
-            delete((Fiber)thread);
-            thread = null;
-        }
-    }
-
-    return (Fiber)thread;
+    mem::free(fiber.stack);
+    mem::free(fiber);
 }
 
-fn void delete(Fiber thread) {
-    if (thread != null) {
-        FiberStruct* t = (FiberStruct*)thread;
-        if (t.stack != null) {
-            mem::free(t.stack);
-        }
-        mem::free(thread);
-    }
-}
-
-fn void switch_to(Fiber thread) {
+fn void switch_to(Fiber* fiber) 
+{
+    if (fiber == null || fiber.done) return;
     if (setjmp::sigsetjmp(&running.context, 0) == 0) {
-        running = (FiberStruct*)thread;
+        running = fiber;
         setjmp::siglongjmp(&running.context, 1);
     }
 }
 
 fn void yield()
 {
+    if (running == &primary) return;
+    
     if (setjmp::sigsetjmp(&running.context, 0) == 0) {
         running = &primary;
         setjmp::siglongjmp(&running.context, 1);
     }
+}
+
+fn void done() 
+{
+    running.done = true;
+    yield();
 }

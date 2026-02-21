@@ -5,18 +5,20 @@ module ext::thread::fiber @if(!env::WIN32 && (env::X86_64 || env::AARCH64));
 import unistd; // sysconf
 import sys::mman; // mprotect
 import std::io;
+import string;
 
-// alias Fiber = void*;
-alias SwapFn = fn void(void*, void*) @callconv("stdcall");
-
+alias Context = void*;
 struct Fiber {
-    void* handle;
-    bool done;
+   Context memory;
+   Context handle;
+   bool done;
 }
 
-tlocal long[64] _buffer;
+alias SwapFn = fn void(Context, Context) @callconv("stdcall");
+
+tlocal long[64] primarybuf @align(16);
+tlocal Fiber primary = { .memory = null, .handle = &primarybuf, .done = false };
 tlocal Fiber* running = null;
-tlocal Fiber primary;
 
 SwapFn asm_swap = null;
 
@@ -24,14 +26,15 @@ char[4096] asmblock @align(4096);
 
 macro void warn(String fmt, args...)
 {
-  io::printf("%s,%s: ", $$FILE, $$LINE); io::printfn(fmt, ...args);
+    io::printf("%s,%s: ", $$FILE, $$LINE); io::printfn(fmt, ...args);
 }
 
 fn void init() 
 {
     if (running != null) return;
-
+    
     asmblock[0:ASM.len] = ASM[0:ASM.len];
+    
     ulong addr = (ulong)(void*)&asmblock;
     ulong page_size = (ulong)unistd::sysconf(unistd::_SC_PAGESIZE);
     ulong base = addr - (addr % page_size);
@@ -39,9 +42,9 @@ fn void init()
     mman::mprotect((void*)base, (usz)size, mman::PROT_READ | mman::PROT_EXEC);
 
     asm_swap = (SwapFn)(void*)&asmblock;
+ 
+    string::memset(&primarybuf[0], 0, $sizeof(primarybuf));
 
-    primary.handle = (void*)&_buffer[0];
-    primary.done = false;
     running = &primary;
 }
 
@@ -62,7 +65,6 @@ fn void crash() @noreturn
 fn Fiber* active() 
 {
     if (running == null) init();
-    
     return running;
 }
 
@@ -90,8 +92,8 @@ fn Fiber* create(uint stack_size, Coroutine coroutine)
     fiber.done = false;
     
     void* handle = mem::malloc(stack_size);
-    fiber.handle = handle;
-
+    fiber.memory = handle;
+    
     if (handle != null) {
         // Build the initial stack layout:
         //
@@ -114,8 +116,12 @@ fn Fiber* create(uint stack_size, Coroutine coroutine)
         *p = (long)(void*)coroutine; // initial instruction pointer
 
         *((long*)handle) = (long)p; // store rsp in handle[0]
-    }
 
+        warn("%d", (long)p);
+    }
+    fiber.handle = handle;
+
+    warn("%p, %p", fiber.memory, fiber.handle);
     return fiber;
 }
 
@@ -123,29 +129,28 @@ fn Fiber* create(uint stack_size, Coroutine coroutine)
 fn void delete(Fiber* fiber) 
 {
     if (fiber == null || fiber == &primary) return;
-    mem::free(fiber.handle);
+
+    mem::free(fiber.memory);
     mem::free(fiber);
 }
 
 fn void switch_to(Fiber* fiber) 
 {
     if (fiber == null || fiber.done) return;
-    
     Fiber* prev = running;
     running = fiber;
     
-    // warn("%p, %p, %d, %d", fiber.handle, prev.handle, *(long*)fiber.handle, *(long*)prev.handle);
-
+    warn("%p, %p: %d, %d, prev is primary?:%s", fiber.handle, prev.handle, *(long*)fiber.handle, *(long*)prev.handle, prev==&primary);
+    
     asm_swap(fiber.handle, prev.handle);
 }
 
 fn void yield()
 {
-    if (running == &primary) return;
     switch_to(&primary);
 }
 
-fn void done()
+fn void done() 
 {
     running.done = true;
     yield();

@@ -16,3 +16,6 @@ FIBER = $(EXT)/fiber/*.c3
 fiber_test: fiber_test.c3
 	$(C3C) $^ $(LIBC) $(FIBER) -o $@
 
+fiber_test.exe: fiber_test.c3
+	$(C3C) $^ $(LIBC) $(FIBER) -o $@ --target windows-x64 --winsdk ~/p/msvc_sdk/x64
+

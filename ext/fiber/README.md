@@ -13,7 +13,7 @@ It provides a lightweight cooperative multitasking system, allowing you to creat
 
 | Module | Description |
 |--------|-------------|
-| `ext::thread::fiber` | Fiber operations: create(), delete(), active(), switch_to(), yield() |
+| `ext::thread::fiber` | Fiber operations: create(), delete(), active(), switch_to(), yield(), done() |
 
 
 This is a part of extended C3 library.
@@ -26,11 +26,12 @@ import ext::thread::fiber;
 
 alias Coroutine = fn void(); // Coroutine
 
-Fiber coro = fiber::active();
-Fiber coro = fiber::create(uint stack_size, Coroutine coroutine); // 64K < stack_size
-void fiber::switch_to(coro);
-void fiber::yield();
-void fiber::delete(coro);
+Fiber* fiber = fiber::active(); // get currently active fiber
+Fiber* fiber = fiber::create(uint stack_size, Coroutine coroutine); // 64K < stack_size
+void fiber::switch_to(fiber);
+void fiber::yield(); // yield to primary fiber
+void fiber::done(); // at the end of Coroutine, you must call this
+void fiber::delete(fiber);
 ```
 
 Files:
@@ -44,18 +45,20 @@ Files:
 ## How It Works
 
 1. `fiber::active()` returns currently active fiber.
-2. `fiber::create()` allocates a new fiber with its own stack. The thread function has plain `fn void()` signature. Minimum stack size is 64k.
+2. `fiber::create()` allocates a new fiber with its own stack. The coroutine function has plain `fn void()` signature. Minimum stack size is 64k.
 3. `fiber::switch_to(fiber)` hands execution over to the target fiber. Control returns to the caller only when that fiber calls `fibed::yield()` or `fiber::switch_to()` back.
 4. `fiber::yield()` is a convenience wrapper that always returns control to the primary fiber, making it behave like a standard coroutine suspend point.
-5. Cleanup is done by calling `fiber::delete()`
+5. At the end of a coroutine, you need to call `fiber::done()`
+6. Cleanup is done by calling `fiber::delete()`
 
 
 ## Important Notes
 
-- **Cooperative only.** Fibers never preempt each other. You must call `fiber::yield()` or `fiber::switch_to()` explicitly to transfer control. At the end of a `ThreadFn` function, **you must call `fiber::yield()`**
+- **Cooperative only.** Fibers never preempt each other. You must call `fiber::yield()` or `fiber::switch_to()` explicitly to transfer control. 
+- At the end of a `Coroutine` function, **you must call `fiber::done()`**
 - Fibers must not be shared across threads.
 - **Stack size.** The `stack_size` parameter in `fiber::create()` sets the fiber's initial stack size in bytes. A value of `64 * 1024` (64 KB) is a reasonable minimum for lightweight coroutines.
-- **Cleanup.** Always call `fiber::delete()` on fibers you no longer need to avoid memory leaks. Do not delete the currently running fiber.
+- **Cleanup.** Always call `fiber::delete()` on fibers that you no longer need, to avoid memory leaks. Do not delete the currently running fiber.
 
 ## Usage Example
 
@@ -76,7 +79,7 @@ fn void my_coroutine()
     }
     io::printfn("Coroutine done");
     
-    fiber::yield(); // you must call this here
+    fiber::done(); // you must call this at end
 }
 
 fn void main()
