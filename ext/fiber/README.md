@@ -46,7 +46,7 @@ Files:
 
 1. `fiber::active()` returns currently active fiber.
 2. `fiber::create()` allocates a new fiber with its own stack. The coroutine function has plain `fn void()` signature. Minimum stack size is 64k.
-3. `fiber::switch_to(fiber)` hands execution over to the target fiber. Control returns to the caller only when that fiber calls `fibed::yield()` or `fiber::switch_to()` back.
+3. `fiber::switch_to(fiber)` hands execution over to the target fiber. Control returns to the caller only when that fiber calls `fiber::yield()` or `fiber::switch_to()` back.
 4. `fiber::yield()` is a convenience wrapper that always returns control to the primary fiber, making it behave like a standard coroutine suspend point.
 5. At the end of a coroutine, you need to call `fiber::done()`
 6. Cleanup is done by calling `fiber::delete()`
