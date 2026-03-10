@@ -10,6 +10,7 @@ An extended library for the C3 programming language, providing essential system-
 - File system and I/O utilities
 - Regular expression support
 - Fiber coroutine 
+- Async I/O for C3
 
 ## Why ext library?
 
@@ -158,9 +159,9 @@ Based on:
 * [ext/fiber](ext/fiber)
 - More about [Fiber Coroutine](ext/fiber/README.md)
 
-### Asyncio 
+### Async I/O 
 
-This is a C3 version of Python's asyncio library. It follows the python's API, because it is the easiest one among its kind.
+This is a C3 version of Python's `asyncio` library. It follows the python's API, because it is the easiest one among its kind.
 
 It's based on C3's [fiber](../fiber/README.md) coroutine.
 
