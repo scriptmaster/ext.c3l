@@ -8,7 +8,7 @@ It's based on C3's [fiber](../fiber/README.md) coroutine.
 
 | Module | Description |
 |--------|-------------|
-| `ext::asyncio` | Future, Task, EventLoop, Stream, Datagram, Transport, Protocol, DatagramProtocol |
+| `ext::asyncio` | Python asyncio-similar operationsFuture, Task, EventLoop, Stream, Datagram, Transport, Protocol, DatagramProtocol |
 
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
