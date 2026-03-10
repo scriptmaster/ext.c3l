@@ -1,30 +1,30 @@
 # asyncio for C3
 
-This is a C3 version of Python's asyncio library. It follows the python's API, because it is the easiest one among its kind.
-
-It's based on C3's [fiber](../fiber/README.md) coroutine.
+This is a C3 port of Python's asyncio library. It follows Python's API, as it is the most approachable among libraries of its kind.
+It is based on C3's [fiber](../fiber/README.md) coroutine.
 
 ### Available module
 
 | Module | Description |
 |--------|-------------|
-| `ext::asyncio` | Python asyncio-similar operationsFuture, Task, EventLoop, Stream, Datagram, Transport, Protocol, DatagramProtocol |
+| `ext::asyncio` | Python asyncio-similar operations: Future, Task, EventLoop, Stream, Datagram, Transport, Protocol, DatagramProtocol |
 
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
 
 ### Key concepts
 
-* `Future` is a kind of variable holder, which will be filled in the future. Main action on a future is `.await()` until the value gets filled in the future in some other function.
-* `Task` is a handler of a coroutine, that is running independantly. A task `.await()` to finish. If not awaited, a task can finish silently and `autofree` itself. Within a task, we can call `.set_result(void*)` onto a future.
-* `EventLoop` is a scheduler. Everything is initiated by the scheduler. `.create_future()` or `.create_task()`. You can `.run()` an event loop, you can `.gather()` tasks.
-* `EventLoop` does various othe scheduling things like `.sleep()`, `.wait_for()`, `.call_later()`.
-* For more controle of concurrency, `Lock`, `Queue`, `Semaphore`, `Event` or `Channel` can be utilized.
-* `TaskGroup` is for multiple tasks to be `.create_task()` or for joining `.wait()`.
-* For networking, `Stream` is for TCP, `Datagram` is for UDP. You can `.open_connection()` to get a client `Stream`, you can `.open_datagram()` to get a client `Datagram`.
-* `Server` is a TCP server. You can `.start_server()` to make a server, and call `.serve_forever()` for indefinite service.
-* For UDP, you can `.bind_datagram()` to get a server `Datagram`. Simple "UDP" `.socket()` is used to call `.sock_sendto()` or `.sock_recvfrom()` for communication with the server `Datagram`.
-* Event driven, callback style communication is done by implementing `Protocol` (TCP) or `DatagramProtocol` (UDP) interfaces. These interfaces require implementing reactive functions like `.connection_made()`, `.data_received()`, `.connection_lost()` or `.error_received()`. In this case, real data transfer is done through `Transport`.
+* `Future` is a value container that will be filled at some point in the future. The primary operation on a future is `.await()`, which blocks until another coroutine calls `.set_value()` to fill it.
+* `Task` is a handle for an independently running coroutine. A task can be `.await()`ed to wait for its completion. If not awaited, a task can finish silently and `autofree` itself. Within a task, `.set_result(void*)` can be called on a future.
+* `EventLoop` is a scheduler. All activity is driven by the scheduler. It provides `.create_future()` and `.create_task()`. An event loop can be started with `.run()`, and `.gather()` can be used to join and free multiple tasks.
+* `EventLoop` also handles other scheduling operations such as `.sleep()`, `.wait_for()`, and `.call_later()`.
+* For finer concurrency control, `Lock`, `Queue`, `Semaphore`, `Event`, or `Channel` can be used.
+* `TaskGroup` allows multiple tasks to be created via `.create_task()` and joined via `.wait()`.
+* For networking, `Stream` handles TCP and `Datagram` handles UDP. Use `.open_connection()` to obtain a client `Stream`, and `.open_datagram()` to obtain a client `Datagram`.
+* `Server` is a TCP server. Use `.start_server()` to create one, then call `.serve_forever()` to run it indefinitely.
+* For UDP, use `.bind_datagram()` to obtain a server-side `Datagram`. A plain UDP `.socket()` can then call `.sock_sendto()` or `.sock_recvfrom()` to communicate with the server `Datagram`.
+* Event-driven, callback-style communication is achieved by implementing interfaces such as `Protocol` (for TCP) or `DatagramProtocol` (for UDP). These interfaces require implementing reactive methods like `.connection_made()`, `.data_received()`, `.connection_lost()`, and `.error_received()`. Actual data transfer is performed through a `Transport`.
+
 
 ### Files
 
