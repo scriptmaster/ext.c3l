@@ -16,7 +16,7 @@ Back to [ext.c3l](../../README.md) library.
 ### Key concepts
 
 * `Future` is a kind of variable holder, which will be filled in the future. Main action on a future is `.await()` until the value gets filled in the future in some other function.
-* `Task` is a handler of a coroutine, that is running independantly. A task `.await()` to finish. If not awaited, a task finishes silently and `autofree` itself. Within a task, we can call `.set_result(void*)` onto a future.
+* `Task` is a handler of a coroutine, that is running independantly. A task `.await()` to finish. If not awaited, a task can finish silently and `autofree` itself. Within a task, we can call `.set_result(void*)` onto a future.
 * `EventLoop` is a scheduler. Everything is initiated by the scheduler. `.create_future()` or `.create_task()`. You can `.run()` an event loop, you can `.gather()` tasks.
 * `EventLoop` does various othe scheduling things like `.sleep()`, `.wait_for()`, `.call_later()`.
 * For more controle of concurrency, `Lock`, `Queue`, `Semaphore`, `Event` or `Channel` can be utilized.
@@ -24,7 +24,7 @@ Back to [ext.c3l](../../README.md) library.
 * For networking, `Stream` is for TCP, `Datagram` is for UDP. You can `.open_connection()` to get a client `Stream`, you can `.open_datagram()` to get a client `Datagram`.
 * `Server` is a TCP server. You can `.start_server()` to make a server, and call `.serve_forever()` for indefinite service.
 * For UDP, you can `.bind_datagram()` to get a server `Datagram`. Simple "UDP" `.socket()` is used to call `.sock_sendto()` or `.sock_recvfrom()` for communication with the server `Datagram`.
-* Callback style communication is done by implementing `Protocol` (TCP) or `DatagramProtocol` (UDP) interfaces. These interfaces require implementing reactive functions like `.connection_made()`, `.data_received()`, `.connection_lost()` or `.error_received()`. In this case, real data transfer is done through `Transport`.
+* Event driven, callback style communication is done by implementing `Protocol` (TCP) or `DatagramProtocol` (UDP) interfaces. These interfaces require implementing reactive functions like `.connection_made()`, `.data_received()`, `.connection_lost()` or `.error_received()`. In this case, real data transfer is done through `Transport`.
 
 ### Files
 
@@ -41,15 +41,15 @@ Back to [ext.c3l](../../README.md) library.
 * [datagram.c3](datagram.c3): UDP Datagram
 * [protocol.c3](protocol.c3): Protocol, DatagramProtocol, Transport
 
-* [../../examples/ext/asyncio/sample1.c3](../../examples/ext/asyncio/sample1.c3)
-* [../../examples/ext/asyncio/sample2.c3](../../examples/ext/asyncio/sample2.c3)
-* [../../examples/ext/asyncio/sample3.c3](../../examples/ext/asyncio/sample3.c3)
-* [../../examples/ext/asyncio/sample4.c3](../../examples/ext/asyncio/sample4.c3)
-* [../../examples/ext/asyncio/sample5.c3](../../examples/ext/asyncio/sample5.c3)
-* [../../examples/ext/asyncio/sample6.c3](../../examples/ext/asyncio/sample6.c3)
-* [../../examples/ext/asyncio/sample7.c3](../../examples/ext/asyncio/sample7.c3)
-* [../../examples/ext/asyncio/sample8.c3](../../examples/ext/asyncio/sample8.c3)
-* [../../examples/ext/asyncio/sample9.c3](../../examples/ext/asyncio/sample9.c3)
-* [../../examples/ext/asyncio/sample10.c3](../../examples/ext/asyncio/sample10.c3)
-* [../../examples/ext/asyncio/sample11.c3](../../examples/ext/asyncio/sample11.c3)
-* [../../examples/ext/asyncio/sample12.c3](../../examples/ext/asyncio/sample12.c3)
+* [../../examples/asyncio/sample1.c3](../../examples/asyncio/sample1.c3)
+* [../../examples/asyncio/sample2.c3](../../examples/asyncio/sample2.c3)
+* [../../examples/asyncio/sample3.c3](../../examples/asyncio/sample3.c3)
+* [../../examples/asyncio/sample4.c3](../../examples/asyncio/sample4.c3)
+* [../../examples/asyncio/sample5.c3](../../examples/asyncio/sample5.c3)
+* [../../examples/asyncio/sample6.c3](../../examples/asyncio/sample6.c3)
+* [../../examples/asyncio/sample7.c3](../../examples/asyncio/sample7.c3)
+* [../../examples/asyncio/sample8.c3](../../examples/asyncio/sample8.c3)
+* [../../examples/asyncio/sample9.c3](../../examples/asyncio/sample9.c3)
+* [../../examples/asyncio/sample10.c3](../../examples/asyncio/sample10.c3)
+* [../../examples/asyncio/sample11.c3](../../examples/asyncio/sample11.c3)
+* [../../examples/asyncio/sample12.c3](../../examples/asyncio/sample12.c3)
