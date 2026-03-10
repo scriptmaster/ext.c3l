@@ -22,20 +22,6 @@ It provides a lightweight cooperative multitasking system, allowing you to creat
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
 
-### API functions
-
-```c3 
-import ext::thread::fiber;
-
-alias Coroutine = fn void(); // Coroutine
-
-Fiber* fiber = fiber::active(); // get currently active fiber
-Fiber* fiber = fiber::create(uint stack_size, Coroutine coroutine); // 64K < stack_size
-void fiber::switch_to(fiber);
-void fiber::yield(); // yield to primary fiber
-void fiber::done(); // at the end of Coroutine, you must call this
-void fiber::delete(fiber);
-```
 
 Files:
 * [fiber.win32.c3](fiber.win32.c3): based on Windows Fiber
@@ -66,7 +52,7 @@ Fiber* fib = fiber::create(usz stack_size, Coroutine coro); // stack_size must b
 Fiber* fib = fiber::active(); // get current fiber
 void fiber::switch_to(fib); // context switch
 void fiber::yield(); // within a coroutine, suspend and goto main coroutine
-void fiber::done(); // you need to call this at the end of coroutine
+void fiber::done(); // you need to call this at the end of your coroutine function
 void fiber::delete(fib);
 
 void fiber::set_debug(false); // default is true
