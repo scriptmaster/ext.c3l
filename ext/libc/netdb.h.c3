@@ -1,8 +1,9 @@
-
 // netdb.h.c3
+
 module netdb @if(!env::WIN32);
 
 import netinet::in;
+import sys::socket;
 
 // ========== Function Declarations (Common) ==========
 
@@ -97,20 +98,15 @@ struct AddrInfo {
     int ai_socktype;
     int ai_protocol;
     uint ai_addrlen;
-    SockAddr* ai_addr;
+    socket::SockAddr* ai_addr;
     char* ai_canonname;
     AddrInfo* ai_next;
 }
 
-// Socket address structure (from sys/socket.h)
-struct SockAddr {
-    ushort sa_family;
-    char[14] sa_data;
-}
 
 // ========== Linux-specific Definitions ==========
 
-module netdb::c @if(env::LINUX);
+module netdb @if(env::LINUX);
 
 // Host errors
 const int HOST_NOT_FOUND = 1;
@@ -178,7 +174,7 @@ const int NI_MAXSERV = 32;
 
 // ========== Darwin-specific Definitions ==========
 
-module netdb::c @if(env::DARWIN);
+module netdb @if(env::DARWIN);
 
 // Host errors
 const int HOST_NOT_FOUND = 1;
@@ -244,7 +240,7 @@ const int NI_MAXSERV = 32;
 
 // ========== FreeBSD-specific Definitions ==========
 
-module netdb::c @if(env::FREEBSD);
+module netdb @if(env::FREEBSD);
 
 // Host errors
 const int HOST_NOT_FOUND = 1;
@@ -305,7 +301,7 @@ const int NI_MAXSERV = 32;
 
 // ========== NetBSD-specific Definitions ==========
 
-module netdb::c @if(env::NETBSD);
+module netdb @if(env::NETBSD);
 
 // Host errors
 const int HOST_NOT_FOUND = 1;
@@ -369,7 +365,7 @@ const int NI_MAXSERV = 32;
 
 // ========== OpenBSD-specific Definitions ==========
 
-module netdb::c @if(env::OPENBSD);
+module netdb @if(env::OPENBSD);
 
 // Host errors
 const int HOST_NOT_FOUND = 1;

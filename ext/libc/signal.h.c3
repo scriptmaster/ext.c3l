@@ -5,6 +5,11 @@ module signal @if(!env::WIN32);
 // Common signal handling type
 alias SigHandler = fn void(int);
 
+// Special handler values (compared against signal() return value)
+const uptr SIG_DFL = 0;        // Default signal action
+const uptr SIG_IGN = 1;        // Ignore signal
+const uptr SIG_ERR = uptr.max; // Error return from signal()
+
 // Basic signal functions
 extern fn SigHandler signal(int signum, SigHandler handler);
 extern fn int raise(int sig);
@@ -66,6 +71,11 @@ struct TimeSpec {
 
 
 module signal @if(env::LINUX);
+
+// sigprocmask / pthread_sigmask how argument
+const int SIG_BLOCK   = 0; // Block signals in set
+const int SIG_UNBLOCK = 1; // Unblock signals in set
+const int SIG_SETMASK = 2; // Set signal mask to set
 
 // Linux signal numbers
 const int SIGHUP = 1;     // Hangup
@@ -183,7 +193,7 @@ const int POLL_HUP = 6; // Device disconnected
 
 // Signal set type
 struct SigSet {
-    ulong[16] __val;  // 1024 bits for signal mask
+    char[128] __val;  // 128 bytes for signal mask
 }
 
 alias SigFn = fn void(int, SigInfo*, void*);
@@ -270,6 +280,11 @@ const int SIGEV_THREAD_ID = 4;
 
 
 module signal @if(env::DARWIN);
+
+// sigprocmask / pthread_sigmask how argument
+const int SIG_BLOCK   = 1; // Block signals in set
+const int SIG_UNBLOCK = 2; // Unblock signals in set
+const int SIG_SETMASK = 3; // Set signal mask to set
 
 // macOS/Darwin signal numbers
 const int SIGHUP = 1;
@@ -426,6 +441,11 @@ const int SIGEV_THREAD = 3;
 
 
 module signal @if(env::FREEBSD);
+
+// sigprocmask / pthread_sigmask how argument
+const int SIG_BLOCK   = 1; // Block signals in set
+const int SIG_UNBLOCK = 2; // Unblock signals in set
+const int SIG_SETMASK = 3; // Set signal mask to set
 
 // FreeBSD signal numbers
 const int SIGHUP = 1;
@@ -614,6 +634,11 @@ const int SIGEV_THREAD_ID = 4;
 
 module signal @if(env::NETBSD);
 
+// sigprocmask / pthread_sigmask how argument
+const int SIG_BLOCK   = 1; // Block signals in set
+const int SIG_UNBLOCK = 2; // Unblock signals in set
+const int SIG_SETMASK = 3; // Set signal mask to set
+
 // NetBSD signal numbers
 const int SIGHUP = 1;
 const int SIGINT = 2;
@@ -788,6 +813,11 @@ const int SIGEV_THREAD = 2;
 
 
 module signal @if(env::OPENBSD);
+
+// sigprocmask / pthread_sigmask how argument
+const int SIG_BLOCK   = 1; // Block signals in set
+const int SIG_UNBLOCK = 2; // Unblock signals in set
+const int SIG_SETMASK = 3; // Set signal mask to set
 
 // OpenBSD signal numbers
 const int SIGHUP = 1;

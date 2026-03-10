@@ -12,7 +12,7 @@ fn void? startup()
     if (net::__wsa_initialized) return;
     
     winsock2::WSAData wsa_data;
-    int result = winsock2::wsa_startup(0x0202, &wsa_data);
+    int result = winsock2::wsaStartup(0x0202, &wsa_data);
     if (result != 0) {
         return errno::F_SYSNOTREADY~;
     }
@@ -22,7 +22,7 @@ fn void? startup()
 fn void cleanup() 
 {
     if (net::__wsa_initialized) {
-        winsock2::wsa_cleanup();
+        winsock2::wsaCleanup();
         net::__wsa_initialized = false;
     }
 }

@@ -1,8 +1,11 @@
-// winsock2.h.c3 
+// winsock2.h.c3
+
 module winsock2 @if(env::WIN32);
 
 // Windows Socket API 2
 // C3 mapping for winsock2.h
+
+import winbase;
 
 // Common Windows types
 alias Handle = void*;
@@ -193,13 +196,44 @@ const uint INADDR_NONE = 0xFFFFFFFF;
 
 // IO control codes
 const uint FIONREAD = 0x4004667F;
-const uint FIONBIO = 0x8004667E;
+const uint FIONBIO  = 0x8004667E;
 const uint FIOASYNC = 0x8004667D;
 const uint SIOCSHIWAT = 0x80047300;
 const uint SIOCGHIWAT = 0x40047301;
 const uint SIOCSLOWAT = 0x80047302;
 const uint SIOCGLOWAT = 0x40047303;
 const uint SIOCATMARK = 0x40047307;
+
+const uint IOC_VOID     = 0x20000000;
+const uint IOC_OUT      = 0x40000000;
+const uint IOC_IN       = 0x80000000;
+const uint IOC_INOUT    = 0xC0000000; // IOC_IN | IOC_OUT
+const uint IOC_WS2      = 0x08000000;
+const uint IOC_PROTOCOL = 0x10000000;
+const uint IOC_VENDOR   = 0x18000000;
+
+const uint SIO_ASSOCIATE_HANDLE              = 0x88000001; // _WSAIOW(IOC_WS2,1)
+const uint SIO_ENABLE_CIRCULAR_QUEUEING      = 0x28000002; // _WSAIO (IOC_WS2,2)
+const uint SIO_FIND_ROUTE                    = 0x48000003; // _WSAIOR(IOC_WS2,3)
+const uint SIO_FLUSH                         = 0x28000004; // _WSAIO (IOC_WS2,4)
+const uint SIO_GET_BROADCAST_ADDRESS         = 0x48000005; // _WSAIOR(IOC_WS2,5)
+const uint SIO_GET_EXTENSION_FUNCTION_POINTER = 0xC8000006; // _WSAIORW(IOC_WS2,6)
+const uint SIO_GET_QOS                       = 0xC8000007; // _WSAIORW(IOC_WS2,7)
+const uint SIO_GET_GROUP_QOS                 = 0xC8000008; // _WSAIORW(IOC_WS2,8)
+const uint SIO_MULTIPOINT_LOOPBACK           = 0x88000009; // _WSAIOW (IOC_WS2,9)
+const uint SIO_MULTICAST_SCOPE               = 0x8800000A; // _WSAIOW (IOC_WS2,10)
+const uint SIO_SET_QOS                       = 0x8800000B; // _WSAIOW (IOC_WS2,11)
+const uint SIO_SET_GROUP_QOS                 = 0x8800000C; // _WSAIOW (IOC_WS2,12)
+const uint SIO_TRANSLATE_HANDLE              = 0xC800000D; // _WSAIORW(IOC_WS2,13)
+const uint SIO_ROUTING_INTERFACE_QUERY       = 0xC8000014; // _WSAIORW(IOC_WS2,20)
+const uint SIO_ROUTING_INTERFACE_CHANGE      = 0x88000015; // _WSAIOW (IOC_WS2,21)
+const uint SIO_ADDRESS_LIST_QUERY            = 0x48000016; // _WSAIOR (IOC_WS2,22)
+const uint SIO_ADDRESS_LIST_CHANGE           = 0x28000017; // _WSAIO  (IOC_WS2,23)
+const uint SIO_QUERY_TARGET_PNP_HANDLE       = 0x48000018; // _WSAIOR (IOC_WS2,24)
+const uint SIO_NSP_NOTIFY_CHANGE             = 0x88000019; // _WSAIOW (IOC_WS2,25)
+const uint SIO_UDP_CONNRESET                 = 0x9800000C; // _WSAIOW (IOC_VENDOR,12) — UDP ConnReset
+const uint SIO_KEEPALIVE_VALS                = 0x98000004; // _WSAIOW (IOC_VENDOR,4)
+const uint SIO_LOOPBACK_FAST_PATH            = 0x9800000B; // _WSAIOW (IOC_VENDOR,16)
 
 // WSA constants
 const int WSADESCRIPTION_LEN = 256;
@@ -336,13 +370,13 @@ struct FdSet {
 }
 
 struct WSAData {
-    ushort w_version;
-    ushort w_high_version;
-    char[WSADESCRIPTION_LEN + 1] sz_description;
-    char[WSASYS_STATUS_LEN + 1] sz_system_status;
-    ushort i_max_sockets;
-    ushort i_max_udp_dg;
-    char* lp_vendor_info;
+    ushort wVersion;
+    ushort wHighVersion;
+    char[WSADESCRIPTION_LEN + 1] szDescription;
+    char[WSASYS_STATUS_LEN + 1] szSystemStatus;
+    ushort iMaxSockets;
+    ushort iMaxUdpDg;
+    char* lpVendorInfo;
 }
 
 struct WSABuf {
@@ -352,31 +386,20 @@ struct WSABuf {
 
 struct WSAMsg {
     SockAddr* name;
-    int name_len;
+    int nameLen;
     WSABuf* buffers;
-    ULong buffer_count;
+    ULong bufferCount;
     WSABuf control;
     ULong flags;
 }
 
 struct QoS {
-    void* sending_flowspec;
-    void* receiving_flowspec;
-    WSABuf provider_specific;
+    void* sendingFlowSpec;
+    void* receivingFlowSpec;
+    WSABuf providerSpecific;
 }
 
-struct WSAOverlapped {
-    ULongPtr internal;
-    ULongPtr internal_high;
-    union u {
-        struct s {
-            DWord offset;
-            DWord offset_high;
-        } 
-        PVoid pointer;
-    } 
-    Handle event;
-}
+alias WSAOverlapped = winbase::Overlapped;
 
 alias WSAOverlappedCompletionRoutine = fn void(
     DWord error,
@@ -388,7 +411,7 @@ alias WSAOverlappedCompletionRoutine = fn void(
 // Core Socket Functions
 extern fn Socket socket(int af, int type, int protocol) @cname("socket");
 
-extern fn Socket wsa_socket_a(
+extern fn Socket wsaSocketA(
     int af,
     int type,
     int protocol,
@@ -397,7 +420,7 @@ extern fn Socket wsa_socket_a(
     DWord flags
 ) @cname("WSASocketA");
 
-extern fn Socket wsa_socket_w(
+extern fn Socket wsaSocketW(
     int af,
     int type,
     int protocol,
@@ -414,7 +437,7 @@ extern fn int listen(Socket s, int backlog) @cname("listen");
 
 extern fn Socket accept(Socket s, SockAddr* addr, int* addrlen) @cname("accept");
 
-extern fn Socket wsa_accept(
+extern fn Socket wsaAccept(
     Socket s,
     SockAddr* addr,
     int* addrlen,
@@ -424,7 +447,7 @@ extern fn Socket wsa_accept(
 
 extern fn int connect(Socket s, SockAddr* name, int namelen) @cname("connect");
 
-extern fn int wsa_connect(
+extern fn int wsaConnect(
     Socket s,
     SockAddr* name,
     int namelen,
@@ -445,7 +468,7 @@ extern fn int sendto(
     int tolen
 ) @cname("sendto");
 
-extern fn int wsa_send(
+extern fn int wsaSend(
     Socket s,
     WSABuf* buffers,
     DWord buffer_count,
@@ -455,7 +478,7 @@ extern fn int wsa_send(
     WSAOverlappedCompletionRoutine completion_routine
 ) @cname("WSASend");
 
-extern fn int wsa_send_to(
+extern fn int wsaSendTo(
     Socket s,
     WSABuf* buffers,
     DWord buffer_count,
@@ -467,7 +490,7 @@ extern fn int wsa_send_to(
     WSAOverlappedCompletionRoutine completion_routine
 ) @cname("WSASendTo");
 
-extern fn int wsa_send_msg(
+extern fn int wsaSendMsg(
     Socket s,
     WSAMsg* msg,
     DWord flags,
@@ -487,7 +510,7 @@ extern fn int recvfrom(
     int* fromlen
 ) @cname("recvfrom");
 
-extern fn int wsa_recv(
+extern fn int wsaRecv(
     Socket s,
     WSABuf* buffers,
     DWord buffer_count,
@@ -497,7 +520,7 @@ extern fn int wsa_recv(
     WSAOverlappedCompletionRoutine completion_routine
 ) @cname("WSARecv");
 
-extern fn int wsa_recv_from(
+extern fn int wsaRecvFrom(
     Socket s,
     WSABuf* buffers,
     DWord buffer_count,
@@ -509,7 +532,7 @@ extern fn int wsa_recv_from(
     WSAOverlappedCompletionRoutine completion_routine
 ) @cname("WSARecvFrom");
 
-extern fn int wsa_recv_msg(
+extern fn int wsaRecvMsg(
     Socket s,
     WSAMsg* msg,
     DWord* bytes_received,
@@ -520,13 +543,15 @@ extern fn int wsa_recv_msg(
 extern fn int shutdown(Socket s, int how) @cname("shutdown");
 
 // Socket Options
-extern fn int getsockopt(
+extern fn int _assertopt(
     Socket s,
     int level,
     int optname,
     char* optval,
     int* optlen
-) @cname("getsockopt");
+) @cname("_assertopt");
+
+extern fn int getsockopt(Socket s, int level, int optname, char* optval, int* optlen) @cname("getsockopt");
 
 extern fn int setsockopt(
     Socket s,
@@ -536,14 +561,14 @@ extern fn int setsockopt(
     int optlen
 ) @cname("setsockopt");
 
-extern fn int getsockname(Socket s, SockAddr* name, int* namelen) @cname("getsockname");
+extern fn int _assertname(Socket s, SockAddr* name, int* namelen) @cname("_assertname");
 
 extern fn int getpeername(Socket s, SockAddr* name, int* namelen) @cname("getpeername");
 
 // I/O Control
 extern fn int ioctlsocket(Socket s, uint cmd, ULong* argp) @cname("ioctlsocket");
 
-extern fn int wsa_ioctl(
+extern fn int wsaIoctl(
     Socket s,
     DWord io_control_code,
     PVoid in_buffer,
@@ -564,41 +589,41 @@ extern fn int select(
     TimeVal* timeout
 ) @cname("select");
 
-extern fn int wsa_poll(
+extern fn int wsaPoll(
     void* fds,
     ULong fds_count,
     int timeout
 ) @cname("WSAPoll");
 
 // WSA Initialization
-extern fn int wsa_startup(ushort version_required, WSAData* wsa_data) @cname("WSAStartup");
+extern fn int wsaStartup(ushort version_required, WSAData* wsa_data) @cname("WSAStartup");
 
-extern fn int wsa_cleanup() @cname("WSACleanup");
+extern fn int wsaCleanup() @cname("WSACleanup");
 
-extern fn int wsa_get_last_error() @cname("WSAGetLastError");
+extern fn int wsaGetLastError() @cname("WSAGetLastError");
 
-extern fn void wsa_set_last_error(int error) @cname("WSASetLastError");
+extern fn void wsaSetLastError(int error) @cname("WSASetLastError");
 
 // Address Resolution
-extern fn int getaddrinfo(
+extern fn int getAddrInfo(
     char* node_name,
     char* service_name,
     AddrInfo* hints,
     AddrInfo** result
-) @cname("getaddrinfo");
+) @cname("getAddrInfo");
 
-extern fn int get_addr_info_w(
+extern fn int getAddrInfoW(
     short* node_name,
     short* service_name,
     AddrInfoW* hints,
     AddrInfoW** result
 ) @cname("GetAddrInfoW");
 
-extern fn void freeaddrinfo(AddrInfo* ai) @cname("freeaddrinfo");
+extern fn void freeAddrInfo(AddrInfo* ai) @cname("FreeAddrInfo");
 
-extern fn void free_addr_info_w(AddrInfoW* ai) @cname("FreeAddrInfoW");
+extern fn void freeAddrInfoW(AddrInfoW* ai) @cname("FreeAddrInfoW");
 
-extern fn int getnameinfo(
+extern fn int getNameInfo(
     SockAddr* sa,
     int salen,
     char* host,
@@ -606,9 +631,9 @@ extern fn int getnameinfo(
     char* serv,
     DWord servlen,
     int flags
-) @cname("getnameinfo");
+) @cname("GetNameInfo");
 
-extern fn int get_name_info_w(
+extern fn int getNameInfoW(
     SockAddr* sa,
     int salen,
     short* host,
@@ -652,15 +677,15 @@ extern fn int inet_pton(int family, char* src, PVoid dst) @cname("inet_pton");
 extern fn char* inet_ntop(int family, PVoid src, char* dst, ulong size) @cname("inet_ntop");
 
 // Event handling
-extern fn Handle wsa_create_event() @cname("WSACreateEvent");
+extern fn Handle wsaCreateEvent() @cname("WSACreateEvent");
 
-extern fn Bool wsa_close_event(Handle event) @cname("WSACloseEvent");
+extern fn Bool wsaCloseEvent(Handle event) @cname("WSACloseEvent");
 
-extern fn Bool wsa_set_event(Handle event) @cname("WSASetEvent");
+extern fn Bool wsaSetEvent(Handle event) @cname("WSASetEvent");
 
-extern fn Bool wsa_reset_event(Handle event) @cname("WSAResetEvent");
+extern fn Bool wsaResetEvent(Handle event) @cname("WSAResetEvent");
 
-extern fn DWord wsa_wait_for_multiple_events(
+extern fn DWord wsaWaitForMultipleEvents(
     DWord count,
     Handle* events,
     Bool wait_all,
@@ -670,21 +695,21 @@ extern fn DWord wsa_wait_for_multiple_events(
 
 extern fn int wsa_event_select(Socket s, Handle event, int network_events) @cname("WSAEventSelect");
 
-extern fn int wsa_enum_network_events(
+extern fn int wsaEnumNetworkEvents(
     Socket s,
     Handle event,
     void* network_events
 ) @cname("WSAEnumNetworkEvents");
 
 // Asynchronous operations
-extern fn int wsa_async_select(
+extern fn int wsaAsyncSelect(
     Socket s,
     Handle hwnd,
     uint msg,
     int event
 ) @cname("WSAAsyncSelect");
 
-extern fn Handle wsa_async_get_host_by_name(
+extern fn Handle wsaAsyncGetHostByName(
     Handle hwnd,
     uint msg,
     char* name,
@@ -692,7 +717,7 @@ extern fn Handle wsa_async_get_host_by_name(
     int buflen
 ) @cname("WSAAsyncGetHostByName");
 
-extern fn Handle wsa_async_get_host_by_addr(
+extern fn Handle wsaAsyncGetHostByaddr(
     Handle hwnd,
     uint msg,
     char* addr,
@@ -702,9 +727,9 @@ extern fn Handle wsa_async_get_host_by_addr(
     int buflen
 ) @cname("WSAAsyncGetHostByAddr");
 
-extern fn int wsa_cancel_async_request(Handle async_task_handle) @cname("WSACancelAsyncRequest");
+extern fn int wsaCancelAsyncRequest(Handle async_task_handle) @cname("WSACancelAsyncRequest");
 
-extern fn int wsa_cancel_blocking_call() @cname("WSACancelBlockingCall");
+extern fn int wsaCancelBlockingCall() @cname("WSACancelBlockingCall");
 
 // FD_SET macros as functions (since C3 doesn't have macros)
 extern fn void fd_clr(Socket fd, FdSet* set);
@@ -810,3 +835,11 @@ const int WSAHOST_NOT_FOUND = 11001;
 const int WSATRY_AGAIN = 11002;
 const int WSANO_RECOVERY = 11003;
 const int WSANO_DATA = 11004;
+
+const int WSA_IO_INCOMPLETE      = 996;   // ERROR_IO_INCOMPLETE
+const int WSA_IO_PENDING         = 997;   // ERROR_IO_PENDING
+const uint WSA_WAIT_FAILED       = 0xFFFFFFFF; // WAIT_FAILED
+const uint WSA_WAIT_EVENT_0      = 0x00000000; // WAIT_OBJECT_0
+const uint WSA_WAIT_IO_COMPLETION = 0x000000C0; // WAIT_IO_COMPLETION
+const uint WSA_WAIT_TIMEOUT      = 258;         // WAIT_TIMEOUT
+const uint WSA_INFINITE          = 0xFFFFFFFF;  // INFINITE

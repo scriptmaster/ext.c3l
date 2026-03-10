@@ -9,10 +9,10 @@ import windows;
 // =======================================
 
 // Completion routine for asynchronous I/O operations
-alias LpoverlappedCompletionRoutine = fn void(Dword dwErrorCode, Dword dwNumberOfBytesTransfered, Overlapped* lpOverlapped);
+alias LpoverlappedCompletionRoutine = fn void(DWord dwErrorCode, DWord dwNumberOfBytesTransfered, Overlapped* lpOverlapped);
 
 // Progress routine for file copy operations
-alias LpprogressRoutine = fn Dword(LongLong totalFileSize, LongLong totalBytesTransferred, LongLong streamSize, LongLong streamBytesTransferred, Dword dwStreamNumber, Dword dwCallbackReason, Handle hSourceFile, Handle hDestinationFile, LPVoid lpData);
+alias LpprogressRoutine = fn DWord(LongLong totalFileSize, LongLong totalBytesTransferred, LongLong streamSize, LongLong streamBytesTransferred, DWord dwStreamNumber, DWord dwCallbackReason, Handle hSourceFile, Handle hDestinationFile, LPVoid lpData);
 
 // =======================================
 // File API Constants
@@ -22,125 +22,125 @@ alias LpprogressRoutine = fn Dword(LongLong totalFileSize, LongLong totalBytesTr
 const int MAX_PATH = 260;
 
 // File access rights
-const Dword FILE_READ_DATA = 0x0001;
-const Dword FILE_LIST_DIRECTORY = 0x0001;
-const Dword FILE_WRITE_DATA = 0x0002;
-const Dword FILE_ADD_FILE = 0x0002;
-const Dword FILE_APPEND_DATA = 0x0004;
-const Dword FILE_ADD_SUBDIRECTORY = 0x0004;
-const Dword FILE_CREATE_PIPE_INSTANCE = 0x0004;
-const Dword FILE_READ_EA = 0x0008;
-const Dword FILE_WRITE_EA = 0x0010;
-const Dword FILE_EXECUTE = 0x0020;
-const Dword FILE_TRAVERSE = 0x0020;
-const Dword FILE_DELETE_CHILD = 0x0040;
-const Dword FILE_READ_ATTRIBUTES = 0x0080;
-const Dword FILE_WRITE_ATTRIBUTES = 0x0100;
+const DWord FILE_READ_DATA = 0x0001;
+const DWord FILE_LIST_DIRECTORY = 0x0001;
+const DWord FILE_WRITE_DATA = 0x0002;
+const DWord FILE_ADD_FILE = 0x0002;
+const DWord FILE_APPEND_DATA = 0x0004;
+const DWord FILE_ADD_SUBDIRECTORY = 0x0004;
+const DWord FILE_CREATE_PIPE_INSTANCE = 0x0004;
+const DWord FILE_READ_EA = 0x0008;
+const DWord FILE_WRITE_EA = 0x0010;
+const DWord FILE_EXECUTE = 0x0020;
+const DWord FILE_TRAVERSE = 0x0020;
+const DWord FILE_DELETE_CHILD = 0x0040;
+const DWord FILE_READ_ATTRIBUTES = 0x0080;
+const DWord FILE_WRITE_ATTRIBUTES = 0x0100;
 
 // Standard access rights
-const Dword DELETE = 0x00010000;
-const Dword READ_CONTROL = 0x00020000;
-const Dword WRITE_DAC = 0x00040000;
-const Dword WRITE_OWNER = 0x00080000;
-const Dword SYNCHRONIZE = 0x00100000;
-const Dword STANDARD_RIGHTS_REQUIRED = 0x000F0000;
-const Dword STANDARD_RIGHTS_READ = READ_CONTROL;
-const Dword STANDARD_RIGHTS_WRITE = READ_CONTROL;
-const Dword STANDARD_RIGHTS_EXECUTE = READ_CONTROL;
-const Dword STANDARD_RIGHTS_ALL = 0x001F0000;
+const DWord DELETE = 0x00010000;
+const DWord READ_CONTROL = 0x00020000;
+const DWord WRITE_DAC = 0x00040000;
+const DWord WRITE_OWNER = 0x00080000;
+const DWord SYNCHRONIZE = 0x00100000;
+const DWord STANDARD_RIGHTS_REQUIRED = 0x000F0000;
+const DWord STANDARD_RIGHTS_READ = READ_CONTROL;
+const DWord STANDARD_RIGHTS_WRITE = READ_CONTROL;
+const DWord STANDARD_RIGHTS_EXECUTE = READ_CONTROL;
+const DWord STANDARD_RIGHTS_ALL = 0x001F0000;
 
 // File-specific access rights
-const Dword FILE_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x1FF;
-const Dword FILE_GENERIC_READ = STANDARD_RIGHTS_READ | FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE;
-const Dword FILE_GENERIC_WRITE = STANDARD_RIGHTS_WRITE | FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | FILE_APPEND_DATA | SYNCHRONIZE;
-const Dword FILE_GENERIC_EXECUTE = STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE;
+const DWord FILE_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x1FF;
+const DWord FILE_GENERIC_READ = STANDARD_RIGHTS_READ | FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE;
+const DWord FILE_GENERIC_WRITE = STANDARD_RIGHTS_WRITE | FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | FILE_APPEND_DATA | SYNCHRONIZE;
+const DWord FILE_GENERIC_EXECUTE = STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE;
 
 // File notification flags
-const Dword FILE_NOTIFY_CHANGE_FILE_NAME = 0x00000001;
-const Dword FILE_NOTIFY_CHANGE_DIR_NAME = 0x00000002;
-const Dword FILE_NOTIFY_CHANGE_ATTRIBUTES = 0x00000004;
-const Dword FILE_NOTIFY_CHANGE_SIZE = 0x00000008;
-const Dword FILE_NOTIFY_CHANGE_LAST_WRITE = 0x00000010;
-const Dword FILE_NOTIFY_CHANGE_LAST_ACCESS = 0x00000020;
-const Dword FILE_NOTIFY_CHANGE_CREATION = 0x00000040;
-const Dword FILE_NOTIFY_CHANGE_SECURITY = 0x00000100;
+const DWord FILE_NOTIFY_CHANGE_FILE_NAME = 0x00000001;
+const DWord FILE_NOTIFY_CHANGE_DIR_NAME = 0x00000002;
+const DWord FILE_NOTIFY_CHANGE_ATTRIBUTES = 0x00000004;
+const DWord FILE_NOTIFY_CHANGE_SIZE = 0x00000008;
+const DWord FILE_NOTIFY_CHANGE_LAST_WRITE = 0x00000010;
+const DWord FILE_NOTIFY_CHANGE_LAST_ACCESS = 0x00000020;
+const DWord FILE_NOTIFY_CHANGE_CREATION = 0x00000040;
+const DWord FILE_NOTIFY_CHANGE_SECURITY = 0x00000100;
 
 // File action types
-const Dword FILE_ACTION_ADDED = 0x00000001;
-const Dword FILE_ACTION_REMOVED = 0x00000002;
-const Dword FILE_ACTION_MODIFIED = 0x00000003;
-const Dword FILE_ACTION_RENAMED_OLD_NAME = 0x00000004;
-const Dword FILE_ACTION_RENAMED_NEW_NAME = 0x00000005;
+const DWord FILE_ACTION_ADDED = 0x00000001;
+const DWord FILE_ACTION_REMOVED = 0x00000002;
+const DWord FILE_ACTION_MODIFIED = 0x00000003;
+const DWord FILE_ACTION_RENAMED_OLD_NAME = 0x00000004;
+const DWord FILE_ACTION_RENAMED_NEW_NAME = 0x00000005;
 
 // File type constants
-const Dword FILE_TYPE_UNKNOWN = 0x0000;
-const Dword FILE_TYPE_DISK = 0x0001;
-const Dword FILE_TYPE_CHAR = 0x0002;
-const Dword FILE_TYPE_PIPE = 0x0003;
-const Dword FILE_TYPE_REMOTE = 0x8000;
+const DWord FILE_TYPE_UNKNOWN = 0x0000;
+const DWord FILE_TYPE_DISK = 0x0001;
+const DWord FILE_TYPE_CHAR = 0x0002;
+const DWord FILE_TYPE_PIPE = 0x0003;
+const DWord FILE_TYPE_REMOTE = 0x8000;
 
 // Volume flags
-const Dword FILE_CASE_SENSITIVE_SEARCH = 0x00000001;
-const Dword FILE_CASE_PRESERVED_NAMES = 0x00000002;
-const Dword FILE_UNICODE_ON_DISK = 0x00000004;
-const Dword FILE_PERSISTENT_ACLS = 0x00000008;
-const Dword FILE_FILE_COMPRESSION = 0x00000010;
-const Dword FILE_VOLUME_QUOTAS = 0x00000020;
-const Dword FILE_SUPPORTS_SPARSE_FILES = 0x00000040;
-const Dword FILE_SUPPORTS_REPARSE_POINTS = 0x00000080;
-const Dword FILE_SUPPORTS_REMOTE_STORAGE = 0x00000100;
-const Dword FILE_VOLUME_IS_COMPRESSED = 0x00008000;
-const Dword FILE_SUPPORTS_OBJECT_IDS = 0x00010000;
-const Dword FILE_SUPPORTS_ENCRYPTION = 0x00020000;
-const Dword FILE_NAMED_STREAMS = 0x00040000;
-const Dword FILE_READ_ONLY_VOLUME = 0x00080000;
-const Dword FILE_SEQUENTIAL_WRITE_ONCE = 0x00100000;
-const Dword FILE_SUPPORTS_TRANSACTIONS = 0x00200000;
-const Dword FILE_SUPPORTS_HARD_LINKS = 0x00400000;
-const Dword FILE_SUPPORTS_EXTENDED_ATTRIBUTES = 0x00800000;
-const Dword FILE_SUPPORTS_OPEN_BY_FILE_ID = 0x01000000;
-const Dword FILE_SUPPORTS_USN_JOURNAL = 0x02000000;
+const DWord FILE_CASE_SENSITIVE_SEARCH = 0x00000001;
+const DWord FILE_CASE_PRESERVED_NAMES = 0x00000002;
+const DWord FILE_UNICODE_ON_DISK = 0x00000004;
+const DWord FILE_PERSISTENT_ACLS = 0x00000008;
+const DWord FILE_FILE_COMPRESSION = 0x00000010;
+const DWord FILE_VOLUME_QUOTAS = 0x00000020;
+const DWord FILE_SUPPORTS_SPARSE_FILES = 0x00000040;
+const DWord FILE_SUPPORTS_REPARSE_POINTS = 0x00000080;
+const DWord FILE_SUPPORTS_REMOTE_STORAGE = 0x00000100;
+const DWord FILE_VOLUME_IS_COMPRESSED = 0x00008000;
+const DWord FILE_SUPPORTS_OBJECT_IDS = 0x00010000;
+const DWord FILE_SUPPORTS_ENCRYPTION = 0x00020000;
+const DWord FILE_NAMED_STREAMS = 0x00040000;
+const DWord FILE_READ_ONLY_VOLUME = 0x00080000;
+const DWord FILE_SEQUENTIAL_WRITE_ONCE = 0x00100000;
+const DWord FILE_SUPPORTS_TRANSACTIONS = 0x00200000;
+const DWord FILE_SUPPORTS_HARD_LINKS = 0x00400000;
+const DWord FILE_SUPPORTS_EXTENDED_ATTRIBUTES = 0x00800000;
+const DWord FILE_SUPPORTS_OPEN_BY_FILE_ID = 0x01000000;
+const DWord FILE_SUPPORTS_USN_JOURNAL = 0x02000000;
 
 // Replace file flags
-const Dword REPLACEFILE_WRITE_THROUGH = 0x00000001;
-const Dword REPLACEFILE_IGNORE_MERGE_ERRORS = 0x00000002;
-const Dword REPLACEFILE_IGNORE_ACL_ERRORS = 0x00000004;
+const DWord REPLACEFILE_WRITE_THROUGH = 0x00000001;
+const DWord REPLACEFILE_IGNORE_MERGE_ERRORS = 0x00000002;
+const DWord REPLACEFILE_IGNORE_ACL_ERRORS = 0x00000004;
 
 // GetFinalPathNameByHandle flags
-const Dword FILE_NAME_NORMALIZED = 0x0;
-const Dword FILE_NAME_OPENED = 0x8;
-const Dword VOLUME_NAME_DOS = 0x0;
-const Dword VOLUME_NAME_GUID = 0x1;
-const Dword VOLUME_NAME_NT = 0x2;
-const Dword VOLUME_NAME_NONE = 0x4;
+const DWord FILE_NAME_NORMALIZED = 0x0;
+const DWord FILE_NAME_OPENED = 0x8;
+const DWord VOLUME_NAME_DOS = 0x0;
+const DWord VOLUME_NAME_GUID = 0x1;
+const DWord VOLUME_NAME_NT = 0x2;
+const DWord VOLUME_NAME_NONE = 0x4;
 
 // =======================================
 // File API Structures
 // =======================================
 struct Win32FileAttributeData {
-    Dword dwFileAttributes;
-    Dword ftCreationTime_low;
-    Dword ftCreationTime_high;
-    Dword ftLastAccessTime_low;
-    Dword ftLastAccessTime_high;
-    Dword ftLastWriteTime_low;
-    Dword ftLastWriteTime_high;
-    Dword nFileSizeHigh;
-    Dword nFileSizeLow;
+    DWord dwFileAttributes;
+    DWord ftCreationTime_low;
+    DWord ftCreationTime_high;
+    DWord ftLastAccessTime_low;
+    DWord ftLastAccessTime_high;
+    DWord ftLastWriteTime_low;
+    DWord ftLastWriteTime_high;
+    DWord nFileSizeHigh;
+    DWord nFileSizeLow;
 }
 
 struct Win32FindDataW {
-    Dword dwFileAttributes;
-    Dword ftCreationTime_low;
-    Dword ftCreationTime_high;
-    Dword ftLastAccessTime_low;
-    Dword ftLastAccessTime_high;
-    Dword ftLastWriteTime_low;
-    Dword ftLastWriteTime_high;
-    Dword nFileSizeHigh;
-    Dword nFileSizeLow;
-    Dword dwReserved0;
-    Dword dwReserved1;
+    DWord dwFileAttributes;
+    DWord ftCreationTime_low;
+    DWord ftCreationTime_high;
+    DWord ftLastAccessTime_low;
+    DWord ftLastAccessTime_high;
+    DWord ftLastWriteTime_low;
+    DWord ftLastWriteTime_high;
+    DWord nFileSizeHigh;
+    DWord nFileSizeLow;
+    DWord dwReserved0;
+    DWord dwReserved1;
     ushort[260] cFileName;
     ushort[14] cAlternateFileName;
 }
@@ -148,12 +148,12 @@ struct Win32FindDataW {
 
 // Overlapped structure for async I/O
 struct Overlapped {
-    DwordPtr internal;
-    DwordPtr internalHigh;
+    DWordPtr internal;
+    DWordPtr internalHigh;
     union {
         struct {
-            Dword offset;
-            Dword offsetHigh;
+            DWord offset;
+            DWord offsetHigh;
         }
         void* pointer;
     }
@@ -162,9 +162,9 @@ struct Overlapped {
 
 // File notify information
 struct FileNotifyInformation {
-    Dword nextEntryOffset;
-    Dword action;
-    Dword fileNameLength;
+    DWord nextEntryOffset;
+    DWord action;
+    DWord fileNameLength;
     WChar[1] fileName;
 }
 
@@ -174,21 +174,21 @@ struct FileBasicInfo {
     LongLong lastAccessTime;
     LongLong lastWriteTime;
     LongLong changeTime;
-    Dword fileAttributes;
+    DWord fileAttributes;
 }
 
 // File standard info
 struct FileStandardInfo {
     LongLong allocationSize;
     LongLong endOfFile;
-    Dword numberOfLinks;
+    DWord numberOfLinks;
     Bool deletePending;
     Bool directory;
 }
 
 // File name info
 struct FileNameInfo {
-    Dword fileNameLength;
+    DWord fileNameLength;
     WChar[1] fileName;
 }
 
@@ -196,7 +196,7 @@ struct FileNameInfo {
 struct FileRenameInfo {
     Bool replaceIfExists;
     Handle rootDirectory;
-    Dword fileNameLength;
+    DWord fileNameLength;
     WChar[1] fileName;
 }
 
@@ -217,8 +217,8 @@ struct FileEndOfFileInfo {
 
 // File stream info
 struct FileStreamInfo {
-    Dword nextEntryOffset;
-    Dword streamNameLength;
+    DWord nextEntryOffset;
+    DWord streamNameLength;
     LongLong streamSize;
     LongLong streamAllocationSize;
     WChar[1] streamName;
@@ -236,23 +236,23 @@ struct FileCompressionInfo {
 
 // File attribute tag info
 struct FileAttributeTagInfo {
-    Dword fileAttributes;
-    Dword reparseTag;
+    DWord fileAttributes;
+    DWord reparseTag;
 }
 
 // File ID both directory info
 struct FileIdBothDirInfo {
-    Dword nextEntryOffset;
-    Dword fileIndex;
+    DWord nextEntryOffset;
+    DWord fileIndex;
     LongLong creationTime;
     LongLong lastAccessTime;
     LongLong lastWriteTime;
     LongLong changeTime;
     LongLong endOfFile;
     LongLong allocationSize;
-    Dword fileAttributes;
-    Dword fileNameLength;
-    Dword eaSize;
+    DWord fileAttributes;
+    DWord fileNameLength;
+    DWord eaSize;
     char shortNameLength;
     WChar[12] shortName;
     LongLong fileId;
@@ -292,52 +292,52 @@ enum FileInfoByHandleClass : int {
 // File creation and opening
 extern fn Handle createFileA(
     LPCStr lpFileName, 
-    Dword dwDesiredAccess, 
-    Dword dwShareMode,
+    DWord dwDesiredAccess, 
+    DWord dwShareMode,
     void* lpSecurityAttributes, 
-    Dword dwCreationDisposition,
-    Dword dwFlagsAndAttributes, 
+    DWord dwCreationDisposition,
+    DWord dwFlagsAndAttributes, 
     Handle hTemplateFile
 ) @cname("CreateFileA");
 
 extern fn Handle createFileW(
     LPCWStr lpFileName, 
-    Dword dwDesiredAccess, 
-    Dword dwShareMode,
+    DWord dwDesiredAccess, 
+    DWord dwShareMode,
     void* lpSecurityAttributes, 
-    Dword dwCreationDisposition,
-    Dword dwFlagsAndAttributes, 
+    DWord dwCreationDisposition,
+    DWord dwFlagsAndAttributes, 
     Handle hTemplateFile
 ) @cname("CreateFileW");
 
 extern fn Handle createFile2(
     LPCWStr lpFileName, 
-    Dword dwDesiredAccess, 
-    Dword dwShareMode,
-    Dword dwCreationDisposition, 
+    DWord dwDesiredAccess, 
+    DWord dwShareMode,
+    DWord dwCreationDisposition, 
     void* pCreateExParams
 ) @cname("CreateFile2");
 
 extern fn Handle reopenFile(
     Handle hOriginalFile, 
-    Dword dwDesiredAccess, 
-    Dword dwShareMode,
-    Dword dwFlags
+    DWord dwDesiredAccess, 
+    DWord dwShareMode,
+    DWord dwFlags
 ) @cname("ReOpenFile");
 
 // File reading and writing
 extern fn Bool readFile(
     Handle hFile, 
     LPVoid lpBuffer, 
-    Dword nNumberOfBytesToRead,
-    Dword* lpNumberOfBytesRead, 
+    DWord nNumberOfBytesToRead,
+    DWord* lpNumberOfBytesRead, 
     Overlapped* lpOverlapped
 ) @cname("ReadFile");
 
 extern fn Bool readFileEx(
     Handle hFile, 
     LPVoid lpBuffer, 
-    Dword nNumberOfBytesToRead,
+    DWord nNumberOfBytesToRead,
     Overlapped* lpOverlapped, 
     LpoverlappedCompletionRoutine lpCompletionRoutine
 ) @cname("ReadFileEx");
@@ -345,38 +345,38 @@ extern fn Bool readFileEx(
 extern fn Bool writeFile(
     Handle hFile, 
     LPCVoid lpBuffer, 
-    Dword nNumberOfBytesToWrite,
-    Dword* lpNumberOfBytesWritten, 
+    DWord nNumberOfBytesToWrite,
+    DWord* lpNumberOfBytesWritten, 
     Overlapped* lpOverlapped
 ) @cname("WriteFile");
 
 extern fn Bool writeFileEx(
     Handle hFile, 
     LPCVoid lpBuffer, 
-    Dword nNumberOfBytesToWrite,
+    DWord nNumberOfBytesToWrite,
     Overlapped* lpOverlapped,
     LpoverlappedCompletionRoutine lpCompletionRoutine
 ) @cname("WriteFileEx");
 
 // File pointer manipulation
-extern fn Dword setFilePointer(
+extern fn DWord setFilePointer(
     Handle hFile, 
     Long lDistanceToMove, 
     Long* lpDistanceToMoveHigh,
-    Dword dwMoveMethod
+    DWord dwMoveMethod
 ) @cname("SetFilePointer");
 
 extern fn Bool setFilePointerEx(
     Handle hFile, 
     LongLong liDistanceToMove,
     LongLong* lpNewFilePointer, 
-    Dword dwMoveMethod
+    DWord dwMoveMethod
 ) @cname("SetFilePointerEx");
 
 // File size
-extern fn Dword getFileSize(
+extern fn DWord getFileSize(
     Handle hFile, 
-    Dword* lpFileSizeHigh
+    DWord* lpFileSizeHigh
 ) @cname("GetFileSize");
 
 extern fn Bool getFileSizeEx(
@@ -393,16 +393,16 @@ extern fn Bool setFileValidData(
 ) @cname("SetFileValidData");
 
 // File type
-extern fn Dword getFileType(
+extern fn DWord getFileType(
     Handle hFile
 ) @cname("GetFileType");
 
 // File attributes
-extern fn Dword getFileAttributesA(
+extern fn DWord getFileAttributesA(
     LPCStr lpFileName
 ) @cname("GetFileAttributesA");
 
-extern fn Dword getFileAttributesW(
+extern fn DWord getFileAttributesW(
     LPCWStr lpFileName
 ) @cname("GetFileAttributesW");
 
@@ -420,12 +420,12 @@ extern fn Bool getFileAttributesExW(
 
 extern fn Bool setFileAttributesA(
     LPCStr lpFileName, 
-    Dword dwFileAttributes
+    DWord dwFileAttributes
 ) @cname("SetFileAttributesA");
 
 extern fn Bool setFileAttributesW(
     LPCWStr lpFileName, 
-    Dword dwFileAttributes
+    DWord dwFileAttributes
 ) @cname("SetFileAttributesW");
 
 // File time
@@ -453,14 +453,14 @@ extern fn Bool getFileInformationByHandleEx(
     Handle hFile, 
     FileInfoByHandleClass fileInformationClass,
     LPVoid lpFileInformation, 
-    Dword dwBufferSize
+    DWord dwBufferSize
 ) @cname("GetFileInformationByHandleEx");
 
 extern fn Bool setFileInformationByHandle(
     Handle hFile, 
     FileInfoByHandleClass fileInformationClass,
     LPVoid lpFileInformation, 
-    Dword dwBufferSize
+    DWord dwBufferSize
 ) @cname("SetFileInformationByHandle");
 
 // File operations
@@ -490,7 +490,7 @@ extern fn Bool copyFileExA(
     LpprogressRoutine lpProgressRoutine,
     LPVoid lpData, 
     Bool* pbCancel, 
-    Dword dwCopyFlags
+    DWord dwCopyFlags
 ) @cname("CopyFileExA");
 
 extern fn Bool copyFileExW(
@@ -499,7 +499,7 @@ extern fn Bool copyFileExW(
     LpprogressRoutine lpProgressRoutine,
     LPVoid lpData, 
     Bool* pbCancel, 
-    Dword dwCopyFlags
+    DWord dwCopyFlags
 ) @cname("CopyFileExW");
 
 extern fn Bool moveFileA(
@@ -515,20 +515,20 @@ extern fn Bool moveFileW(
 extern fn Bool moveFileExA(
     LPCStr lpExistingFileName, 
     LPCStr lpNewFileName, 
-    Dword dwFlags
+    DWord dwFlags
 ) @cname("MoveFileExA");
 
 extern fn Bool moveFileExW(
     LPCWStr lpExistingFileName, 
     LPCWStr lpNewFileName, 
-    Dword dwFlags
+    DWord dwFlags
 ) @cname("MoveFileExW");
 
 extern fn Bool replaceFileA(
     LPCStr lpReplacedFileName, 
     LPCStr lpReplacementFileName,
     LPCStr lpBackupFileName, 
-    Dword dwReplaceFlags,
+    DWord dwReplaceFlags,
     LPVoid lpExclude, 
     LPVoid lpReserved
 ) @cname("ReplaceFileA");
@@ -537,7 +537,7 @@ extern fn Bool replaceFileW(
     LPCWStr lpReplacedFileName, 
     LPCWStr lpReplacementFileName,
     LPCWStr lpBackupFileName, 
-    Dword dwReplaceFlags,
+    DWord dwReplaceFlags,
     LPVoid lpExclude, 
     LPVoid lpReserved
 ) @cname("ReplaceFileW");
@@ -545,34 +545,34 @@ extern fn Bool replaceFileW(
 // File locking
 extern fn Bool lockFile(
     Handle hFile, 
-    Dword dwFileOffsetLow, 
-    Dword dwFileOffsetHigh,
-    Dword nNumberOfBytesToLockLow, 
-    Dword nNumberOfBytesToLockHigh
+    DWord dwFileOffsetLow, 
+    DWord dwFileOffsetHigh,
+    DWord nNumberOfBytesToLockLow, 
+    DWord nNumberOfBytesToLockHigh
 ) @cname("LockFile");
 
 extern fn Bool unlockFile(
     Handle hFile, 
-    Dword dwFileOffsetLow, 
-    Dword dwFileOffsetHigh,
-    Dword nNumberOfBytesToUnlockLow, 
-    Dword nNumberOfBytesToUnlockHigh
+    DWord dwFileOffsetLow, 
+    DWord dwFileOffsetHigh,
+    DWord nNumberOfBytesToUnlockLow, 
+    DWord nNumberOfBytesToUnlockHigh
 ) @cname("UnlockFile");
 
 extern fn Bool lockFileEx(
     Handle hFile, 
-    Dword dwFlags, 
-    Dword dwReserved,
-    Dword nNumberOfBytesToLockLow, 
-    Dword nNumberOfBytesToLockHigh,
+    DWord dwFlags, 
+    DWord dwReserved,
+    DWord nNumberOfBytesToLockLow, 
+    DWord nNumberOfBytesToLockHigh,
     Overlapped* lpOverlapped
 ) @cname("LockFileEx");
 
 extern fn Bool unlockFileEx(
     Handle hFile, 
-    Dword dwReserved,
-    Dword nNumberOfBytesToUnlockLow, 
-    Dword nNumberOfBytesToUnlockHigh,
+    DWord dwReserved,
+    DWord nNumberOfBytesToUnlockLow, 
+    DWord nNumberOfBytesToUnlockHigh,
     Overlapped* lpOverlapped
 ) @cname("UnlockFileEx");
 
@@ -580,39 +580,39 @@ extern fn Bool unlockFileEx(
 extern fn Bool flushFileBuffers(Handle hFile) @cname("FlushFileBuffers");
 
 // File path operations
-extern fn Dword getFullPathNameA(
+extern fn DWord getFullPathNameA(
     LPCStr lpFileName, 
-    Dword nBufferLength, 
+    DWord nBufferLength, 
     LPStr lpBuffer,
     LPStr* lpFilePart
 ) @cname("GetFullPathNameA");
 
-extern fn Dword getFullPathNameW(
+extern fn DWord getFullPathNameW(
     LPCWStr lpFileName, 
-    Dword nBufferLength, 
+    DWord nBufferLength, 
     LPWStr lpBuffer,
     LPWStr* lpFilePart
 ) @cname("GetFullPathNameW");
 
-extern fn Dword getFinalPathNameByHandleA(
+extern fn DWord getFinalPathNameByHandleA(
     Handle hFile, 
     LPStr lpszFilePath, 
-    Dword cchFilePath,
-    Dword dwFlags
+    DWord cchFilePath,
+    DWord dwFlags
 ) @cname("GetFinalPathNameByHandleA");
 
-extern fn Dword getFinalPathNameByHandleW(
+extern fn DWord getFinalPathNameByHandleW(
     Handle hFile, 
     LPWStr lpszFilePath, 
-    Dword cchFilePath,
-    Dword dwFlags
+    DWord cchFilePath,
+    DWord dwFlags
 ) @cname("GetFinalPathNameByHandleW");
 
-extern fn Dword getLongPathNameA(LPCStr lpszShortPath, LPStr lpszLongPath, Dword cchBuffer) @cname("GetLongPathNameA");
-extern fn Dword getLongPathNameW(LPCWStr lpszShortPath, LPWStr lpszLongPath, Dword cchBuffer) @cname("GetLongPathNameW");
+extern fn DWord getLongPathNameA(LPCStr lpszShortPath, LPStr lpszLongPath, DWord cchBuffer) @cname("GetLongPathNameA");
+extern fn DWord getLongPathNameW(LPCWStr lpszShortPath, LPWStr lpszLongPath, DWord cchBuffer) @cname("GetLongPathNameW");
 
-extern fn Dword getShortPathNameA(LPCStr lpszLongPath, LPStr lpszShortPath, Dword cchBuffer) @cname("GetShortPathNameA");
-extern fn Dword getShortPathNameW(LPCWStr lpszLongPath, LPWStr lpszShortPath, Dword cchBuffer) @cname("GetShortPathNameW");
+extern fn DWord getShortPathNameA(LPCStr lpszLongPath, LPStr lpszShortPath, DWord cchBuffer) @cname("GetShortPathNameA");
+extern fn DWord getShortPathNameW(LPCWStr lpszLongPath, LPWStr lpszShortPath, DWord cchBuffer) @cname("GetShortPathNameW");
 
 // Directory operations
 extern fn Bool createDirectoryA(LPCStr lpPathName, void* lpSecurityAttributes) @cname("CreateDirectoryA");
@@ -633,8 +633,8 @@ extern fn Bool createDirectoryExW(
 extern fn Bool removeDirectoryA(LPCStr lpPathName) @cname("RemoveDirectoryA");
 extern fn Bool removeDirectoryW(LPCWStr lpPathName) @cname("RemoveDirectoryW");
 
-extern fn Dword getCurrentDirectoryA(Dword nBufferLength, LPStr lpBuffer) @cname("GetCurrentDirectoryA");
-extern fn Dword getCurrentDirectoryW(Dword nBufferLength, LPWStr lpBuffer) @cname("GetCurrentDirectoryW");
+extern fn DWord getCurrentDirectoryA(DWord nBufferLength, LPStr lpBuffer) @cname("GetCurrentDirectoryA");
+extern fn DWord getCurrentDirectoryW(DWord nBufferLength, LPWStr lpBuffer) @cname("GetCurrentDirectoryW");
 
 extern fn Bool setCurrentDirectoryA(LPCStr lpPathName) @cname("SetCurrentDirectoryA");
 extern fn Bool setCurrentDirectoryW(LPCWStr lpPathName) @cname("SetCurrentDirectoryW");
@@ -656,7 +656,7 @@ extern fn Handle findFirstFileExA(
     LPVoid lpFindFileData,
     int fSearchOp, 
     LPVoid lpSearchFilter, 
-    Dword dwAdditionalFlags
+    DWord dwAdditionalFlags
 ) @cname("FindFirstFileExA");
 
 extern fn Handle findFirstFileExW(
@@ -665,7 +665,7 @@ extern fn Handle findFirstFileExW(
     LPVoid lpFindFileData,
     int fSearchOp, 
     LPVoid lpSearchFilter, 
-    Dword dwAdditionalFlags
+    DWord dwAdditionalFlags
 ) @cname("FindFirstFileExW");
 
 extern fn Bool findNextFileA(
@@ -684,13 +684,13 @@ extern fn Bool findClose(Handle hFindFile) @cname("FindClose");
 extern fn Handle findFirstChangeNotificationA(
     LPCStr lpPathName, 
     Bool bWatchSubtree,
-    Dword dwNotifyFilter
+    DWord dwNotifyFilter
 ) @cname("FindFirstChangeNotificationA");
 
 extern fn Handle findFirstChangeNotificationW(
     LPCWStr lpPathName, 
     Bool bWatchSubtree,
-    Dword dwNotifyFilter
+    DWord dwNotifyFilter
 ) @cname("FindFirstChangeNotificationW");
 
 extern fn Bool findNextChangeNotification(
@@ -704,10 +704,10 @@ extern fn Bool findCloseChangeNotification(
 extern fn Bool readDirectoryChangesW(
     Handle hDirectory, 
     LPVoid lpBuffer, 
-    Dword nBufferLength,
+    DWord nBufferLength,
     Bool bWatchSubtree, 
-    Dword dwNotifyFilter,
-    Dword* lpBytesReturned, 
+    DWord dwNotifyFilter,
+    DWord* lpBytesReturned, 
     Overlapped* lpOverlapped,
     LpoverlappedCompletionRoutine lpCompletionRoutine
 ) @cname("ReadDirectoryChangesW");
@@ -716,89 +716,89 @@ extern fn Bool readDirectoryChangesW(
 extern fn Bool getVolumeInformationA(
     LPCStr lpRootPathName, 
     LPStr lpVolumeNameBuffer,
-    Dword nVolumeNameSize, 
-    Dword* lpVolumeSerialNumber,
-    Dword* lpMaximumComponentLength, 
-    Dword* lpFileSystemFlags,
+    DWord nVolumeNameSize, 
+    DWord* lpVolumeSerialNumber,
+    DWord* lpMaximumComponentLength, 
+    DWord* lpFileSystemFlags,
     LPStr lpFileSystemNameBuffer, 
-    Dword nFileSystemNameSize
+    DWord nFileSystemNameSize
 ) @cname("GetVolumeInformationA");
 
 extern fn Bool getVolumeInformationW(
     LPCWStr lpRootPathName, 
     LPWStr lpVolumeNameBuffer,
-    Dword nVolumeNameSize, 
-    Dword* lpVolumeSerialNumber,
-    Dword* lpMaximumComponentLength, 
-    Dword* lpFileSystemFlags,
+    DWord nVolumeNameSize, 
+    DWord* lpVolumeSerialNumber,
+    DWord* lpMaximumComponentLength, 
+    DWord* lpFileSystemFlags,
     LPWStr lpFileSystemNameBuffer, 
-    Dword nFileSystemNameSize
+    DWord nFileSystemNameSize
 ) @cname("GetVolumeInformationW");
 
 extern fn Bool getVolumeInformationByHandleW(
     Handle hFile, 
     LPWStr lpVolumeNameBuffer,
-    Dword nVolumeNameSize, 
-    Dword* lpVolumeSerialNumber,
-    Dword* lpMaximumComponentLength, 
-    Dword* lpFileSystemFlags,
+    DWord nVolumeNameSize, 
+    DWord* lpVolumeSerialNumber,
+    DWord* lpMaximumComponentLength, 
+    DWord* lpFileSystemFlags,
     LPWStr lpFileSystemNameBuffer, 
-    Dword nFileSystemNameSize
+    DWord nFileSystemNameSize
 ) @cname("GetVolumeInformationByHandleW");
 
 extern fn Bool getVolumePathNameA(
     LPCStr lpszFileName, 
     LPStr lpszVolumePathName, 
-    Dword cchBufferLength
+    DWord cchBufferLength
 ) @cname("GetVolumePathNameA");
 
 extern fn Bool getVolumePathNameW(
     LPCWStr lpszFileName, 
     LPWStr lpszVolumePathName, 
-    Dword cchBufferLength
+    DWord cchBufferLength
 ) @cname("GetVolumePathNameW");
 
 extern fn Bool getVolumeNameForVolumeMountPointA(
     LPCStr lpszVolumeMountPoint, 
     LPStr lpszVolumeName,
-    Dword cchBufferLength
+    DWord cchBufferLength
 ) @cname("GetVolumeNameForVolumeMountPointA");
 
 extern fn Bool getVolumeNameForVolumeMountPointW(
     LPCWStr lpszVolumeMountPoint, 
     LPWStr lpszVolumeName,
-    Dword cchBufferLength
+    DWord cchBufferLength
 ) @cname("GetVolumeNameForVolumeMountPointW");
 
 extern fn Bool getVolumePathNamesForVolumeNameA(
     LPCStr lpszVolumeName, 
     LPStr lpszVolumePathNames,
-    Dword cchBufferLength, 
-    Dword* lpcchReturnLength
+    DWord cchBufferLength, 
+    DWord* lpcchReturnLength
 ) @cname("GetVolumePathNamesForVolumeNameA");
 
 extern fn Bool getVolumePathNamesForVolumeNameW(
     LPCWStr lpszVolumeName, 
     LPWStr lpszVolumePathNames,
-    Dword cchBufferLength, 
-    Dword* lpcchReturnLength
+    DWord cchBufferLength, 
+    DWord* lpcchReturnLength
 ) @cname("GetVolumePathNamesForVolumeNameW");
 
 // Disk space information
 extern fn Bool getDiskFreeSpaceA(
     LPCStr lpRootPathName, 
-    Dword* lpSectorsPerCluster,
-    Dword* lpBytesPerSector, 
-    Dword* lpNumberOfFreeClusters,
-    Dword* lpTotalNumberOfClusters
+    DWord* lpSectorsPerCluster,
+    DWord* lpBytesPerSector, 
+    DWord* lpNumberOfFreeClusters,
+    DWord* lpTotalNumberOfClusters
 ) @cname("GetDiskFreeSpaceA");
 
 extern fn Bool getDiskFreeSpaceW(
     LPCWStr lpRootPathName, 
-    Dword* lpSectorsPerCluster,
-    Dword* lpBytesPerSector, 
-    Dword* lpNumberOfFreeClusters,
-    Dword* lpTotalNumberOfClusters
+    DWord* lpSectorsPerCluster,
+    DWord* lpBytesPerSector, 
+    DWord* lpNumberOfFreeClusters,
+    DWord* lpTotalNumberOfClusters
 ) @cname("GetDiskFreeSpaceW");
 
 extern fn Bool getDiskFreeSpaceExA(
@@ -825,26 +825,26 @@ extern fn uint getDriveTypeW(
 ) @cname("GetDriveTypeW");
 
 // Logical drives
-extern fn Dword getLogicalDrives() @cname("GetLogicalDrives");
+extern fn DWord getLogicalDrives() @cname("GetLogicalDrives");
 
-extern fn Dword getLogicalDriveStringsA(
-    Dword nBufferLength, 
+extern fn DWord getLogicalDriveStringsA(
+    DWord nBufferLength, 
     LPStr lpBuffer
 ) @cname("GetLogicalDriveStringsA");
 
-extern fn Dword getLogicalDriveStringsW(
-    Dword nBufferLength, 
+extern fn DWord getLogicalDriveStringsW(
+    DWord nBufferLength, 
     LPWStr lpBuffer
 ) @cname("GetLogicalDriveStringsW");
 
 // Temporary files
 extern fn uint getTempPathA(
-    Dword nBufferLength, 
+    DWord nBufferLength, 
     LPStr lpBuffer
 ) @cname("GetTempPathA");
 
 extern fn uint getTempPathW(
-    Dword nBufferLength, 
+    DWord nBufferLength, 
     LPWStr lpBuffer
 ) @cname("GetTempPathW");
 
@@ -871,10 +871,10 @@ extern fn void setFileApisToANSI() @cname("SetFileApisToANSI");
 extern fn Handle openFileById(
     Handle hVolumeHint, 
     void* lpFileId, 
-    Dword dwDesiredAccess,
-    Dword dwShareMode, 
+    DWord dwDesiredAccess,
+    DWord dwShareMode, 
     void* lpSecurityAttributes, 
-    Dword dwFlagsAndAttributes
+    DWord dwFlagsAndAttributes
 ) @cname("OpenFileById");
 
 // ====================================
@@ -894,27 +894,27 @@ const uint DRIVE_RAMDISK = 6;
 // MoveFile Flags
 // =====================================
 
-const Dword MOVEFILE_REPLACE_EXISTING = 0x00000001;
-const Dword MOVEFILE_COPY_ALLOWED = 0x00000002;
-const Dword MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
-const Dword MOVEFILE_WRITE_THROUGH = 0x00000008;
-const Dword MOVEFILE_CREATE_HARDLINK = 0x00000010;
-const Dword MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x00000020;
+const DWord MOVEFILE_REPLACE_EXISTING = 0x00000001;
+const DWord MOVEFILE_COPY_ALLOWED = 0x00000002;
+const DWord MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
+const DWord MOVEFILE_WRITE_THROUGH = 0x00000008;
+const DWord MOVEFILE_CREATE_HARDLINK = 0x00000010;
+const DWord MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x00000020;
 
 // =======================================
 // CopyFile Flags
 // =======================================
 
-const Dword COPY_FILE_FAIL_IF_EXISTS = 0x00000001;
-const Dword COPY_FILE_RESTARTABLE = 0x00000002;
-const Dword COPY_FILE_OPEN_SOURCE_FOR_WRITE = 0x00000004;
-const Dword COPY_FILE_ALLOW_DECRYPTED_DESTINATION = 0x00000008;
-const Dword COPY_FILE_COPY_SYMLINK = 0x00000800;
-const Dword COPY_FILE_NO_BUFFERING = 0x00001000;
+const DWord COPY_FILE_FAIL_IF_EXISTS = 0x00000001;
+const DWord COPY_FILE_RESTARTABLE = 0x00000002;
+const DWord COPY_FILE_OPEN_SOURCE_FOR_WRITE = 0x00000004;
+const DWord COPY_FILE_ALLOW_DECRYPTED_DESTINATION = 0x00000008;
+const DWord COPY_FILE_COPY_SYMLINK = 0x00000800;
+const DWord COPY_FILE_NO_BUFFERING = 0x00001000;
 
 // =======================================
 // LockFile Flags
 // =======================================
 
-const Dword LOCKFILE_FAIL_IMMEDIATELY = 0x00000001;
-const Dword LOCKFILE_EXCLUSIVE_LOCK = 0x00000002;
+const DWord LOCKFILE_FAIL_IMMEDIATELY = 0x00000001;
+const DWord LOCKFILE_EXCLUSIVE_LOCK = 0x00000002;

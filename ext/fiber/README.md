@@ -1,13 +1,16 @@
 # Fiber - a lightweight coroutine in C3
 
-This is a co-operative non-preemptive coroutine in C3. Extremely lightweight and supports multiplatform. Based on [libco](https://github.com/higan-emu/libco)
+This is a co-operative non-preemptive coroutine in C3. 
+
+Inspired by [libco](https://github.com/higan-emu/libco)
 
 It provides a lightweight cooperative multitasking system, allowing you to create and switch between multiple execution contexts (fibers) within a single thread.
 
 ### Based on
 * X86_64, AARCH64: Assembly code, fast switching
 * Windows: Native Fiber interface
-* Other Posix: based on sigsetjmp() /siglongjmp()
+* Other Posix: based on ucontext
+* Added: other implementation using sigsetjmp() /siglongjmp()
 
 ### Available module
 
@@ -35,10 +38,11 @@ void fiber::delete(fiber);
 ```
 
 Files:
-* [fiber.win32.c3](fiber.win32.c3)
-* [fiber.posix.c3](fiber.posix.c3)
-* [fiber.asm.c3](fiber.asm.c3)
-* [fiber.sjlj.c3](fiber.sjlj.c3)
+* [fiber.win32.c3](fiber.win32.c3): based on Windows Fiber
+* [fiber.asm.c3](fiber.posix.c3): Assembly based implementation (Only for X86_64 and AARCH64)
+* [fiber.asm_inc.c3](fiber.asm_inc.c3): Assembly code
+* [fiber.ucontext.c3](fiber.ucontext.c3): implementation based on ucontext, for posix
+* [fiber.sjlj.c3](fiber.sjlj.c3): implementation using sigsetjmp/siglongjmp (not used)
 * [../../examples/fiber/fiber_test.c3](../../examples/fiber/fiber_test.c3)
 
 
@@ -51,6 +55,25 @@ Files:
 5. At the end of a coroutine, you need to call `fiber::done()`
 6. Cleanup is done by calling `fiber::delete()`
 
+### API functions
+
+```c3 
+import ext::thread::fiber;
+
+alias Coroutine = fn void();
+
+Fiber* fib = fiber::create(usz stack_size, Coroutine coro); // stack_size must be larger than 64KB, this cannot be called in other coroutine
+Fiber* fib = fiber::active(); // get current fiber
+void fiber::switch_to(fib); // context switch
+void fiber::yield(); // within a coroutine, suspend and goto main coroutine
+void fiber::done(); // you need to call this at the end of coroutine
+void fiber::delete(fib);
+
+void fiber::set_debug(false); // default is true
+void fiber::set_allocator(Allocator allocx); // default is mem
+
+fn usz fiber::stack_used(); // in bytes, you can call this to determine proper stack size, not available on Windows
+```
 
 ## Important Notes
 
@@ -58,7 +81,7 @@ Files:
 - At the end of a `Coroutine` function, **you must call `fiber::done()`**
 - Fibers must not be shared across threads.
 - **Stack size.** The `stack_size` parameter in `fiber::create()` sets the fiber's initial stack size in bytes. A value of `64 * 1024` (64 KB) is a reasonable minimum for lightweight coroutines.
-- **Cleanup.** Always call `fiber::delete()` on fibers that you no longer need, to avoid memory leaks. Do not delete the currently running fiber.
+- **Cleanup.** Always call `fiber::delete()` on fibers that you no longer need, to avoid memory leaks. Do not free the currently running fiber.
 
 ## Usage Example
 

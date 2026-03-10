@@ -50,17 +50,17 @@ const uint CRITICAL_SECTION_NO_DEBUG_INFO = 0x01000000;
 
 // Structures
 struct CriticalSection {
-    PVoid debug_info;
-    Long lock_count;
-    Long recursion_count;
-    Handle owning_thread;
-    Handle lock_semaphore;
-    ULongPtr spin_count;
+    PVoid debugInfo;
+    Long lockCount;
+    Long recursionCount;
+    Handle owningThread;
+    Handle lockSemaphore;
+    ULongPtr spinCount;
 }
 
 struct CriticalSectionAndSpinCount {
-    CriticalSection critical_section;
-    DWord spin_count;
+    CriticalSection criticalSection;
+    DWord spinCount;
 }
 
 struct SRWLock {
@@ -81,18 +81,18 @@ struct SynchronizationBarrier {
 
 struct SecurityAttributes {
     DWord length;
-    PVoid security_descriptor;
-    Bool inherit_handle;
+    PVoid securityDescriptor;
+    Bool inheritHandle;
 }
 
 struct Reason {
     DWord flags;
     union reason {
         struct detailed {
-            Handle resource_file_name_module;
-            short* resource_reason_id;
+            Handle resourceFileNameModule;
+            short* resourceReasonId;
         } 
-        char* simple_reason_string;
+        char* simpleReasonString;
     }
 }
 

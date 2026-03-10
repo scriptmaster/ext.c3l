@@ -2,6 +2,8 @@
 
 module ws2tcpip @if(env::WIN32);
 
+import winsock2;
+
 // Windows TCP/IP Specific API
 // C3 mapping for ws2tcpip.h
 
@@ -40,40 +42,6 @@ struct InAddr {
     } 
 }
 
-// Socket address structures
-struct SockAddr {
-    UShort sa_family;
-    char[14] sa_data;
-}
-
-struct SockAddrIn {
-    short sin_family;
-    UShort sin_port;
-    InAddr sin_addr;
-    char[8] sin_zero;
-}
-
-struct SockAddrIn6 {
-    short sin6_family;
-    UShort sin6_port;
-    ULong sin6_flowinfo;
-    In6Addr sin6_addr;
-    ULong sin6_scope_id;
-}
-
-struct SockAddrIn6Old {
-    short sin6_family;
-    UShort sin6_port;
-    ULong sin6_flowinfo;
-    In6Addr sin6_addr;
-}
-
-struct SockAddrStorage {
-    short ss_family;
-    char[6] __ss_pad1;
-    long __ss_align;
-    char[112] __ss_pad2;
-}
 
 // Address info structures
 struct AddrInfo {
@@ -83,7 +51,7 @@ struct AddrInfo {
     int ai_protocol;
     ulong ai_addrlen;
     char* ai_canonname;
-    SockAddr* ai_addr;
+    winsock2::SockAddr* ai_addr;
     AddrInfo* ai_next;
 }
 
@@ -94,7 +62,7 @@ struct AddrInfoEx {
     int ai_protocol;
     ulong ai_addrlen;
     char* ai_canonname;
-    SockAddr* ai_addr;
+    winsock2::SockAddr* ai_addr;
     void* ai_blob;
     ulong ai_bloblen;
     void* ai_provider;
@@ -108,7 +76,7 @@ struct AddrInfoW {
     int ai_protocol;
     ulong ai_addrlen;
     short* ai_canonname;
-    SockAddr* ai_addr;
+    winsock2::SockAddr* ai_addr;
     AddrInfoW* ai_next;
 }
 
@@ -119,7 +87,7 @@ struct AddrInfoExW {
     int ai_protocol;
     ulong ai_addrlen;
     short* ai_canonname;
-    SockAddr* ai_addr;
+    winsock2::SockAddr* ai_addr;
     void* ai_blob;
     ulong ai_bloblen;
     void* ai_provider;
@@ -145,13 +113,13 @@ struct Ipv6Mreq {
 
 struct GroupReq {
     ULong gr_interface;
-    SockAddrStorage gr_group;
+    winsock2::SockAddrStorage gr_group;
 }
 
 struct GroupSourceReq {
     ULong gsr_interface;
-    SockAddrStorage gsr_group;
-    SockAddrStorage gsr_source;
+    winsock2::SockAddrStorage gsr_group;
+    winsock2::SockAddrStorage gsr_source;
 }
 
 // IP packet info structures
@@ -353,21 +321,21 @@ const int ADDR_ANY = 0;
 const uint SCOPEID_UNSPECIFIED = 0;
 
 // Address resolution functions
-extern fn int getaddrinfo(
+extern fn int getAddrInfo(
     char* node_name,
     char* service_name,
     AddrInfo* hints,
     AddrInfo** result
-) @cname("getaddrinfo");
+) @cname("GetAddrInfo");
 
-extern fn int get_addr_info_w(
+extern fn int getAddrInfoW(
     short* node_name,
     short* service_name,
     AddrInfoW* hints,
     AddrInfoW** result
 ) @cname("GetAddrInfoW");
 
-extern fn int get_addr_info_ex_a(
+extern fn int getAddrInfoExA(
     char* name,
     char* service_name,
     DWord namespace_id,
@@ -380,7 +348,7 @@ extern fn int get_addr_info_ex_a(
     Handle* name_handle
 ) @cname("GetAddrInfoExA");
 
-extern fn int get_addr_info_ex_w(
+extern fn int getAddrInfoExW(
     short* name,
     short* service_name,
     DWord namespace_id,
@@ -393,11 +361,11 @@ extern fn int get_addr_info_ex_w(
     Handle* name_handle
 ) @cname("GetAddrInfoExW");
 
-extern fn int get_addr_info_ex_cancel(
+extern fn int getAddrInfoExCancel(
     Handle* name_handle
 ) @cname("GetAddrInfoExCancel");
 
-extern fn int get_addr_info_ex_overflow_safe_a(
+extern fn int getAddrInfoExOverflowSafeA(
     char* name,
     char* service_name,
     DWord namespace_id,
@@ -410,7 +378,7 @@ extern fn int get_addr_info_ex_overflow_safe_a(
     Handle* name_handle
 ) @cname("GetAddrInfoExOverflowSafeA");
 
-extern fn int get_addr_info_ex_overflow_safe_w(
+extern fn int getAddrInfoExOverflowSafeW(
     short* name,
     short* service_name,
     DWord namespace_id,
@@ -423,23 +391,23 @@ extern fn int get_addr_info_ex_overflow_safe_w(
     Handle* name_handle
 ) @cname("GetAddrInfoExOverflowSafeW");
 
-extern fn void freeaddrinfo(
+extern fn void freeAddrInfo(
     AddrInfo* ai
-) @cname("freeaddrinfo");
+) @cname("FreeAddrInfo");
 
-extern fn void free_addr_info_w(
+extern fn void freeAddrInfoW(
     AddrInfoW* ai
 ) @cname("FreeAddrInfoW");
 
-extern fn void free_addr_info_ex(
+extern fn void freeAddrInfoEx(
     AddrInfoEx* ai
 ) @cname("FreeAddrInfoEx");
 
-extern fn void free_addr_info_ex_w(
+extern fn void freeAddrInfoExW(
     AddrInfoExW* ai
 ) @cname("FreeAddrInfoExW");
 
-extern fn int getnameinfo(
+extern fn int getNameInfo(
     SockAddr* sa,
     int salen,
     char* host,
@@ -447,9 +415,9 @@ extern fn int getnameinfo(
     char* serv,
     DWord servlen,
     int flags
-) @cname("getnameinfo");
+) @cname("GetNameInfo");
 
-extern fn int get_name_info_w(
+extern fn int getNameInfoW(
     SockAddr* sa,
     int salen,
     short* host,
@@ -466,7 +434,7 @@ extern fn int inet_pton(
     PVoid dst
 ) @cname("inet_pton");
 
-extern fn int inet_pton_w(
+extern fn int inetPtonW(
     int family,
     short* src,
     PVoid dst
@@ -479,7 +447,7 @@ extern fn char* inet_ntop(
     ulong size
 ) @cname("inet_ntop");
 
-extern fn short* inet_ntop_w(
+extern fn short* inetNtopW(
     int family,
     PVoid src,
     short* dst,
@@ -487,10 +455,10 @@ extern fn short* inet_ntop_w(
 ) @cname("InetNtopW");
 
 // Hostname resolution
-extern fn int set_addr_info_ex_a(
+extern fn int setAddrInfoExA(
     char* name,
     char* service_name,
-    SockAddr* addresses,
+    winsock2::SockAddr* addresses,
     DWord address_count,
     void* blob,
     DWord blob_length,
@@ -503,10 +471,10 @@ extern fn int set_addr_info_ex_a(
     Handle* name_handle
 ) @cname("SetAddrInfoExA");
 
-extern fn int set_addr_info_ex_w(
+extern fn int setAddrInfoExW(
     short* name,
     short* service_name,
-    SockAddr* addresses,
+    winsock2::SockAddr* addresses,
     DWord address_count,
     void* blob,
     DWord blob_length,

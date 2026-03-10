@@ -16,12 +16,12 @@ tlocal Fiber primary;
 
 alias Coroutine = fn void();
 
-fn void thunk(void* coentry) @callconv("stdcall") 
+fn void thunk(void* coentry) @callconv("stdcall") @private
 {
     ((Coroutine)coentry)();
 }
 
-fn void init()
+fn void init(Allocator allocx=mem, bool debug=true) @private
 {
     if (running != null) return;
     primary.wfiber = winbase::convertThreadToFiber(null);

@@ -1,4 +1,5 @@
 // sys.socket.h.c3
+
 module sys::socket @if(!env::WIN32);
 
 // Main socket functions

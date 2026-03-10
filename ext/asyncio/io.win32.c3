@@ -1,0 +1,744 @@
+// io.win32.c3
+
+module ext::asyncio @if(env::WIN32);
+
+import std::io;
+
+import stdio; // libc
+import stdlib; // libc
+import string; // libc
+import winbase; // libc
+import winsock2; // libc
+import ws2tcpip; // libc
+import errno; // libc
+
+const usz MAX_EVENTS = 1024;
+const usz MAX_FD_WATCH = 2048;
+
+const usz IOCP_OP_POOL = 1024;   // maximum OVERLAPPED tasks
+const usz IOCP_BUF_SIZE = 64 * 1024;  // I/O buffer size per task (64 KiB)
+
+// On completion, OS returns Overlapped* as the first field.
+// Access other fields by casting to IocpOp*.
+// Overlapped must be the first in struct
+
+struct IocpOp {
+    winbase::Overlapped ov; // must be first
+    bool active;
+    bool is_write;
+    bool is_socket; // true=socket(wsaRecv/Send), false=file (readFile/writeFile)
+    winbase::Handle handle;
+    Future* future;
+
+    // on completion buf has been filled
+    char[IOCP_BUF_SIZE] buf;
+    winbase::DWord transferred;  // bytes transfered
+
+    // for sockets (for WSARecv/WSASend)
+    winsock2::WSABuf wsabuf;
+    winbase::DWord flags;
+    
+    // for recvfrom
+    winsock2::SockAddrStorage from_addr;
+    int from_len;
+    
+    // bool cancel_requested;
+    
+    ulong file_offset;
+}
+
+tlocal IocpOp[IOCP_OP_POOL] _op_pool;
+tlocal winbase::Handle _iocp;
+
+// IOCP op pool manage
+tlocal usz _active_op_count;
+
+fn IocpOp* _op_alloc() 
+{
+    for (usz i = 0; i < IOCP_OP_POOL; i++) {
+        if (!_op_pool[i].active) {
+            string::memset(&_op_pool[i], 0, IocpOp.sizeof);
+            _op_pool[i].active = true;
+            _active_op_count++;
+            return &_op_pool[i];
+        }
+    }
+    _assert(false, "asyncio/iocp: operation pool exhausted");
+    return null;
+}
+
+fn void _op_free(IocpOp* op) 
+{
+    op.active = false;
+    _active_op_count--;
+}
+
+// Handle Type identification
+// GetFileType() == FILE_TYPE_PIPE -> pipe 
+// GetFileType() == FILE_TYPE_DISK -> file
+// GetFileType() == FILE_TYPE_CHAR -> terminal
+// For socket, GetFileType returns FILE_TYPE_UNKNOWN, WSASocket
+
+fn bool _is_socket(winbase::Handle h) 
+{
+    // getsockopt returns WSAENOTSOCK if no socket
+    int err = 0;
+    int len = $sizeof(err);
+    int rc  = winsock2::getsockopt((winsock2::Socket)h, winsock2::SOL_SOCKET, winsock2::SO_ERROR, (char*)&err, &len);
+    if (rc == 0) return true;
+    if (winsock2::wsaGetLastError() == winsock2::WSAENOTSOCK) return false;
+    _assert(false, "getsockopt() failed");
+    return false;
+}
+
+// connect handle to iocp
+fn bool _iocp_associate(winbase::Handle h) 
+{
+    winbase::Handle result = winbase::createIoCompletionPort(
+        h, _iocp,
+        (uptr)h, // completion key = handle itself
+        0);
+    return result != null;
+    // || winbase::getLastError() == winbase::ERROR_INVALID_PARAMETER;
+
+}
+
+bool initialized = false;
+fn void io_init() 
+{
+    if (initialized) return;
+    initialized = true;
+    
+    // Winsock initialize
+    winsock2::WSAData wsa;
+    _assert(winsock2::wsaStartup(0x0202, &wsa) == 0, "asyncio: WSAStartup failed");
+
+    // create IOCP (threads 1)
+    _iocp = winbase::createIoCompletionPort(winbase::INVALID_HANDLE_VALUE, null, 0, 1);
+    _assert(_iocp != null, "asyncio: CreateIoCompletionPort failed");
+}
+
+tlocal bool _io_shutting_down = false;
+
+fn void io_destroy() 
+{
+    if (!initialized) return;
+
+    // 1. no more I/O 
+    _io_shutting_down = true;
+
+    // 2. all pending handle, CancelIoEx
+    for (usz i = 0; i < IOCP_OP_POOL; i++) {
+        if (!_op_pool[i].active) continue;
+
+        winbase::Handle h = _op_pool[i].handle;
+        if (h != null && h != winbase::INVALID_HANDLE_VALUE) {
+            // duplicate allowed
+            winbase::cancelIoEx(h, null);
+        }
+    }
+
+    // 3. completion drain
+    // cancel completion / already-finished completion
+    while (_active_op_count > 0) {
+        winbase::OverlappedEntry[MAX_EVENTS] entries;
+        winbase::ULong removed = 0;
+
+        winbase::Bool ok = winbase::getQueuedCompletionStatusEx(
+            _iocp,
+            &entries[0],
+            MAX_EVENTS,
+            (ulong*)&removed,
+            50, // ms
+            winbase::FALSE
+        );
+
+        if (!ok && removed == 0) {
+            continue;
+        }
+
+        for (winbase::ULong i = 0; i < removed; i++) {
+            winbase::Overlapped* ov = entries[i].lpOverlapped;
+            if (ov == null) continue;
+
+            IocpOp* op = (IocpOp*)ov;
+            if (!op.active) continue;
+
+            Future* fut = op.future;
+            op.transferred = entries[i].dwNumberOfBytesTransferred;
+
+            if (fut != null && !fut.done()) {
+                fut.set_exception(IO_ERROR);
+                fut.cancel("io destroyed");
+            }
+
+            _op_free(op);
+        }
+    }
+
+    // 4. _active_op_count == 0 
+    _assert(_active_op_count == 0, "asyncio/win32: pending IOCP ops remain at destroy");
+
+    winbase::closeHandle(_iocp);
+    _iocp = null;
+
+    winsock2::wsaCleanup();
+    initialized = false;
+    _io_shutting_down = false;
+}
+
+fn bool set_nonblocking(int fd) 
+{
+    winbase::Handle h = (winbase::Handle) (iptr)fd;
+    if (_is_socket(h)) {
+        uint mode = 1;
+        return winsock2::ioctlsocket((winsock2::Socket)fd, winsock2::FIONBIO, &mode) == 0;
+    }
+    return true; // For files, OVERLAPPED is nonblocking
+}
+
+/*
+struct FdWatch {
+    int fd;
+    bool active;
+    Future* read_fut;
+    Future* write_fut;
+}
+
+tlocal FdWatch[MAX_FD_WATCH] _fd_table;
+tlocal usz _fd_count;
+
+fn FdWatch* _find_or_create(int fd) 
+{
+    for (usz i = 0; i < MAX_FD_WATCH; i++) {
+        if (_fd_table[i].active && _fd_table[i].fd == fd) return &_fd_table[i];
+    }
+    for (usz i = 0; i < MAX_FD_WATCH; i++) {
+        if (!_fd_table[i].active) {
+            _fd_table[i] = { fd, true, null, null };
+            _fd_count++;
+            return &_fd_table[i];
+        }
+    }
+    _assert(false, "asyncio: FD watch table full");
+    return null;
+}
+
+fn FdWatch* _find(int fd) 
+{
+    for (usz i = 0; i < MAX_FD_WATCH; i++) {
+        if (_fd_table[i].active && _fd_table[i].fd == fd) return &_fd_table[i];
+    }
+    return null;
+}
+*/
+
+// Public API
+
+fn void register_read(int fd, Future* future, ulong offset) 
+{
+    if (_io_shutting_down) {
+        future.set_exception(IO_ERROR);
+        future.cancel("io shutting down");
+        return;
+    }
+    
+    winbase::Handle h = (winbase::Handle)(iptr)fd;
+    bool is_sock = _is_socket(h);
+
+    IocpOp* op = _op_alloc();
+    op.is_write = false;
+    op.is_socket = is_sock;
+    op.handle = h;
+    op.future = future;
+    op.file_offset = offset;
+
+    if (!is_sock) {
+        op.ov.offset = (winbase::DWord)(offset & 0xFFFFFFFF);
+        op.ov.offset_high = (winbase::DWord)(offset >> 32);
+    }
+    
+    // _iocp_associate(h);
+    if (!_iocp_associate(h)) {
+        future.set_exception(IO_ERROR);
+        future.cancel("iocp associate failed");
+        _op_free(op);
+        return;
+    }
+
+    if (is_sock) {
+        op.wsabuf.buf = &op.buf[0];
+        op.wsabuf.len = IOCP_BUF_SIZE;
+        op.flags = 0;
+        int rc = winsock2::wsaRecv((winsock2::Socket)h, &op.wsabuf, 1, null, &op.flags, &op.ov, null);
+        if (rc == 0) return;
+        if (winsock2::wsaGetLastError() != winsock2::WSA_IO_PENDING) {
+            future.set_exception(IO_ERROR);
+            future.cancel("io error");
+            _op_free(op);
+        }
+    } else {
+        winbase::Bool rc = winbase::readFile(h, &op.buf[0], IOCP_BUF_SIZE, null, &op.ov);
+        if (rc) return;
+        if (winbase::getLastError() != winbase::ERROR_IO_PENDING) {
+            future.set_exception(IO_ERROR);
+            future.cancel("io error");
+            _op_free(op);
+        }
+    }
+}
+
+fn void register_write(int fd, Future* future) 
+{
+    _assert(false, "not used on win32/iocp");
+}
+
+fn void _start_write(int fd, void* data, usz len, Future* future, ulong offset) 
+{
+    if (_io_shutting_down) {
+        future.set_exception(IO_ERROR);
+        future.cancel("io shutting down");
+        return;
+    }
+    
+    winbase::Handle h = (winbase::Handle)(iptr)fd;
+    bool is_sock = _is_socket(h);
+
+    IocpOp* op = _op_alloc();
+    op.is_write = true;
+    op.is_socket = is_sock;
+    op.handle = h;
+    op.future = future;
+    op.file_offset = offset;
+
+    if (!is_sock) {
+        op.ov.offset = (winbase::DWord)(offset & 0xFFFFFFFF);
+        op.ov.offset_high = (winbase::DWord)(offset >> 32);
+    }
+    
+    usz copy_len = len < IOCP_BUF_SIZE ? len : IOCP_BUF_SIZE;
+    string::memcpy(&op.buf[0], data, copy_len);
+
+    // _iocp_associate(h);
+    if (!_iocp_associate(h)) {
+        future.set_exception(IO_ERROR);
+        future.cancel("iocp associate failed");
+        _op_free(op);
+        return;
+    }
+
+    if (is_sock) {
+        op.wsabuf.buf = &op.buf[0];
+        op.wsabuf.len = (winbase::DWord)copy_len;
+        int rc = winsock2::wsaSend((winsock2::Socket)h, &op.wsabuf, 1, null, 0, &op.ov, null);
+        if (rc == 0) return;
+        if (winsock2::wsaGetLastError() != winsock2::WSA_IO_PENDING) {
+            future.set_exception(IO_ERROR);
+            future.cancel("io error");
+            _op_free(op);
+        }
+    } else {
+        winbase::Bool rc = winbase::writeFile(h, &op.buf[0], (winbase::DWord)copy_len, null, &op.ov);
+        if (rc) return;
+        if (winbase::getLastError() != winbase::ERROR_IO_PENDING) {
+            future.set_exception(IO_ERROR);
+            future.cancel("io error");
+            _op_free(op);
+        }
+    }
+}
+
+
+fn void unregister(int fd)
+{
+    winbase::Handle h = (winbase::Handle)(iptr)fd;
+
+    winbase::cancelIoEx((winbase::Handle)(iptr)fd, null);
+
+    for (usz i = 0; i < IOCP_OP_POOL; i++) {
+        if (_op_pool[i].active && _op_pool[i].handle == h) {
+            _op_pool[i].future.cancel("fd unregistered");
+            // _op_pool[i].cancel_requested = true;
+            // _op_free, on abort completion packet arrive at poll()
+        }
+    }
+
+/*
+    FdWatch* w = _find(fd);
+    if (w == null) return;
+    
+    if (w.read_fut)  { w.read_fut.cancel("fd unregistered");  w.read_fut  = null; }
+    if (w.write_fut) { w.write_fut.cancel("fd unregistered"); w.write_fut = null; }
+
+    w.active = false;
+    _fd_count--;
+*/
+}
+
+fn bool io_pending() @inline
+{ 
+    return _active_op_count > 0; 
+}
+
+
+fn void io_poll(ulong timeout_us) 
+{
+    if (_active_op_count == 0) return;
+
+    winbase::OverlappedEntry[MAX_EVENTS] entries;
+    winbase::ULong removed = 0;
+
+    winbase::DWord timeout_ms = (timeout_us / 1000 > 0xFFFFFFFE)
+    ? winbase::INFINITE : (winbase::DWord)(timeout_us / 1000);
+    winbase::Bool ok = winbase::getQueuedCompletionStatusEx(_iocp, &entries[0], MAX_EVENTS, (ulong*)&removed, timeout_ms, winbase::FALSE);
+
+    if (!ok && removed == 0) return;
+
+    for (winbase::ULong i = 0; i < removed; i++) {
+        winbase::Overlapped* ov = entries[i].lpOverlapped;
+        if (ov == null) continue;
+
+        IocpOp* op = (IocpOp*)ov;
+        if (!op.active) {
+            continue;
+        }
+
+        winbase::DWord transferred = entries[i].dwNumberOfBytesTransferred;
+        op.transferred = transferred;
+
+        Future* fut = op.future;
+        if (fut.done()) {
+            _op_free(op);   // cancelIoEx abort packet: future is already cancelled
+            continue;
+        }
+        /*
+        if (transferred == 0) {
+            fut.set_exception(IO_ERROR);
+            fut.cancel("io error");
+        } else {
+            fut.set_result((void*)op);
+            // _op_free(op); // after data read/write in async_read/write
+            continue;
+        }
+        */
+        if (transferred == 0 && !op.is_write) {
+            fut.set_result(null); // EOF: caller gets read() == 0
+        } else if (transferred == 0) {
+            fut.set_exception(IO_ERROR);
+        } else {
+            fut.set_result((void*)op);
+            continue;
+        }
+
+        _op_free(op);
+    }
+}
+
+fn usz? async_read(int fd, void* out_buf, usz max_len) 
+{
+    ulong offset = 0; 
+    EventLoop* loop = asyncio::get_running_loop();
+    usz total = 0;
+    while (total < max_len) {
+        Future* fut = loop.create_future();
+        register_read(fd, fut, offset);
+        void*? raw  = fut.await();
+        fault ferror = fut.error;
+        fut.free();
+        if (catch err = raw) {
+            if (ferror == IO_ERROR) return IO_ERROR~;
+            return err~;
+        }
+        if (raw == null) return 0;
+    
+        IocpOp* op = (IocpOp*)raw;
+        winbase::DWord n = op.transferred;
+        if (n > (winbase::DWord)max_len) n = (winbase::DWord)max_len;
+        string::memcpy(out_buf, &op.buf[0], (usz)n);
+        _op_free(op);
+    
+        total += (usz)n;
+        offset += (ulong)n;
+        if ((usz)n < IOCP_BUF_SIZE) break;
+    }
+    return total;
+}
+
+fn usz? async_write(int fd, void* buf, usz len) 
+{
+    EventLoop* loop = asyncio::get_running_loop();
+    ulong offset = 0;
+    usz total = 0;
+    while (total < len) {
+        usz chunk = len - total;
+        if (chunk > IOCP_BUF_SIZE) chunk = IOCP_BUF_SIZE;
+
+        Future* fut = loop.create_future();
+        _start_write(fd, (char*)buf + total, chunk, fut, offset);
+
+        void*? raw = fut.await();
+        fault ferror = fut.error;
+        fut.free();
+        if (catch err = raw) {
+            if (ferror == IO_ERROR) return IO_ERROR~;
+            return err~;
+        }
+
+        if (raw == null) {
+            if (total > 0) return total;
+            return IO_ERROR~;
+        }
+
+        IocpOp* op = (IocpOp*)raw;
+        winbase::DWord written = op.transferred;
+        _op_free(op);
+
+        total += (usz)written;
+        offset += (ulong)written;
+    }
+    return total;
+}
+
+fn void _start_recvfrom(int fd, Future* future)
+{
+    if (_io_shutting_down) {
+        future.set_exception(IO_ERROR);
+        future.cancel("io shutting down");
+        return;
+    }
+
+    winbase::Handle h = (winbase::Handle)(iptr)fd;
+
+    IocpOp* op = _op_alloc();
+    op.is_write  = false;
+    op.is_socket = true;
+    op.handle = h;
+    op.future = future;
+    op.flags = 0;
+    op.from_len = $sizeof(winsock2::SockAddrStorage);
+
+    op.wsabuf.buf = &op.buf[0];
+    op.wsabuf.len = IOCP_BUF_SIZE;
+
+    // _iocp_associate(h);
+    if (!_iocp_associate(h)) {
+        future.set_exception(IO_ERROR);
+        future.cancel("iocp associate failed");
+        _op_free(op);
+        return;
+    }
+
+    int rc = winsock2::wsaRecvFrom(
+        (winsock2::Socket)h,
+        &op.wsabuf, 1,
+        null, &op.flags,
+        (winsock2::SockAddr*)&op.from_addr, &op.from_len,
+        &op.ov, null
+    );
+    if (rc == 0) return;
+    if (winsock2::wsaGetLastError() != winsock2::WSA_IO_PENDING) {
+        future.set_exception(IO_ERROR);
+        future.cancel("io error");
+        _op_free(op);
+    }
+}
+
+fn usz? async_recvfrom(int fd, void* buf, usz len, char* ip_str, usz* ip_len, ushort* port) 
+{
+    EventLoop* loop = asyncio::get_running_loop();
+
+    Future* fut = loop.create_future();
+    _start_recvfrom(fd, fut);
+
+    void*? raw = fut.await();
+    fault ferror = fut.error;
+    fut.free();
+
+    if (catch err = raw) {
+        if (ferror == IO_ERROR) return IO_ERROR~;
+        return err~;
+    }
+    if (raw == null) return -1;
+
+    IocpOp* op = (IocpOp*)raw;
+    winbase::DWord n = op.transferred;
+    if (n > (winbase::DWord)len) n = (winbase::DWord)len;
+    string::memcpy(buf, &op.buf[0], (usz)n);
+
+    // extract sender addr
+    if (ip_str != null || port != null) {
+        ushort family = ((winsock2::SockAddrIn*)&op.from_addr).sin_family;
+        if (family == (ushort)winsock2::AF_INET6) {
+            winsock2::SockAddrIn6* a6 = (winsock2::SockAddrIn6*)&op.from_addr;
+            ws2tcpip::inetNtop(winsock2::AF_INET6, &a6.sin6_addr, ip_str, 46);
+            *ip_len = (usz)string::strlen(ip_str);
+            *port = winsock2::ntohs(a6.sin6_port);
+        } else {
+            winsock2::SockAddrIn* a4 = (winsock2::SockAddrIn*)&op.from_addr;
+            ws2tcpip::inetNtop(winsock2::AF_INET, &a4.sin_addr, ip_str, 16);
+            *ip_len = (usz)string::strlen(ip_str);
+            *port = winsock2::ntohs(a4.sin_port);
+        }
+    }
+
+    _op_free(op);
+    return (usz)n;
+}
+
+fn usz? async_sendto(int fd, void* buf, usz len, char* ip_str, ushort port) 
+{
+   EventLoop* loop = asyncio::get_running_loop();
+
+    winsock2::SockAddr* dest_addr;
+    int dest_len;
+    winsock2::SockAddrIn a4 = {};
+    winsock2::SockAddrIn6 a6 = {};
+
+    if (ws2tcpip::inetPton(winsock2::AF_INET6, ip_str, &a6.sin6_addr) == 1) {
+        a6.sin6_family = (ushort)winsock2::AF_INET6;
+        a6.sin6_port = winsock2::htons(port);
+        dest_addr = (winsock2::SockAddr*)&a6;
+        dest_len = $sizeof(a6);
+    } else if (ws2tcpip::inetPton(winsock2::AF_INET, ip_str, &a4.sin_addr) == 1) {
+        a4.sin_family = (ushort)winsock2::AF_INET;
+        a4.sin_port = winsock2::htons(port);
+        dest_addr = (winsock2::SockAddr*)&a4;
+        dest_len = $sizeof(a4);
+    } else {
+        return IO_ERROR~;
+    }
+
+    usz total = 0;
+    while (total < len) {
+        usz chunk = len - total;
+        if (chunk > IOCP_BUF_SIZE) chunk = IOCP_BUF_SIZE;
+
+        IocpOp* op = _op_alloc();
+        op.is_write = true;
+        op.is_socket = true;
+        op.handle = (winbase::Handle)(iptr)fd;
+        op.flags = 0;
+
+        string::memcpy(&op.buf[0], (char*)buf + total, chunk);
+        op.wsabuf.buf = &op.buf[0];
+        op.wsabuf.len = (winbase::DWord)chunk;
+
+        _iocp_associate(op.handle);
+
+        Future* fut = loop.create_future();
+        op.future = fut;
+
+        int rc = winsock2::wsaSendTo(
+            (winsock2::Socket)fd,
+            &op.wsabuf, 1,
+            null, 0,
+            dest_addr, dest_len,
+            &op.ov, null
+        );
+        if (rc != 0 && winsock2::wsaGetLastError() != winsock2::WSA_IO_PENDING) {
+            fut.free();
+            _op_free(op);
+            return total > 0 ? total : IO_ERROR~;
+        }
+
+        void*? raw = fut.await();
+        fault ferror = fut.error;
+        fut.free();
+
+        if (catch err = raw) {
+            if (ferror == IO_ERROR) return IO_ERROR~;
+            return err~;
+        }
+        if (raw == null) return total > 0 ? total : IO_ERROR~;
+
+        IocpOp* completed = (IocpOp*)raw;
+        total += (usz)completed.transferred;
+        _op_free(completed);
+    }
+    return total;
+}
+
+// additional functions window specific
+
+fn Char16*? utf8to16(String path, Char16[] wpath) 
+{
+    if (path.len == 0) return errno::F_INVAL~;
+    Char16[] p2 = path.to_utf16(_allox)!;
+    defer free(p2);
+    
+    if (p2.len >= wpath.len-1) return errno::F_BAD_LENGTH~;
+    
+    wpath[0:p2.len] = p2[0:p2.len];
+    wpath[p2.len] = 0;
+    
+    return wpath.ptr;
+}
+
+fn int? open_file_async(String path, bool write_mode) 
+{
+    winbase::DWord access = write_mode ? (winbase::GENERIC_WRITE) : (winbase::GENERIC_READ);
+    winbase::DWord share = winbase::FILE_SHARE_READ;
+    winbase::DWord disposition = write_mode ? winbase::CREATE_ALWAYS : winbase::OPEN_EXISTING;
+    winbase::DWord flags = winbase::FILE_ATTRIBUTE_NORMAL | winbase::FILE_FLAG_OVERLAPPED;
+
+    Char16[260] wbuf;
+    Char16*? wpath = utf8to16(path, &wbuf);
+    if (catch err = wpath) {
+        return err~;
+    }
+    winbase::Handle h = winbase::createFileW(wpath, access, share, null, disposition, flags, null);
+    if (h == winbase::INVALID_HANDLE_VALUE) return errno::get_fault()~;
+    return (int) (iptr) h;
+}
+
+struct PipePair { 
+    int read_fd; 
+    int write_fd;
+    winbase::Overlapped _pipe_conn_ov;
+}
+
+// tlocal winbase::Overlapped _pipe_conn_ov;
+tlocal int static_counter = 0;
+fn PipePair? create_pipe_async() 
+{
+    winbase::SecurityAttributes sa;
+    sa.nLength = $sizeof(sa);
+    sa.lpSecurityDescriptor = null;
+    sa.bInheritHandle = winbase::TRUE;
+
+    winbase::Handle rh;
+    winbase::Handle wh;
+    
+    char[64] name;
+    winbase::DWord pid = winbase::getCurrentProcessId();
+    static_counter += 1;
+    stdio::sprintf(&name[0], "\\\\.\\pipe\\asyncio_%lu_%lu", pid, (winbase::DWord)static_counter);
+
+    rh = winbase::createNamedPipeA(&name[0], winbase::PIPE_ACCESS_INBOUND | winbase::FILE_FLAG_OVERLAPPED, winbase::PIPE_TYPE_BYTE | winbase::PIPE_READMODE_BYTE | winbase::PIPE_WAIT, 1, 65536, 65536, 0, &sa);
+
+    // set async connect waiting, before CreateFile wh
+    // _pipe_conn_ov = {};
+    winbase::Overlapped _pipe_conn_ov = {};
+
+    winbase::Bool b = winbase::connectNamedPipe(rh, &_pipe_conn_ov);   // OVERLAPPED, returns immediately
+    if (b != winbase::TRUE) {
+        winbase::DWord err = winbase::getLastError();
+        if (err != winbase::ERROR_IO_PENDING && err != winbase::ERROR_PIPE_CONNECTED) {
+            return IO_ERROR~;
+        }
+    }
+    
+    wh = winbase::createFileA(&name[0], winbase::GENERIC_WRITE, 0, &sa, winbase::OPEN_EXISTING, winbase::FILE_ATTRIBUTE_NORMAL | winbase::FILE_FLAG_OVERLAPPED, null);
+
+    return { (int)(iptr)rh, (int)(iptr)wh, _pipe_conn_ov };
+}
+
+fn void close_socket(int fd) 
+{
+    winsock2::closesocket((winsock2::Socket)fd);
+}
+
+fn void close_handle(int fd) 
+{
+    winbase::closeHandle((winbase::Handle)(iptr)fd);
+}

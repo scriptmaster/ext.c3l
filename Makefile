@@ -10,6 +10,7 @@ build-all:
 	@cd ./examples/hash && make build
 	@cd ./examples/io && make build
 	@cd ./examples/fiber && make build
+	@cd ./examples/asyncio && make build
 
 clean:
 	@rm -rf ./build/*
@@ -19,6 +20,7 @@ clean:
 	@cd ./examples/hash && make clean
 	@cd ./examples/io && make clean
 	@cd ./examples/fiber && make clean
+	@cd ./examples/asyncio && make clean
 
 push:
 	@make clean

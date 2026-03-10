@@ -1,0 +1,281 @@
+// stream.c3
+
+module ext::asyncio;
+
+import std::io;
+
+import stdlib; // libc
+import string; // libc
+import errno; // libc
+
+const usz READ_BUF_SIZE  = 64 * 1024;
+
+struct Stream {
+    int fd;
+    bool eof;
+    fault error;
+    bool closed;
+    
+    char[READ_BUF_SIZE] rbuf;
+    usz rbuf_start;
+    usz rbuf_end;
+    
+    Stream* reader; // python StreamReader
+    Stream* writer; // python StreamWriter
+}
+
+fn Stream* stream_new(int fd) 
+{
+    Stream* s = mem_alloc(Stream);
+    *s = {};
+    s.fd = fd;
+    s.eof = false;
+    s.closed = false;
+    s.error = NONE;
+    s.rbuf_start = 0;
+    s.rbuf_end = 0;
+    s.reader = s;
+    s.writer = s;
+    
+    set_nonblocking(fd);
+    
+    return s;
+}
+
+// close() calls _free()
+fn void Stream._free(&self) 
+{
+    mem_free(self);
+}
+
+fn bool Stream.at_eof(&self) @inline 
+{
+    return self.eof && self.rbuf_start == self.rbuf_end;
+}
+
+fn bool Stream.fill(&self) @inline @private
+{
+    if (self.eof) return false;
+    
+    if (self.rbuf_start > 0) {
+        usz remaining = self.rbuf_end - self.rbuf_start;
+        if (remaining > 0) {
+            string::memmove(&self.rbuf[0], &self.rbuf[self.rbuf_start], remaining);
+        }
+        self.rbuf_end = remaining;
+        self.rbuf_start = 0;
+    }
+    if (self.rbuf_end >= READ_BUF_SIZE) return true;
+
+    usz? n = async_read(self.fd, &self.rbuf[self.rbuf_end], READ_BUF_SIZE - self.rbuf_end);
+    if (catch err = n) {
+        self.error = err;
+        return false;
+    }
+    
+    if (n > 0)  { 
+        self.rbuf_end += (usz)n; 
+        return true; 
+    }
+    if (n == 0) { self.eof = true; }
+    return false;
+}
+
+fn usz Stream.available(&self) @inline @private
+{
+    return self.rbuf_end - self.rbuf_start;
+}
+
+fn usz Stream.read(&self, char[] buf) 
+{
+    usz got = 0;
+    char* dst = buf.ptr;
+    while (got < buf.len) {
+        while (self.available() == 0) {
+            if (self.eof) return got;
+            if (!self.fill()) return got;
+        }
+        usz take = buf.len - got;
+        if (take > self.available()) take = self.available();
+        string::memcpy(dst + got, &self.rbuf[self.rbuf_start], take);
+        self.rbuf_start += take;
+        got += take;
+    }
+    return got;
+}
+
+fn usz Stream.read_any(&self, char[] buf) 
+{
+    if (self.available() == 0) {
+        if (self.eof) return 0;
+        self.fill();
+        if (self.available() == 0) return 0;
+    }
+    usz take = buf.len < self.available() ? buf.len : self.available();
+    string::memcpy(buf.ptr, &self.rbuf[self.rbuf_start], take);
+    self.rbuf_start += take;
+    return take;
+}
+
+fn usz Stream.read_until(&self, char delim, char[] buf) 
+{
+    usz total = 0;
+    char* dst = buf.ptr;
+    while (total < buf.len) {
+        while (self.available() == 0) {
+            if (self.eof) return total;
+            if (!self.fill()) return total;
+        }
+        char c = self.rbuf[self.rbuf_start++];
+        dst[total++] = c;
+        if (c == delim) return total;
+    }
+    return total;
+}
+
+fn usz Stream.readline(&self, char[] buf) 
+{
+    if (buf.len == 0) return 0;
+    usz len = self.read_until('\n', buf[0:buf.len - 1]);
+    if (len == 0) return 0;
+    if (len >= 2 && buf[len-2] == '\r') {
+        buf[len-2] = '\0';
+        return len - 2;
+    }
+    buf[len-1] = '\0';
+    return len - 1;
+}
+
+
+fn bool Stream.read_u32be(&self, uint* out) 
+{
+    char[4] buf;
+    if (self.read(&buf) < 4) return false;
+    *out = ((uint)buf[0] << 24) | ((uint)buf[1] << 16) | ((uint)buf[2] <<  8) | (uint)buf[3];
+    return true;
+}
+
+fn usz Stream.write(&self, char[] buf) 
+{
+    usz? n = async_write(self.fd, buf.ptr, buf.len);
+    if (catch err = n) {
+        self.error = err;
+        return 0;
+    }
+    return n;
+}
+
+
+fn usz Stream.write_u32be(&self, uint v) 
+{
+    char[4] buf = {
+        (char)((v >> 24) & 0xFF), (char)((v >> 16) & 0xFF),
+        (char)((v >>  8) & 0xFF), (char)( v        & 0xFF),
+    };
+    return self.write(&buf);
+}
+
+macro Stream.writef(&self, String fmt, args...) 
+{
+    DString str; str.init(_allox);
+    defer str.free();
+    str.appendf(fmt, ...args);
+
+    return self.write((char[])str.str_view());
+}
+
+fn Stream* open_pipe(int pipe_fd) 
+{
+    return stream_new(pipe_fd);
+}
+
+module ext::asyncio @if(!env::WIN32);
+
+import string; // libc
+import fcntl; // libc
+import unistd; // libc
+import errno; // libc
+
+fn void Stream.close(&self) 
+{
+    if (self.closed) return;
+    self.closed = true;
+    
+    unregister(self.fd);
+    unistd::close(self.fd);
+    self._free();
+}
+
+fn Stream*? open_file(String path, bool write_mode)
+{
+    ZString fname = path.zstr_copy(allocx);
+    defer mem_free(fname);
+
+    int fd = 0;
+    int flags = 0;
+    if (write_mode) {
+        flags |= fcntl::O_RDWR | fcntl::O_CREAT;
+        fd = fcntl::open(fname, flags, 0644);
+    } else {
+        flags |= fcntl::O_RDONLY;
+        fd = fcntl::open(fname, flags);
+    }
+    
+    if (fd < 0) return errno::get_fault()~;
+
+    return stream_new(fd);
+}
+
+
+fn Stream* stdin_stream() 
+{
+    return stream_new(0);
+}
+
+fn Stream* stdout_stream() 
+{
+    return stream_new(1);
+}
+
+
+module ext::asyncio @if(env::WIN32);
+
+import winbase; // libc
+import winsock2; // libc
+
+fn void Stream.close(&self) 
+{
+    if (self.closed) return;
+    self.closed = true;
+
+    unregister(self.fd);
+
+    if (_is_socket((winbase::Handle)(iptr)self.fd)) {
+        winsock2::closesocket((winsock2::Socket)self.fd);
+    } else {
+        winbase::closeHandle((winbase::Handle)(iptr)self.fd);
+    }
+    self._free();
+}
+
+fn Stream*? open_file(String path, bool write_mode)
+{
+    int fd = open_file_async(path, write_mode)!;
+    
+    if (fd < 0) return IO_ERROR~;
+
+    return stream_new(fd);
+}
+
+
+fn Stream* stdin_stream() 
+{
+    winbase::Handle h = winbase::getStdHandle(winbase::STD_INPUT_HANDLE);
+    return stream_new((int)(iptr)h);
+}
+
+fn Stream* stdout_stream() 
+{
+    winbase::Handle h = winbase::getStdHandle(winbase::STD_OUTPUT_HANDLE);
+    return stream_new((int)(iptr)h);
+}

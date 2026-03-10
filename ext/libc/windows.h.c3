@@ -8,16 +8,16 @@ module windows @if(env::WIN32);
 // Basic integer types
 alias Byte = char;
 alias Word = ushort;
-alias Dword = uint;
-alias Qword = ulong;
-alias DwordPtr = usz;
+alias DWord = uint;
+alias QWord = ulong;
+alias DWordPtr = usz;
 alias Long = int;
 alias ULong = uint;
 alias LongLong = long;
 alias ULongLong = ulong;
 
 // Pointer types
-alias Pvoid = void*;
+alias PVoid = void*;
 alias LPVoid = void*;
 alias LPCVoid = void*;
 
@@ -62,190 +62,190 @@ const Handle NULL_HANDLE = (Handle)0;
 // Error Codes
 // =============================================================================
 
-const Dword ERROR_SUCCESS = 0;
-const Dword ERROR_INVALID_FUNCTION = 1;
-const Dword ERROR_FILE_NOT_FOUND = 2;
-const Dword ERROR_PATH_NOT_FOUND = 3;
-const Dword ERROR_TOO_MANY_OPEN_FILES = 4;
-const Dword ERROR_ACCESS_DENIED = 5;
-const Dword ERROR_INVALID_HANDLE = 6;
-const Dword ERROR_NOT_ENOUGH_MEMORY = 8;
-const Dword ERROR_INVALID_DATA = 13;
-const Dword ERROR_OUTOFMEMORY = 14;
-const Dword ERROR_NO_MORE_FILES = 18;
-const Dword ERROR_SHARING_VIOLATION = 32;
-const Dword ERROR_HANDLE_EOF = 38;
-const Dword ERROR_NOT_SUPPORTED = 50;
-const Dword ERROR_ALREADY_EXISTS = 183;
-const Dword ERROR_MORE_DATA = 234;
-const Dword ERROR_NO_MORE_ITEMS = 259;
-const Dword ERROR_DIRECTORY = 267;
-const Dword ERROR_IO_PENDING = 997;
+const DWord ERROR_SUCCESS = 0;
+const DWord ERROR_INVALID_FUNCTION = 1;
+const DWord ERROR_FILE_NOT_FOUND = 2;
+const DWord ERROR_PATH_NOT_FOUND = 3;
+const DWord ERROR_TOO_MANY_OPEN_FILES = 4;
+const DWord ERROR_ACCESS_DENIED = 5;
+const DWord ERROR_INVALID_HANDLE = 6;
+const DWord ERROR_NOT_ENOUGH_MEMORY = 8;
+const DWord ERROR_INVALID_DATA = 13;
+const DWord ERROR_OUTOFMEMORY = 14;
+const DWord ERROR_NO_MORE_FILES = 18;
+const DWord ERROR_SHARING_VIOLATION = 32;
+const DWord ERROR_HANDLE_EOF = 38;
+const DWord ERROR_NOT_SUPPORTED = 50;
+const DWord ERROR_ALREADY_EXISTS = 183;
+const DWord ERROR_MORE_DATA = 234;
+const DWord ERROR_NO_MORE_ITEMS = 259;
+const DWord ERROR_DIRECTORY = 267;
+const DWord ERROR_IO_PENDING = 997;
 
 // Error handling functions
-extern fn Dword getLastError() @cname("GetLastError");
-extern fn void setLastError(Dword dwErrCode) @cname("SetLastError");
-extern fn Dword formatMessageA(Dword dwFlags, LPCVoid lpSource, Dword dwMessageId, Dword dwLanguageId, LPStr lpBuffer, Dword nSize, void* arguments) @cname("FormatMessageA");
-extern fn Dword formatMessageW(Dword dwFlags, LPCVoid lpSource, Dword dwMessageId, Dword dwLanguageId, LPWStr lpBuffer, Dword nSize, void* arguments) @cname("FormatMessageW");
+extern fn DWord getLastError() @cname("GetLastError");
+extern fn void setLastError(DWord dwErrCode) @cname("SetLastError");
+extern fn DWord formatMessageA(DWord dwFlags, LPCVoid lpSource, DWord dwMessageId, DWord dwLanguageId, LPStr lpBuffer, DWord nSize, void* arguments) @cname("FormatMessageA");
+extern fn DWord formatMessageW(DWord dwFlags, LPCVoid lpSource, DWord dwMessageId, DWord dwLanguageId, LPWStr lpBuffer, DWord nSize, void* arguments) @cname("FormatMessageW");
 
 // FormatMessage flags
-const Dword FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-const Dword FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-const Dword FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
+const DWord FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+const DWord FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+const DWord FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
 
 // =============================================================================
 // File Operations
 // =============================================================================
 
 // File access modes
-const Dword GENERIC_READ = 0x80000000;
-const Dword GENERIC_WRITE = 0x40000000;
-const Dword GENERIC_EXECUTE = 0x20000000;
-const Dword GENERIC_ALL = 0x10000000;
+const DWord GENERIC_READ = 0x80000000;
+const DWord GENERIC_WRITE = 0x40000000;
+const DWord GENERIC_EXECUTE = 0x20000000;
+const DWord GENERIC_ALL = 0x10000000;
 
 // File share modes
-const Dword FILE_SHARE_READ = 0x00000001;
-const Dword FILE_SHARE_WRITE = 0x00000002;
-const Dword FILE_SHARE_DELETE = 0x00000004;
+const DWord FILE_SHARE_READ = 0x00000001;
+const DWord FILE_SHARE_WRITE = 0x00000002;
+const DWord FILE_SHARE_DELETE = 0x00000004;
 
 // File creation dispositions
-const Dword CREATE_NEW = 1;
-const Dword CREATE_ALWAYS = 2;
-const Dword OPEN_EXISTING = 3;
-const Dword OPEN_ALWAYS = 4;
-const Dword TRUNCATE_EXISTING = 5;
+const DWord CREATE_NEW = 1;
+const DWord CREATE_ALWAYS = 2;
+const DWord OPEN_EXISTING = 3;
+const DWord OPEN_ALWAYS = 4;
+const DWord TRUNCATE_EXISTING = 5;
 
 // File attributes
-const Dword FILE_ATTRIBUTE_READONLY = 0x00000001;
-const Dword FILE_ATTRIBUTE_HIDDEN = 0x00000002;
-const Dword FILE_ATTRIBUTE_SYSTEM = 0x00000004;
-const Dword FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
-const Dword FILE_ATTRIBUTE_ARCHIVE = 0x00000020;
-const Dword FILE_ATTRIBUTE_DEVICE = 0x00000040;
-const Dword FILE_ATTRIBUTE_NORMAL = 0x00000080;
-const Dword FILE_ATTRIBUTE_TEMPORARY = 0x00000100;
-const Dword FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200;
-const Dword FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400;
-const Dword FILE_ATTRIBUTE_COMPRESSED = 0x00000800;
-const Dword FILE_ATTRIBUTE_OFFLINE = 0x00001000;
-const Dword FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = 0x00002000;
-const Dword FILE_ATTRIBUTE_ENCRYPTED = 0x00004000;
+const DWord FILE_ATTRIBUTE_READONLY = 0x00000001;
+const DWord FILE_ATTRIBUTE_HIDDEN = 0x00000002;
+const DWord FILE_ATTRIBUTE_SYSTEM = 0x00000004;
+const DWord FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
+const DWord FILE_ATTRIBUTE_ARCHIVE = 0x00000020;
+const DWord FILE_ATTRIBUTE_DEVICE = 0x00000040;
+const DWord FILE_ATTRIBUTE_NORMAL = 0x00000080;
+const DWord FILE_ATTRIBUTE_TEMPORARY = 0x00000100;
+const DWord FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200;
+const DWord FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400;
+const DWord FILE_ATTRIBUTE_COMPRESSED = 0x00000800;
+const DWord FILE_ATTRIBUTE_OFFLINE = 0x00001000;
+const DWord FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = 0x00002000;
+const DWord FILE_ATTRIBUTE_ENCRYPTED = 0x00004000;
 
 // File flags
-const Dword FILE_FLAG_WRITE_THROUGH = 0x80000000;
-const Dword FILE_FLAG_OVERLAPPED = 0x40000000;
-const Dword FILE_FLAG_NO_BUFFERING = 0x20000000;
-const Dword FILE_FLAG_RANDOM_ACCESS = 0x10000000;
-const Dword FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000;
-const Dword FILE_FLAG_DELETE_ON_CLOSE = 0x04000000;
-const Dword FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
-const Dword FILE_FLAG_POSIX_SEMANTICS = 0x01000000;
-const Dword FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
-const Dword INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF;
+const DWord FILE_FLAG_WRITE_THROUGH = 0x80000000;
+const DWord FILE_FLAG_OVERLAPPED = 0x40000000;
+const DWord FILE_FLAG_NO_BUFFERING = 0x20000000;
+const DWord FILE_FLAG_RANDOM_ACCESS = 0x10000000;
+const DWord FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000;
+const DWord FILE_FLAG_DELETE_ON_CLOSE = 0x04000000;
+const DWord FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+const DWord FILE_FLAG_POSIX_SEMANTICS = 0x01000000;
+const DWord FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
+const DWord INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF;
 
 
 // File seek methods
-const Dword FILE_BEGIN = 0;
-const Dword FILE_CURRENT = 1;
-const Dword FILE_END = 2;
+const DWord FILE_BEGIN = 0;
+const DWord FILE_CURRENT = 1;
+const DWord FILE_END = 2;
 
 // File time structure
 struct FileTime {
-    Dword dwLowDateTime;
-    Dword dwHighDateTime;
+    DWord dwLowDateTime;
+    DWord dwHighDateTime;
 }
 
 // File information structures
 struct Win32FindDataA {
-    Dword dwFileAttributes;
+    DWord dwFileAttributes;
     FileTime ftCreationTime;
     FileTime ftLastAccessTime;
     FileTime ftLastWriteTime;
-    Dword nFileSizeHigh;
-    Dword nFileSizeLow;
-    Dword dwReserved0;
-    Dword dwReserved1;
+    DWord nFileSizeHigh;
+    DWord nFileSizeLow;
+    DWord dwReserved0;
+    DWord dwReserved1;
     char[260] cFileName;      // MAX_PATH
     char[14] cAlternateFileName;
 }
 
 struct Win32FindDataW {
-    Dword dwFileAttributes;
+    DWord dwFileAttributes;
     FileTime ftCreationTime;
     FileTime ftLastAccessTime;
     FileTime ftLastWriteTime;
-    Dword nFileSizeHigh;
-    Dword nFileSizeLow;
-    Dword dwReserved0;
-    Dword dwReserved1;
+    DWord nFileSizeHigh;
+    DWord nFileSizeLow;
+    DWord dwReserved0;
+    DWord dwReserved1;
     ushort[260] cFileName;    // MAX_PATH
     ushort[14] cAlternateFileName;
 }
 
 struct ByHandleFileInformation {
-    Dword dwFileAttributes;
+    DWord dwFileAttributes;
     FileTime ftCreationTime;
     FileTime ftLastAccessTime;
     FileTime ftLastWriteTime;
-    Dword dwVolumeSerialNumber;
-    Dword nFileSizeHigh;
-    Dword nFileSizeLow;
-    Dword nNumberOfLinks;
-    Dword nFileIndexHigh;
-    Dword nFileIndexLow;
+    DWord dwVolumeSerialNumber;
+    DWord nFileSizeHigh;
+    DWord nFileSizeLow;
+    DWord nNumberOfLinks;
+    DWord nFileIndexHigh;
+    DWord nFileIndexLow;
 }
 
 // File functions
 extern fn Handle createFileA(
     LPCStr lpFileName, 
-    Dword dwDesiredAccess, 
-    Dword dwShareMode,
+    DWord dwDesiredAccess, 
+    DWord dwShareMode,
     void* lpSecurityAttributes, 
-    Dword dwCreationDisposition,
-    Dword dwFlagsAndAttributes, 
+    DWord dwCreationDisposition,
+    DWord dwFlagsAndAttributes, 
     Handle hTemplateFile
 ) @cname("CreateFileA");
 
 extern fn Handle createFileW(
     LPCWStr lpFileName, 
-    Dword dwDesiredAccess, 
-    Dword dwShareMode,
+    DWord dwDesiredAccess, 
+    DWord dwShareMode,
     void* lpSecurityAttributes, 
-    Dword dwCreationDisposition,
-    Dword dwFlagsAndAttributes, 
+    DWord dwCreationDisposition,
+    DWord dwFlagsAndAttributes, 
     Handle hTemplateFile
 ) @cname("CreateFileW");
 
 extern fn Bool readFile(
     Handle hFile, 
     LPVoid lpBuffer, 
-    Dword nNumberOfBytesToRead,
-    Dword* lpNumberOfBytesRead, 
+    DWord nNumberOfBytesToRead,
+    DWord* lpNumberOfBytesRead, 
     void* lpOverlapped
 ) @cname("ReadFile");
 
 extern fn Bool writeFile(
     Handle hFile, 
     LPCVoid lpBuffer, 
-    Dword nNumberOfBytesToWrite,
-    Dword* lpNumberOfBytesWritten, 
+    DWord nNumberOfBytesToWrite,
+    DWord* lpNumberOfBytesWritten, 
     void* lpOverlapped
 ) @cname("WriteFile");
 
 extern fn Bool closeHandle(Handle hObject) @cname("CloseHandle");
 
-extern fn Dword setFilePointer(
+extern fn DWord setFilePointer(
     Handle hFile, 
     Long lDistanceToMove, 
     Long* lpDistanceToMoveHigh,
-    Dword dwMoveMethod
+    DWord dwMoveMethod
 ) @cname("SetFilePointer");
 
 extern fn Bool setFilePointerEx(
     Handle hFile, 
     LongLong liDistanceToMove,
     LongLong* lpNewFilePointer, 
-    Dword dwMoveMethod
+    DWord dwMoveMethod
 ) @cname("SetFilePointerEx");
 
 extern fn Bool getFileTime(
@@ -262,16 +262,16 @@ extern fn Bool setFileTime(
     FileTime* lpLastWriteTime
 ) @cname("SetFileTime");
 
-extern fn Dword getFileSize(
+extern fn DWord getFileSize(
     Handle hFile, 
-    Dword* lpFileSizeHigh
+    DWord* lpFileSizeHigh
 ) @cname("GetFileSize");
 
 extern fn Bool getFileSizeEx(Handle hFile, LongLong* lpFileSize) @cname("GetFileSizeEx");
-extern fn Dword getFileAttributesA(LPCStr lpFileName) @cname("GetFileAttributesA");
-extern fn Dword getFileAttributesW(LPCWStr lpFileName) @cname("GetFileAttributesW");
-extern fn Bool setFileAttributesA(LPCStr lpFileName, Dword dwFileAttributes) @cname("SetFileAttributesA");
-extern fn Bool setFileAttributesW(LPCWStr lpFileName, Dword dwFileAttributes) @cname("SetFileAttributesW");
+extern fn DWord getFileAttributesA(LPCStr lpFileName) @cname("GetFileAttributesA");
+extern fn DWord getFileAttributesW(LPCWStr lpFileName) @cname("GetFileAttributesW");
+extern fn Bool setFileAttributesA(LPCStr lpFileName, DWord dwFileAttributes) @cname("SetFileAttributesA");
+extern fn Bool setFileAttributesW(LPCWStr lpFileName, DWord dwFileAttributes) @cname("SetFileAttributesW");
 extern fn Bool deleteFileA(LPCStr lpFileName) @cname("DeleteFileA");
 extern fn Bool deleteFileW(LPCWStr lpFileName) @cname("DeleteFileW");
 extern fn Bool copyFileA(LPCStr lpExistingFileName, LPCStr lpNewFileName, Bool bFailIfExists) @cname("CopyFileA");
@@ -286,8 +286,8 @@ extern fn Bool createDirectoryA(LPCStr lpPathName, void* lpSecurityAttributes) @
 extern fn Bool createDirectoryW(LPCWStr lpPathName, void* lpSecurityAttributes) @cname("CreateDirectoryW");
 extern fn Bool removeDirectoryA(LPCStr lpPathName) @cname("RemoveDirectoryA");
 extern fn Bool removeDirectoryW(LPCWStr lpPathName) @cname("RemoveDirectoryW");
-extern fn Dword getCurrentDirectoryA(Dword nBufferLength, LPStr lpBuffer) @cname("GetCurrentDirectoryA");
-extern fn Dword getCurrentDirectoryW(Dword nBufferLength, LPWStr lpBuffer) @cname("GetCurrentDirectoryW");
+extern fn DWord getCurrentDirectoryA(DWord nBufferLength, LPStr lpBuffer) @cname("GetCurrentDirectoryA");
+extern fn DWord getCurrentDirectoryW(DWord nBufferLength, LPWStr lpBuffer) @cname("GetCurrentDirectoryW");
 extern fn Bool setCurrentDirectoryA(LPCStr lpPathName) @cname("SetCurrentDirectoryA");
 extern fn Bool setCurrentDirectoryW(LPCWStr lpPathName) @cname("SetCurrentDirectoryW");
 
@@ -303,47 +303,47 @@ extern fn Bool findClose(Handle hFindFile) @cname("FindClose");
 // =============================================================================
 
 // Memory allocation flags
-const Dword MEM_COMMIT = 0x00001000;
-const Dword MEM_RESERVE = 0x00002000;
-const Dword MEM_RESET = 0x00080000;
-const Dword MEM_RELEASE = 0x00008000;
-const Dword MEM_DECOMMIT = 0x00004000;
+const DWord MEM_COMMIT = 0x00001000;
+const DWord MEM_RESERVE = 0x00002000;
+const DWord MEM_RESET = 0x00080000;
+const DWord MEM_RELEASE = 0x00008000;
+const DWord MEM_DECOMMIT = 0x00004000;
 
 // Memory protection flags
-const Dword PAGE_NOACCESS = 0x01;
-const Dword PAGE_READONLY = 0x02;
-const Dword PAGE_READWRITE = 0x04;
-const Dword PAGE_WRITECOPY = 0x08;
-const Dword PAGE_EXECUTE = 0x10;
-const Dword PAGE_EXECUTE_READ = 0x20;
-const Dword PAGE_EXECUTE_READWRITE = 0x40;
-const Dword PAGE_EXECUTE_WRITECOPY = 0x80;
-const Dword PAGE_GUARD = 0x100;
-const Dword PAGE_NOCACHE = 0x200;
-const Dword PAGE_WRITECOMBINE = 0x400;
+const DWord PAGE_NOACCESS = 0x01;
+const DWord PAGE_READONLY = 0x02;
+const DWord PAGE_READWRITE = 0x04;
+const DWord PAGE_WRITECOPY = 0x08;
+const DWord PAGE_EXECUTE = 0x10;
+const DWord PAGE_EXECUTE_READ = 0x20;
+const DWord PAGE_EXECUTE_READWRITE = 0x40;
+const DWord PAGE_EXECUTE_WRITECOPY = 0x80;
+const DWord PAGE_GUARD = 0x100;
+const DWord PAGE_NOCACHE = 0x200;
+const DWord PAGE_WRITECOMBINE = 0x400;
 
 // Heap flags
-const Dword HEAP_NO_SERIALIZE = 0x00000001;
-const Dword HEAP_GENERATE_EXCEPTIONS = 0x00000004;
-const Dword HEAP_ZERO_MEMORY = 0x00000008;
+const DWord HEAP_NO_SERIALIZE = 0x00000001;
+const DWord HEAP_GENERATE_EXCEPTIONS = 0x00000004;
+const DWord HEAP_ZERO_MEMORY = 0x00000008;
 
 // Memory functions
-extern fn LPVoid virtualAlloc(LPVoid lpAddress, usz dwSize, Dword flAllocationType,
-    Dword flProtect) @cname("VirtualAlloc");
-extern fn Bool virtualFree(LPVoid lpAddress, usz dwSize, Dword dwFreeType) @cname("VirtualFree");
-extern fn Bool virtualProtect(LPVoid lpAddress, usz dwSize, Dword flNewProtect,
-    Dword* lpflOldProtect) @cname("VirtualProtect");
+extern fn LPVoid virtualAlloc(LPVoid lpAddress, usz dwSize, DWord flAllocationType,
+    DWord flProtect) @cname("VirtualAlloc");
+extern fn Bool virtualFree(LPVoid lpAddress, usz dwSize, DWord dwFreeType) @cname("VirtualFree");
+extern fn Bool virtualProtect(LPVoid lpAddress, usz dwSize, DWord flNewProtect,
+    DWord* lpflOldProtect) @cname("VirtualProtect");
 extern fn usz virtualQuery(LPCVoid lpAddress, void* lpBuffer, usz dwLength) @cname("VirtualQuery");
 
 // Heap functions
 extern fn Handle getProcessHeap() @cname("GetProcessHeap");
-extern fn Handle heapCreate(Dword flOptions, usz dwInitialSize, usz dwMaximumSize) @cname("HeapCreate");
+extern fn Handle heapCreate(DWord flOptions, usz dwInitialSize, usz dwMaximumSize) @cname("HeapCreate");
 extern fn Bool heapDestroy(Handle hHeap) @cname("HeapDestroy");
-extern fn LPVoid heapAlloc(Handle hHeap, Dword dwFlags, usz dwBytes) @cname("HeapAlloc");
-extern fn LPVoid heapReAlloc(Handle hHeap, Dword dwFlags, LPVoid lpMem, usz dwBytes) @cname("HeapReAlloc");
-extern fn Bool heapFree(Handle hHeap, Dword dwFlags, LPVoid lpMem) @cname("HeapFree");
-extern fn usz heapSize(Handle hHeap, Dword dwFlags, LPCVoid lpMem) @cname("HeapSize");
-extern fn Bool heapValidate(Handle hHeap, Dword dwFlags, LPCVoid lpMem) @cname("HeapValidate");
+extern fn LPVoid heapAlloc(Handle hHeap, DWord dwFlags, usz dwBytes) @cname("HeapAlloc");
+extern fn LPVoid heapReAlloc(Handle hHeap, DWord dwFlags, LPVoid lpMem, usz dwBytes) @cname("HeapReAlloc");
+extern fn Bool heapFree(Handle hHeap, DWord dwFlags, LPVoid lpMem) @cname("HeapFree");
+extern fn usz heapSize(Handle hHeap, DWord dwFlags, LPCVoid lpMem) @cname("HeapSize");
+extern fn Bool heapValidate(Handle hHeap, DWord dwFlags, LPCVoid lpMem) @cname("HeapValidate");
 
 // Global memory functions (legacy but still used)
 extern fn HGlobal globalAlloc(uint uFlags, usz dwBytes) @cname("GlobalAlloc");
@@ -358,14 +358,14 @@ extern fn usz globalSize(HGlobal hMem) @cname("GlobalSize");
 // =============================================================================
 
 // Process creation flags
-const Dword DEBUG_PROCESS = 0x00000001;
-const Dword DEBUG_ONLY_THIS_PROCESS = 0x00000002;
-const Dword CREATE_SUSPENDED = 0x00000004;
-const Dword DETACHED_PROCESS = 0x00000008;
-const Dword CREATE_NEW_CONSOLE = 0x00000010;
-const Dword CREATE_NEW_PROCESS_GROUP = 0x00000200;
-const Dword CREATE_UNICODE_ENVIRONMENT = 0x00000400;
-const Dword CREATE_NO_WINDOW = 0x08000000;
+const DWord DEBUG_PROCESS = 0x00000001;
+const DWord DEBUG_ONLY_THIS_PROCESS = 0x00000002;
+const DWord CREATE_SUSPENDED = 0x00000004;
+const DWord DETACHED_PROCESS = 0x00000008;
+const DWord CREATE_NEW_CONSOLE = 0x00000010;
+const DWord CREATE_NEW_PROCESS_GROUP = 0x00000200;
+const DWord CREATE_UNICODE_ENVIRONMENT = 0x00000400;
+const DWord CREATE_NO_WINDOW = 0x08000000;
 
 // Thread priority
 const int THREAD_PRIORITY_IDLE = -15;
@@ -377,18 +377,18 @@ const int THREAD_PRIORITY_HIGHEST = 2;
 const int THREAD_PRIORITY_TIME_CRITICAL = 15;
 
 // Wait results
-const Dword WAIT_OBJECT_0 = 0x00000000;
-const Dword WAIT_ABANDONED = 0x00000080;
-const Dword WAIT_TIMEOUT = 0x00000102;
-const Dword WAIT_FAILED = 0xFFFFFFFF;
-const Dword INFINITE = 0xFFFFFFFF;
+const DWord WAIT_OBJECT_0 = 0x00000000;
+const DWord WAIT_ABANDONED = 0x00000080;
+const DWord WAIT_TIMEOUT = 0x00000102;
+const DWord WAIT_FAILED = 0xFFFFFFFF;
+const DWord INFINITE = 0xFFFFFFFF;
 
 // Exit codes
-const Dword STILL_ACTIVE = 259;
+const DWord STILL_ACTIVE = 259;
 
 // Security attributes
 struct SecurityAttributes {
-    Dword nLength;
+    DWord nLength;
     LPVoid lpSecurityDescriptor;
     Bool bInheritHandle;
 }
@@ -397,24 +397,24 @@ struct SecurityAttributes {
 struct ProcessInformation {
     Handle hProcess;
     Handle hThread;
-    Dword dwProcessId;
-    Dword dwThreadId;
+    DWord dwProcessId;
+    DWord dwThreadId;
 }
 
 // Startup info
 struct StartupInfoA {
-    Dword cb;
+    DWord cb;
     LPStr lpReserved;
     LPStr lpDesktop;
     LPStr lpTitle;
-    Dword dwX;
-    Dword dwY;
-    Dword dwXSize;
-    Dword dwYSize;
-    Dword dwXCountChars;
-    Dword dwYCountChars;
-    Dword dwFillAttribute;
-    Dword dwFlags;
+    DWord dwX;
+    DWord dwY;
+    DWord dwXSize;
+    DWord dwYSize;
+    DWord dwXCountChars;
+    DWord dwYCountChars;
+    DWord dwFillAttribute;
+    DWord dwFlags;
     Word wShowWindow;
     Word cbReserved2;
     Byte* lpReserved2;
@@ -424,18 +424,18 @@ struct StartupInfoA {
 }
 
 struct StartupInfoW {
-    Dword cb;
+    DWord cb;
     LPWStr lpReserved;
     LPWStr lpDesktop;
     LPWStr lpTitle;
-    Dword dwX;
-    Dword dwY;
-    Dword dwXSize;
-    Dword dwYSize;
-    Dword dwXCountChars;
-    Dword dwYCountChars;
-    Dword dwFillAttribute;
-    Dword dwFlags;
+    DWord dwX;
+    DWord dwY;
+    DWord dwXSize;
+    DWord dwYSize;
+    DWord dwXCountChars;
+    DWord dwYCountChars;
+    DWord dwFillAttribute;
+    DWord dwFlags;
     Word wShowWindow;
     Word cbReserved2;
     Byte* lpReserved2;
@@ -445,36 +445,36 @@ struct StartupInfoW {
 }
 
 // Process functions
-extern fn Bool createProcessA(LPCStr lpApplicationName, LPStr lpCommandLine, SecurityAttributes* lpProcessAttributes, SecurityAttributes* lpThreadAttributes, Bool bInheritHandles, Dword dwCreationFlags, LPVoid lpEnvironment, LPCStr lpCurrentDirectory, StartupInfoA* lpStartupInfo, ProcessInformation* lpProcessInformation) @cname("CreateProcessA");
+extern fn Bool createProcessA(LPCStr lpApplicationName, LPStr lpCommandLine, SecurityAttributes* lpProcessAttributes, SecurityAttributes* lpThreadAttributes, Bool bInheritHandles, DWord dwCreationFlags, LPVoid lpEnvironment, LPCStr lpCurrentDirectory, StartupInfoA* lpStartupInfo, ProcessInformation* lpProcessInformation) @cname("CreateProcessA");
 extern fn Bool createProcessW(LPCWStr lpApplicationName, LPWStr lpCommandLine,
     SecurityAttributes* lpProcessAttributes,
     SecurityAttributes* lpThreadAttributes,
-    Bool bInheritHandles, Dword dwCreationFlags,
+    Bool bInheritHandles, DWord dwCreationFlags,
     LPVoid lpEnvironment, LPCWStr lpCurrentDirectory,
     StartupInfoW* lpStartupInfo,
     ProcessInformation* lpProcessInformation) @cname("CreateProcessW");
 extern fn Handle getCurrentProcess() @cname("GetCurrentProcess");
-extern fn Dword getCurrentProcessId() @cname("GetCurrentProcessId");
+extern fn DWord getCurrentProcessId() @cname("GetCurrentProcessId");
 extern fn Bool terminateProcess(Handle hProcess, uint uExitCode) @cname("TerminateProcess");
-extern fn Bool getExitCodeProcess(Handle hProcess, Dword* lpExitCode) @cname("GetExitCodeProcess");
-extern fn Handle openProcess(Dword dwDesiredAccess, Bool bInheritHandle, Dword dwProcessId) @cname("OpenProcess");
-alias Thrfn = fn Dword(LPVoid);
+extern fn Bool getExitCodeProcess(Handle hProcess, DWord* lpExitCode) @cname("GetExitCodeProcess");
+extern fn Handle openProcess(DWord dwDesiredAccess, Bool bInheritHandle, DWord dwProcessId) @cname("OpenProcess");
+alias Thrfn = fn DWord(LPVoid);
 // Thread functions
 extern fn Handle createThread(SecurityAttributes* lpThreadAttributes, usz dwStackSize,
     Thrfn lpStartAddress, LPVoid lpParameter,
-    Dword dwCreationFlags, Dword* lpThreadId) @cname("CreateThread");
+    DWord dwCreationFlags, DWord* lpThreadId) @cname("CreateThread");
 extern fn Handle getCurrentThread() @cname("GetCurrentThread");
-extern fn Dword getCurrentThreadId() @cname("GetCurrentThreadId");
-extern fn Bool terminateThread(Handle hThread, Dword dwExitCode) @cname("TerminateThread");
-extern fn Dword suspendThread(Handle hThread) @cname("SuspendThread");
-extern fn Dword resumeThread(Handle hThread) @cname("ResumeThread");
-extern fn void exitThread(Dword dwExitCode) @cname("ExitThread");
-extern fn Bool getExitCodeThread(Handle hThread, Dword* lpExitCode) @cname("GetExitCodeThread");
+extern fn DWord getCurrentThreadId() @cname("GetCurrentThreadId");
+extern fn Bool terminateThread(Handle hThread, DWord dwExitCode) @cname("TerminateThread");
+extern fn DWord suspendThread(Handle hThread) @cname("SuspendThread");
+extern fn DWord resumeThread(Handle hThread) @cname("ResumeThread");
+extern fn void exitThread(DWord dwExitCode) @cname("ExitThread");
+extern fn Bool getExitCodeThread(Handle hThread, DWord* lpExitCode) @cname("GetExitCodeThread");
 extern fn int getThreadPriority(Handle hThread) @cname("GetThreadPriority");
 extern fn Bool setThreadPriority(Handle hThread, int nPriority) @cname("SetThreadPriority");
-extern fn Dword waitForSingleObject(Handle hHandle, Dword dwMilliseconds) @cname("WaitForSingleObject");
-extern fn Dword waitForMultipleObjects(Dword nCount, Handle* lpHandles, Bool bWaitAll,
-    Dword dwMilliseconds) @cname("WaitForMultipleObjects");
+extern fn DWord waitForSingleObject(Handle hHandle, DWord dwMilliseconds) @cname("WaitForSingleObject");
+extern fn DWord waitForMultipleObjects(DWord nCount, Handle* lpHandles, Bool bWaitAll,
+    DWord dwMilliseconds) @cname("WaitForMultipleObjects");
 
 // Exit process
 extern fn void exitProcess(uint uExitCode) @cname("ExitProcess") @noreturn;
@@ -488,16 +488,16 @@ extern fn Handle createMutexA(SecurityAttributes* lpMutexAttributes, Bool bIniti
     LPCStr lpName) @cname("CreateMutexA");
 extern fn Handle createMutexW(SecurityAttributes* lpMutexAttributes, Bool bInitialOwner,
     LPCWStr lpName) @cname("CreateMutexW");
-extern fn Handle openMutexA(Dword dwDesiredAccess, Bool bInheritHandle, LPCStr lpName) @cname("OpenMutexA");
-extern fn Handle openMutexW(Dword dwDesiredAccess, Bool bInheritHandle, LPCWStr lpName) @cname("OpenMutexW");
+extern fn Handle openMutexA(DWord dwDesiredAccess, Bool bInheritHandle, LPCStr lpName) @cname("OpenMutexA");
+extern fn Handle openMutexW(DWord dwDesiredAccess, Bool bInheritHandle, LPCWStr lpName) @cname("OpenMutexW");
 extern fn Bool releaseMutex(Handle hMutex) @cname("ReleaseMutex");
 
 extern fn Handle createEventA(SecurityAttributes* lpEventAttributes, Bool bManualReset,
     Bool bInitialState, LPCStr lpName) @cname("CreateEventA");
 extern fn Handle createEventW(SecurityAttributes* lpEventAttributes, Bool bManualReset,
     Bool bInitialState, LPCWStr lpName) @cname("CreateEventW");
-extern fn Handle openEventA(Dword dwDesiredAccess, Bool bInheritHandle, LPCStr lpName) @cname("OpenEventA");
-extern fn Handle openEventW(Dword dwDesiredAccess, Bool bInheritHandle, LPCWStr lpName) @cname("OpenEventW");
+extern fn Handle openEventA(DWord dwDesiredAccess, Bool bInheritHandle, LPCStr lpName) @cname("OpenEventA");
+extern fn Handle openEventW(DWord dwDesiredAccess, Bool bInheritHandle, LPCWStr lpName) @cname("OpenEventW");
 extern fn Bool setEvent(Handle hEvent) @cname("SetEvent");
 extern fn Bool resetEvent(Handle hEvent) @cname("ResetEvent");
 extern fn Bool pulseEvent(Handle hEvent) @cname("PulseEvent");
@@ -506,8 +506,8 @@ extern fn Handle createSemaphoreA(SecurityAttributes* lpSemaphoreAttributes,
     Long lInitialCount, Long lMaximumCount, LPCStr lpName) @cname("CreateSemaphoreA");
 extern fn Handle createSemaphoreW(SecurityAttributes* lpSemaphoreAttributes,
     Long lInitialCount, Long lMaximumCount, LPCWStr lpName) @cname("CreateSemaphoreW");
-extern fn Handle openSemaphoreA(Dword dwDesiredAccess, Bool bInheritHandle, LPCStr lpName) @cname("OpenSemaphoreA");
-extern fn Handle openSemaphoreW(Dword dwDesiredAccess, Bool bInheritHandle, LPCWStr lpName) @cname("OpenSemaphoreW");
+extern fn Handle openSemaphoreA(DWord dwDesiredAccess, Bool bInheritHandle, LPCStr lpName) @cname("OpenSemaphoreA");
+extern fn Handle openSemaphoreW(DWord dwDesiredAccess, Bool bInheritHandle, LPCWStr lpName) @cname("OpenSemaphoreW");
 extern fn Bool releaseSemaphore(Handle hSemaphore, Long lReleaseCount, Long* lpPreviousCount) @cname("ReleaseSemaphore");
 
 // Critical section
@@ -517,12 +517,12 @@ struct CriticalSection {
     Long recursionCount;
     Handle owningThread;
     Handle lockSemaphore;
-    DwordPtr spinCount;
+    DWordPtr spinCount;
 }
 
 extern fn void initializeCriticalSection(CriticalSection* lpCriticalSection) @cname("InitializeCriticalSection");
 extern fn Bool initializeCriticalSectionAndSpinCount(CriticalSection* lpCriticalSection,
-    Dword dwSpinCount) @cname("InitializeCriticalSectionAndSpinCount");
+    DWord dwSpinCount) @cname("InitializeCriticalSectionAndSpinCount");
 extern fn void enterCriticalSection(CriticalSection* lpCriticalSection) @cname("EnterCriticalSection");
 extern fn Bool tryEnterCriticalSection(CriticalSection* lpCriticalSection) @cname("TryEnterCriticalSection");
 extern fn void leaveCriticalSection(CriticalSection* lpCriticalSection) @cname("LeaveCriticalSection");
@@ -542,26 +542,26 @@ extern fn Long interlockedCompareExchange(Long* destination, Long exchange, Long
 // System info structure
 struct SystemInfo {
     union {
-        Dword dwOemId;
+        DWord dwOemId;
         struct {
             Word wProcessorArchitecture;
             Word wReserved;
         }
     }
-    Dword dwPageSize;
+    DWord dwPageSize;
     LPVoid lpMinimumApplicationAddress;
     LPVoid lpMaximumApplicationAddress;
-    DwordPtr dwActiveProcessorMask;
-    Dword dwNumberOfProcessors;
-    Dword dwProcessorType;
-    Dword dwAllocationGranularity;
+    DWordPtr dwActiveProcessorMask;
+    DWord dwNumberOfProcessors;
+    DWord dwProcessorType;
+    DWord dwAllocationGranularity;
     Word wProcessorLevel;
     Word wProcessorRevision;
 }
 
 // System functions
 extern fn void getSystemInfo(SystemInfo* lpSystemInfo) @cname("GetSystemInfo");
-extern fn Dword getTickCount() @cname("GetTickCount");
+extern fn DWord getTickCount() @cname("GetTickCount");
 extern fn ULongLong getTickCount64() @cname("GetTickCount64");
 extern fn Bool queryPerformanceCounter(LongLong* lpPerformanceCount) @cname("QueryPerformanceCounter");
 extern fn Bool queryPerformanceFrequency(LongLong* lpFrequency) @cname("QueryPerformanceFrequency");
@@ -590,40 +590,40 @@ extern fn Bool fileTimeToSystemTime(FileTime* lpFileTime, SystemTime* lpSystemTi
 // =============================================================================
 
 // Console constants
-const Dword STD_INPUT_HANDLE = (Dword)(-10);
-const Dword STD_OUTPUT_HANDLE = (Dword)(-11);
-const Dword STD_ERROR_HANDLE = (Dword)(-12);
+const DWord STD_INPUT_HANDLE = (DWord)(-10);
+const DWord STD_OUTPUT_HANDLE = (DWord)(-11);
+const DWord STD_ERROR_HANDLE = (DWord)(-12);
 
 // Console functions
-extern fn Handle getStdHandle(Dword nStdHandle) @cname("GetStdHandle");
-extern fn Bool setStdHandle(Dword nStdHandle, Handle hHandle) @cname("SetStdHandle");
+extern fn Handle getStdHandle(DWord nStdHandle) @cname("GetStdHandle");
+extern fn Bool setStdHandle(DWord nStdHandle, Handle hHandle) @cname("SetStdHandle");
 extern fn Bool allocConsole() @cname("AllocConsole");
 extern fn Bool freeConsole() @cname("FreeConsole");
-extern fn Bool attachConsole(Dword dwProcessId) @cname("AttachConsole");
+extern fn Bool attachConsole(DWord dwProcessId) @cname("AttachConsole");
 extern fn Bool setConsoleTitleA(LPCStr lpConsoleTitle) @cname("SetConsoleTitleA");
 extern fn Bool setConsoleTitleW(LPCWStr lpConsoleTitle) @cname("SetConsoleTitleW");
-extern fn Dword getConsoleTitleA(LPStr lpConsoleTitle, Dword nSize) @cname("GetConsoleTitleA");
-extern fn Dword getConsoleTitleW(LPWStr lpConsoleTitle, Dword nSize) @cname("GetConsoleTitleW");
+extern fn DWord getConsoleTitleA(LPStr lpConsoleTitle, DWord nSize) @cname("GetConsoleTitleA");
+extern fn DWord getConsoleTitleW(LPWStr lpConsoleTitle, DWord nSize) @cname("GetConsoleTitleW");
 
 // =============================================================================
 // Module/Library Functions
 // =============================================================================
 
 // LoadLibrary flags
-const Dword LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
-const Dword LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008;
-const Dword LOAD_LIBRARY_AS_IMAGE_RESOURCE = 0x00000020;
+const DWord LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
+const DWord LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008;
+const DWord LOAD_LIBRARY_AS_IMAGE_RESOURCE = 0x00000020;
 
 extern fn HModule loadLibraryA(LPCStr lpLibFileName) @cname("LoadLibraryA");
 extern fn HModule loadLibraryW(LPCWStr lpLibFileName) @cname("LoadLibraryW");
-extern fn HModule loadLibraryExA(LPCStr lpLibFileName, Handle hFile, Dword dwFlags) @cname("LoadLibraryExA");
-extern fn HModule loadLibraryExW(LPCWStr lpLibFileName, Handle hFile, Dword dwFlags) @cname("LoadLibraryExW");
+extern fn HModule loadLibraryExA(LPCStr lpLibFileName, Handle hFile, DWord dwFlags) @cname("LoadLibraryExA");
+extern fn HModule loadLibraryExW(LPCWStr lpLibFileName, Handle hFile, DWord dwFlags) @cname("LoadLibraryExW");
 extern fn Bool freeLibrary(HModule hLibModule) @cname("FreeLibrary");
 extern fn void* getProcAddress(HModule hModule, LPCStr lpProcName) @cname("GetProcAddress");
 extern fn HModule getModuleHandleA(LPCStr lpModuleName) @cname("GetModuleHandleA");
 extern fn HModule getModuleHandleW(LPCWStr lpModuleName) @cname("GetModuleHandleW");
-extern fn Dword getModuleFileNameA(HModule hModule, LPStr lpFilename, Dword nSize) @cname("GetModuleFileNameA");
-extern fn Dword getModuleFileNameW(HModule hModule, LPWStr lpFilename, Dword nSize) @cname("GetModuleFileNameW");
+extern fn DWord getModuleFileNameA(HModule hModule, LPStr lpFilename, DWord nSize) @cname("GetModuleFileNameA");
+extern fn DWord getModuleFileNameW(HModule hModule, LPWStr lpFilename, DWord nSize) @cname("GetModuleFileNameW");
 
 // =============================================================================
 // String and Character Functions
@@ -631,7 +631,7 @@ extern fn Dword getModuleFileNameW(HModule hModule, LPWStr lpFilename, Dword nSi
 
 extern fn int multiByteToWideChar(
     uint codePage, 
-    Dword dwFlags, 
+    DWord dwFlags, 
     LPCStr lpMultiByteStr,
     int cbMultiByte, 
     LPWStr lpWideCharStr, 
@@ -640,7 +640,7 @@ extern fn int multiByteToWideChar(
 
 extern fn int wideCharToMultiByte(
     uint codePage, 
-    Dword dwFlags, 
+    DWord dwFlags, 
     LPCWStr lpWideCharStr,
     int cchWideChar, 
     LPStr lpMultiByteStr, 
@@ -656,18 +656,18 @@ const uint CP_UTF8 = 65001; // UTF-8 code page
 // Miscellaneous
 // =============================================================================
 
-extern fn void sleep(Dword dwMilliseconds) @cname("Sleep");
+extern fn void sleep(DWord dwMilliseconds) @cname("Sleep");
 extern fn void outputDebugStringA(LPCStr lpOutputString) @cname("OutputDebugStringA");
 extern fn void outputDebugStringW(LPCWStr lpOutputString) @cname("OutputDebugStringW");
 extern fn Bool isDebuggerPresent() @cname("IsDebuggerPresent");
 extern fn void debugBreak() @cname("DebugBreak");
 
 // GetVersion (deprecated but still used)
-extern fn Dword getVersion() @cname("GetVersion");
+extern fn DWord getVersion() @cname("GetVersion");
 
 // Environment variables
-extern fn Dword getEnvironmentVariableA(LPCStr lpName, LPStr lpBuffer, Dword nSize) @cname("GetEnvironmentVariableA");
-extern fn Dword getEnvironmentVariableW(LPCWStr lpName, LPWStr lpBuffer, Dword nSize) @cname("GetEnvironmentVariableW");
+extern fn DWord getEnvironmentVariableA(LPCStr lpName, LPStr lpBuffer, DWord nSize) @cname("GetEnvironmentVariableA");
+extern fn DWord getEnvironmentVariableW(LPCWStr lpName, LPWStr lpBuffer, DWord nSize) @cname("GetEnvironmentVariableW");
 extern fn Bool setEnvironmentVariableA(LPCStr lpName, LPCStr lpValue) @cname("SetEnvironmentVariableA");
 extern fn Bool setEnvironmentVariableW(LPCWStr lpName, LPCWStr lpValue) @cname("SetEnvironmentVariableW");
 
@@ -676,24 +676,24 @@ extern fn LPStr getCommandLineA() @cname("GetCommandLineA");
 extern fn LPWStr getCommandLineW() @cname("GetCommandLineW");
 
 // Computer name
-extern fn Bool getComputerNameA(LPStr lpBuffer, Dword* nSize) @cname("GetComputerNameA");
-extern fn Bool getComputerNameW(LPWStr lpBuffer, Dword* nSize) @cname("GetComputerNameW");
+extern fn Bool getComputerNameA(LPStr lpBuffer, DWord* nSize) @cname("GetComputerNameA");
+extern fn Bool getComputerNameW(LPWStr lpBuffer, DWord* nSize) @cname("GetComputerNameW");
 
 // =============================================================================
 // Macros and Helper Functions
 // =============================================================================
 
 // LOWORD/HIWORD macros
-macro Word loword(Dword dw) => ((Word)((DwordPtr)(dw) & 0xFFFF));
-macro Word hiword(Dword dw) => ((Word)((DwordPtr)(dw) >> 16));
+macro Word loword(DWord dw) => ((Word)((DWordPtr)(dw) & 0xFFFF));
+macro Word hiword(DWord dw) => ((Word)((DWordPtr)(dw) >> 16));
 
 // LOBYTE/HIBYTE macros
-macro Byte lobyte(Word w) => ((Byte)((DwordPtr)(w) & 0xFF));
-macro Byte hibyte(Word w) => ((Byte)((DwordPtr)(w) >> 8));
+macro Byte lobyte(Word w) => ((Byte)((DWordPtr)(w) & 0xFF));
+macro Byte hibyte(Word w) => ((Byte)((DWordPtr)(w) >> 8));
 
 // MAKEWORD/MAKELONG macros
 macro Word makeword(Byte lo, Byte hi) => ((Word)(((Byte)(lo)) | ((Word)((Byte)(hi))) << 8));
-macro Dword makelong(Word lo, Word hi) => ((Dword)(((Word)(lo)) | ((Dword)((Word)(hi))) << 16));
+macro DWord makelong(Word lo, Word hi) => ((DWord)(((Word)(lo)) | ((DWord)((Word)(hi))) << 16));
 
 // Success/failure checks
 macro Bool succeeded(Long hr) => ((Long)(hr) >= 0);

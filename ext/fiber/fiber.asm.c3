@@ -1,169 +1,211 @@
 // fiber.asm.c3
 
+module ext::thread::fiber @if(env::X86_64 || env::AARCH64);
 
+import unistd; // sysconf
+import sys::mman; // mprotect
+import std::io;
+import string;
+import stdlib;
 
-module ext::thread::fiber @if(env::X86_64);
+// alias Fiber = void*;
+alias SwapFn = fn void(void*, void*) @callconv("stdcall");
+
+struct Fiber {
+    void* handle;
+    char* block;
+    usz stack_size;
+    bool done;
+}
+
+tlocal long[64] _buffer;
+tlocal Fiber* running = null;
+tlocal Fiber primary;
+
+SwapFn asm_swap = null;
+
+char[4096] asmblock @align(4096);
+
+const char[] CANARY = "CANARYCANARYCANARYCANARY"; // 24 bytes
+
+fn void init(Allocator allocx = mem, bool debug = true) @private
+{
+    if (running != null) return;
+    set_allocator(allocx);
+    set_debug(debug);
+
+    asmblock[0:ASM.len] = ASM[0:ASM.len];
+    ulong addr = (ulong)(void*)&asmblock;
+    ulong page_size = (ulong)unistd::sysconf(unistd::_SC_PAGESIZE);
+    ulong base = addr - (addr % page_size);
+    ulong size = (addr - base) + (ulong)asmblock.len;
+    mman::mprotect((void*)base, (usz)size, mman::PROT_READ | mman::PROT_EXEC);
+
+    asm_swap = (SwapFn)(void*)&asmblock;
+
+    primary.handle = (void*)&_buffer[0];
+    primary.block = null;
+    primary.stack_size = 0;
+    primary.done = false;
+    running = &primary;
+}
 
 // ========================================
-// x86-64 swap function (machine code)
-//
-// Two ABI variants are compiled in conditionally:
-//   - Win64:    args in rcx (new), rdx (prev)
-//               callee-saved: rbp, rsi, rdi, rbx, r12-r15, xmm6-xmm15
-//   - System V: args in rdi (new), rsi (prev)
-//               callee-saved: rbp, rbx, r12-r15  (no SSE regs required)
-//
-// Common logic:
-//   mov [prev], rsp        ; save current stack pointer
-//   mov rsp,    [new]      ; restore next stack pointer
-//   pop rax                ; pop entrypoint address into rax
-//   mov [prev+N], reg      ; save callee-saved registers
-//   mov reg,    [new+N]    ; restore callee-saved registers
-//   jmp rax                ; jump to entrypoint (or resume point)
+// crash — safety net if a coroutine entrypoint ever returns
 // ========================================
 
+fn void crash() @noreturn @private
+{
+    unreachable("crash");
+}
 
-// ----------------------------------------
-// Win64 ABI
-// rcx = new handle, rdx = prev handle
-// Win64 callee-saved: rbp, rsi, rdi, rbx, r12-r15, xmm6-xmm15
-// ----------------------------------------
-const char[*] ASMWIN64 = {
-    // --- save prev context (rdx) ---
-    0x48, 0x89, 0x22, // mov [rdx], rsp
-    0x48, 0x8b, 0x21, // mov rsp, [rcx]
-    0x58, // pop rax  ; entrypoint → rax
-    0x48, 0x89, 0x6a, 0x08, // mov [rdx+ 8], rbp
-    0x48, 0x89, 0x72, 0x10, // mov [rdx+16], rsi
-    0x48, 0x89, 0x7a, 0x18, // mov [rdx+24], rdi
-    0x48, 0x89, 0x5a, 0x20, // mov [rdx+32], rbx
-    0x4c, 0x89, 0x62, 0x28, // mov [rdx+40], r12
-    0x4c, 0x89, 0x6a, 0x30, // mov [rdx+48], r13
-    0x4c, 0x89, 0x72, 0x38, // mov [rdx+56], r14
-    0x4c, 0x89, 0x7a, 0x40, // mov [rdx+64], r15
+// ========================================
+// Public API
+// ========================================
 
-    // Win64 requires saving xmm6-xmm15 (callee-saved SSE registers)
-    0x0f, 0x29, 0x72, 0x50, // movaps [rdx+ 80], xmm6
-    0x0f, 0x29, 0x7a, 0x60, // movaps [rdx+ 96], xmm7
-    0x44, 0x0f, 0x29, 0x42, 0x70, // movaps [rdx+112], xmm8
-    0x48, 0x83, 0xc2, 0x70, // add rdx, 112     ; advance base for xmm9-15
-    0x44, 0x0f, 0x29, 0x4a, 0x10, // movaps [rdx+ 16], xmm9
-    0x44, 0x0f, 0x29, 0x52, 0x20, // movaps [rdx+ 32], xmm10
-    0x44, 0x0f, 0x29, 0x5a, 0x30, // movaps [rdx+ 48], xmm11
-    0x44, 0x0f, 0x29, 0x62, 0x40, // movaps [rdx+ 64], xmm12
-    0x44, 0x0f, 0x29, 0x6a, 0x50, // movaps [rdx+ 80], xmm13
-    0x44, 0x0f, 0x29, 0x72, 0x60, // movaps [rdx+ 96], xmm14
-    0x44, 0x0f, 0x29, 0x7a, 0x70, // movaps [rdx+112], xmm15
-        
-    // --- restore new context (rcx) ---
-    0x48, 0x8b, 0x69, 0x08, // mov rbp, [rcx+ 8]
-    0x48, 0x8b, 0x71, 0x10, // mov rsi, [rcx+16]
-    0x48, 0x8b, 0x79, 0x18, // mov rdi, [rcx+24]
-    0x48, 0x8b, 0x59, 0x20, // mov rbx, [rcx+32]
-    0x4c, 0x8b, 0x61, 0x28, // mov r12, [rcx+40]
-    0x4c, 0x8b, 0x69, 0x30, // mov r13, [rcx+48]
-    0x4c, 0x8b, 0x71, 0x38, // mov r14, [rcx+56]
-    0x4c, 0x8b, 0x79, 0x40, // mov r15, [rcx+64]
-        
-    0x0f, 0x28, 0x71, 0x50, // movaps xmm6,  [rcx+ 80]
-    0x0f, 0x28, 0x79, 0x60, // movaps xmm7,  [rcx+ 96]
-    0x44, 0x0f, 0x28, 0x41, 0x70, // movaps xmm8,  [rcx+112]
-    0x48, 0x83, 0xc1, 0x70, // add rcx, 112
-    0x44, 0x0f, 0x28, 0x49, 0x10, // movaps xmm9,  [rcx+ 16]
-    0x44, 0x0f, 0x28, 0x51, 0x20, // movaps xmm10, [rcx+ 32]
-    0x44, 0x0f, 0x28, 0x59, 0x30, // movaps xmm11, [rcx+ 48]
-    0x44, 0x0f, 0x28, 0x61, 0x40, // movaps xmm12, [rcx+ 64]
-    0x44, 0x0f, 0x28, 0x69, 0x50, // movaps xmm13, [rcx+ 80]
-    0x44, 0x0f, 0x28, 0x71, 0x60, // movaps xmm14, [rcx+ 96]
-    0x44, 0x0f, 0x28, 0x79, 0x70, // movaps xmm15, [rcx+112]
-        
-    0xff, 0xe0, // jmp rax
-};
+/// Return the currently active coroutine handle.
+fn Fiber* active()
+{
+    if (running == null) init();
 
-
-// ----------------------------------------
-// System V AMD64 ABI (Linux, macOS, BSD)
-// rdi = new handle, rsi = prev handle
-// SysV callee-saved: rbp, rbx, r12-r15
-// xmm registers are all caller-saved in SysV — no need to save
-// ----------------------------------------
-const char[*] ASM = {
-    // --- save prev context (rsi) ---
-    0x48, 0x89, 0x26, // mov [rsi], rsp
-    0x48, 0x8b, 0x27, // mov rsp, [rdi]
-    0x58, // pop rax ; entrypoint → rax
-    0x48, 0x89, 0x6e, 0x08, // mov [rsi+ 8], rbp
-    0x48, 0x89, 0x5e, 0x10, // mov [rsi+16], rbx
-    0x4c, 0x89, 0x66, 0x18, // mov [rsi+24], r12
-    0x4c, 0x89, 0x6e, 0x20, // mov [rsi+32], r13
-    0x4c, 0x89, 0x76, 0x28, // mov [rsi+40], r14
-    0x4c, 0x89, 0x7e, 0x30, // mov [rsi+48], r15
-    // --- restore new context (rdi) ---
-    0x48, 0x8b, 0x6f, 0x08, // mov rbp, [rdi+ 8]
-    0x48, 0x8b, 0x5f, 0x10, // mov rbx, [rdi+16]
-    0x4c, 0x8b, 0x67, 0x18, // mov r12, [rdi+24]
-    0x4c, 0x8b, 0x6f, 0x20, // mov r13, [rdi+32]
-    0x4c, 0x8b, 0x77, 0x28, // mov r14, [rdi+40]
-    0x4c, 0x8b, 0x7f, 0x30, // mov r15, [rdi+48]
-    0xff, 0xe0, // jmp rax
-};
-
-module ext::thread::fiber @if(env::AARCH64);
-
-const char[*] ASM = {
-  0x910003f0,  /* mov x16,sp           */
-  0xa9007830,  /* stp x16,x30,[x1]     */
-  0xa9407810,  /* ldp x16,x30,[x0]     */
-  0x9100021f,  /* mov sp,x16           */
-  0xa9015033,  /* stp x19,x20,[x1, 16] */
-  0xa9415013,  /* ldp x19,x20,[x0, 16] */
-  0xa9025835,  /* stp x21,x22,[x1, 32] */
-  0xa9425815,  /* ldp x21,x22,[x0, 32] */
-  0xa9036037,  /* stp x23,x24,[x1, 48] */
-  0xa9436017,  /* ldp x23,x24,[x0, 48] */
-  0xa9046839,  /* stp x25,x26,[x1, 64] */
-  0xa9446819,  /* ldp x25,x26,[x0, 64] */
-  0xa905703b,  /* stp x27,x28,[x1, 80] */
-  0xa945701b,  /* ldp x27,x28,[x0, 80] */
-  0xf900303d,  /* str x29,    [x1, 96] */
-  0xf940301d,  /* ldr x29,    [x0, 96] */
-  0x6d072428,  /* stp d8, d9, [x1,112] */
-  0x6d472408,  /* ldp d8, d9, [x0,112] */
-  0x6d082c2a,  /* stp d10,d11,[x1,128] */
-  0x6d482c0a,  /* ldp d10,d11,[x0,128] */
-  0x6d09342c,  /* stp d12,d13,[x1,144] */
-  0x6d49340c,  /* ldp d12,d13,[x0,144] */
-  0x6d0a3c2e,  /* stp d14,d15,[x1,160] */
-  0x6d4a3c0e,  /* ldp d14,d15,[x0,160] */
-  0xd61f03c0,  /* br x30               */
-};
+    return running;
+}
 
 /*
-module ext::thread::fiber @if(env::X86);
+### Stack Layout (x86-64)
 
-// asm_switch(oldp, newp);
-// fastcall: oldp to edx, newp to ecx, push return addr, call asm
-// stdcall: push newp, push oldp, push return addr, call asm
-
-const char[*] ASM = {
-    0x58, // pop eax
-    // pop ecx
-    // pop edx
-    // push ebp
-    // mov ebp, esp
-    0x89, 0x22, // mov [edx], esp
-    0x8b, 0x21, // mov esp, [ecx]
-    0x89, 0x6a, 0x04, // mov [edx+4], ebp
-    0x89, 0x72, 0x08, // mov [edx+8], esi
-    0x89, 0x7a, 0x0c, // mov [edx+12], edi
-    0x89, 0x5a, 0x10, // mov [edx+16], ebx
-    0x8b, 0x69, 0x04, // mov ebp, [ecx+4]
-    0x8b, 0x71, 0x08, // mov esi, [ecx+8]
-    0x8b, 0x79, 0x0c, // mov edi, [ecx+12]
-    0x8b, 0x59, 0x10, // mov ebx, [ecx+16]
-    // mov esp, ebp
-    // pop ebp
-    0xff, 0xe0, // jmp eax
-};
+memory (handle base)
+┌──────────────────┐
+│  handle[0]       │  ← initial rsp (points to p)
+│  handle[1..N]    │  ← callee-saved registers saved here after first swap
+│  ...             │
+│  &crash          │  ← *p+1  (guard: called if entrypoint returns)
+│  entrypoint addr │  ← *p    (popped → rax, then jmp rax)
+└──────────────────┘  ← stack_top (16-byte aligned, 32 bytes below raw top)
 
 */
+
+/// Create a coroutine in caller-supplied memory (zero-copy).
+alias Coroutine = fn void();
+fn Fiber* create(uint stack_size, Coroutine coroutine)
+{
+    if (running == null) init();
+
+    Fiber* fiber = mem_alloc(Fiber);
+    fiber.done = false;
+    fiber.stack_size = stack_size;
+
+    char* block;
+    void* handle;
+
+    if (debug) {
+        block = mem_malloc(stack_size + CANARY.len * 2);
+        string::memcpy(&block[0], CANARY.ptr, CANARY.len);
+        string::memset(&block[CANARY.len], 'Z', stack_size);
+        string::memcpy(&block[CANARY.len + stack_size], CANARY.ptr, CANARY.len);
+        handle = block + CANARY.len;
+    } else {
+        block = mem_malloc(stack_size);
+        handle = block;
+    }
+
+    fiber.block = block;
+    fiber.handle = handle;
+
+    if (handle != null) {
+        // Build the initial stack layout:
+        //
+        //   handle[0]  = rsp  → points to p below
+        //
+        //   stack grows downward:
+        //   ┌──────────────┐ ← stack_top (16-byte aligned, 32 bytes reserved)
+        //   │  &crash      │ ← called if entrypoint returns
+        //   │  entrypoint  │ ← popped into rax by the swap stub, then jmp rax
+        //   └──────────────┘ ← p  (stored as initial rsp in handle[0])
+        //
+        ulong stack_top = (ulong)handle + stack_size;
+        stack_top -= 32; // shadow space / ABI reserve
+        stack_top &= ~((ulong)15); // 16-byte alignment
+
+        long* p = (long*)stack_top;
+        p--;
+        *p = (long)(void*)&crash; // return address guard
+        p--;
+        *p = (long)(void*)coroutine; // initial instruction pointer
+
+        *((long*)handle) = (long)p; // store rsp in handle[0]
+    }
+
+    return fiber;
+}
+
+fn void check_canary(Fiber* fiber) @inline @private
+{
+    if (!debug) return;
+    if (fiber.block == null) return; // primary has no block
+    usz stack_size = fiber.stack_size;
+
+    if (string::strncmp(fiber.block, CANARY.ptr, CANARY.len) != 0) {
+        warn("Prefix canary breached");
+        stdlib::exit(0);
+    }
+
+    if (string::strncmp(fiber.block + CANARY.len + stack_size, CANARY.ptr, CANARY.len) != 0) {
+        warn("Postfix canary breached");
+        stdlib::exit(0);
+    }
+}
+
+fn usz stack_used(Fiber* fiber)
+{
+    if (!debug) return 0;
+    if (fiber.block == null) return 0; // primary has no block
+
+    usz stack_size = fiber.stack_size;
+    usz untouched;
+    for (isz i = 0; i < stack_size; i++) {
+        usz idx = i + CANARY.len;
+        if (fiber.block[idx] != 'Z') {
+            untouched = i;
+            break;
+        }
+    }
+    return stack_size - untouched;
+}
+
+fn void delete(Fiber* fiber)
+{
+    if (fiber == null || fiber == &primary) return;
+    check_canary(fiber);
+    // warn("@@@  free block=%p,stack_size:%dKB,stack_filled:%dKB", fiber.block, fiber.stack_size/1024, stack_filled(fiber)/1024);
+    mem_free(fiber.block);
+    mem_free(fiber);
+}
+
+fn void switch_to(Fiber* fiber)
+{
+    if (fiber == null || fiber.done) return;
+    if (running != &primary) check_canary(running);
+    if (fiber != &primary) check_canary(fiber);
+
+    Fiber* prev = running;
+    running = fiber;
+
+    // warn("%p, %p, %d, %d", fiber.handle, prev.handle, *(long*)fiber.handle, *(long*)prev.handle);
+
+    asm_swap(fiber.handle, prev.handle);
+}
+
+fn void yield()
+{
+    if (running == &primary) return;
+    check_canary(running);
+    switch_to(&primary);
+}
+
+fn void done()
+{
+    running.done = true;
+    check_canary(running);
+    yield();
+}
