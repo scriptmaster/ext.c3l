@@ -71,6 +71,8 @@ fn int? create_server_socket(ushort port)
 }
 ```
 
+* Browse [libc](./) header files.
+
 ### Discrepencies
 
 C3 has strong naming rules, which hinders away 1:1 direct conversion.
@@ -151,6 +153,8 @@ extern fn int wsa_startup(ushort version_required, WSAData* wsa_data) @cname("WS
 
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
+
+* Browse [libc](./) header files.
 
 ## Module Naming Convention
 
