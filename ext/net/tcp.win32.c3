@@ -3,10 +3,11 @@
 
 module ext::net::tcp @if(env::WIN32);
 
-import winsock2;
-import ws2tcpip;
+import c::winsock2;
+import c::ws2tcpip;
+import c::errno;
+
 import ext::net::wsa;
-import errno;
 
 typedef TcpSocket = inline winsock2::Socket;
 

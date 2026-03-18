@@ -2,11 +2,11 @@
 
 module ext::thread::fiber @if(env::X86_64 || env::AARCH64);
 
-import unistd; // sysconf
-import sys::mman; // mprotect
+import c::unistd; // sysconf
+import c::sys::mman; // mprotect
 import std::io;
-import string;
-import stdlib;
+import c::string;
+import c::stdlib;
 
 // alias Fiber = void*;
 alias SwapFn = fn void(void*, void*) @callconv("stdcall");

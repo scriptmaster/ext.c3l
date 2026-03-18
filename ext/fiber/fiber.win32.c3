@@ -2,7 +2,7 @@
 
 module ext::thread::fiber @if(env::WIN32);
 
-import winbase;
+import c::winbase;
 
 alias FiberProc = fn void(void* param);
 alias WinFiber = void*;

@@ -3,8 +3,9 @@
 module ext::asyncio;
 
 import std::io;
-import string;
-import stdlib;
+
+import c::string;
+import c::stdlib;
 
 macro void warn(String fmt, args...)
 {

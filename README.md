@@ -50,33 +50,33 @@ Now it's ready to be used in your project.
 
 ### C Header Bindings 
 
-* [ext/libc](ext/libc)
+* [ext/c](ext/c)
 
 Provides bridge modules to C header files for both POSIX and Windows platforms:
 
 | C Header | C3 Module | Import Statement |
 |----------|-----------|------------------|
-| `stdio.h` | `stdio.h.c3` | `import stdio;` |
-| `unistd.h` | `unistd.h.c3` | `import unistd;` |
-| `netinet/in.h` | `netinet.in.h.c3` | `import netinet::in;` |
-| `winsock2.h` | `winsock2.h.c3` | `import winsock2;` |
+| `stdio.h` | `stdio.h.c3` | `import c::stdio;` |
+| `unistd.h` | `unistd.h.c3` | `import c::unistd;` |
+| `netinet/in.h` | `netinet.in.h.c3` | `import c::netinet::in;` |
+| `winsock2.h` | `winsock2.h.c3` | `import c::winsock2;` |
 | ... | ... | ... |
 
 
 Import your familiar C header files.
 
 ```c3
-import stdio;
-import string;
-import errno; // provides errno(), get_fault()
-import sys::time; // POSIX
-import netinet::in; // POSIX
-import unistd; // POSIX
+import c::stdio;
+import c::string;
+import c::errno; // provides errno(), get_fault()
+import c::sys::time; // POSIX
+import c::netinet::in; // POSIX
+import c::unistd; // POSIX
 
-import io; // Win32
-import process; // Win32
-import winsock2; // Win32
-import ws2tcpip; // Win32
+import c::io; // Win32
+import c::process; // Win32
+import c::winsock2; // Win32
+import c::ws2tcpip; // Win32
 
 sidio::printf("Hello\n");
 
@@ -86,7 +86,7 @@ int result = winsock2::wsa_startup(0x0202, &wsa_data);
 UdpSocket? sock = (UdpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_DGRAM, winsock2::IPPROTO_UDP);
 ```
 
-- More about [C Header bindings](ext/libc/README.md)
+- More about [C Header bindings](ext/c/README.md)
 
 ### Networking 
 

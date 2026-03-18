@@ -3,9 +3,9 @@
 module slre;
 
 import std::io;
-import string;
-import stdio;
-import stdlib;
+import c::string;
+import c::stdio;
+import c::stdlib;
 
 struct SlreCap {
   char *ptr;

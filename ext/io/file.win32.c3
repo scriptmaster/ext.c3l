@@ -3,8 +3,8 @@
 
 module ext::io::cfile @if(env::WIN32);
 
-import windows;
-import errno;
+import c::windows;
+import c::errno;
 import ext::io::stat;
 
 struct File

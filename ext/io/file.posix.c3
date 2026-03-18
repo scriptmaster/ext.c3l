@@ -2,8 +2,8 @@
 
 module ext::io::cfile @if(!env::WIN32);
 
-import errno;
-import stdio;
+import c::errno;
+import c::stdio;
 import ext::io::stat;
 
 struct File 

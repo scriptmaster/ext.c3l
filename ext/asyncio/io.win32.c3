@@ -4,13 +4,13 @@ module ext::asyncio @if(env::WIN32);
 
 import std::io;
 
-import stdio; // libc
-import stdlib; // libc
-import string; // libc
-import winbase; // libc
-import winsock2; // libc
-import ws2tcpip; // libc
-import errno; // libc
+import c::stdio; // libc
+import c::stdlib; // libc
+import c::string; // libc
+import c::winbase; // libc
+import c::winsock2; // libc
+import c::ws2tcpip; // libc
+import c::errno; // libc
 
 const usz MAX_EVENTS = 1024;
 const usz MAX_FD_WATCH = 2048;

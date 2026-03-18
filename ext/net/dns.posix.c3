@@ -2,14 +2,15 @@
 
 module ext::net::dns @if(!env::WIN32);
 
-import stdio;
-import stdlib;
-import string;
-import netdb;
-import errno;
-import arpa::inet;
-import netinet::in;
-import sys::socket;
+import c::stdio;
+import c::stdlib;
+import c::string;
+import c::netdb;
+import c::errno;
+import c::arpa::inet;
+import c::netinet::in;
+import c::sys::socket;
+
 import std::collections::list;
 
 <*

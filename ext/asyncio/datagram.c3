@@ -4,8 +4,8 @@ module ext::asyncio;
 
 import std::io;
 
-import stdlib; // libc
-import string; // libc
+import c::stdlib; // libc
+import c::string; // libc
 
 struct Datagram {
     int fd;
@@ -79,9 +79,9 @@ fn usz EventLoop.sock_recvfrom(&self, int sock_fd, char[] data, char[] ip, usz* 
 
 module ext::asyncio @if(!env::WIN32);
 
-import string; // libc
-import fcntl; // libc
-import unistd; // libc
+import c::string; // libc
+import c::fcntl; // libc
+import c::unistd; // libc
 
 fn void Datagram.close(&self) 
 {
@@ -95,8 +95,8 @@ fn void Datagram.close(&self)
 
 module ext::asyncio @if(env::WIN32);
 
-import winbase; // libc
-import winsock2; // libc
+import c::winbase; // libc
+import c::winsock2; // libc
 
 fn void Datagram.close(&self) 
 {

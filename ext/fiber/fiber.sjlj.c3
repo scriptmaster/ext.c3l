@@ -3,10 +3,10 @@
 module ext::thread::fiber @if(false); // not included @if(env::POSIX);
 
 import std::io;
-import signal;
-import setjmp;
-import string;
-import stdlib;
+import c::signal;
+import c::setjmp;
+import c::string;
+import c::stdlib;
 
 // Coroutine implementation based on POSIX sigsetjmp/siglongjmp
 //  Original: Based on ideas from a paper by Ralf Engelschall

@@ -3,16 +3,16 @@
 module ext::asyncio @if(!env::WIN32);
 
 import std::io;
-import stdlib; // libc
-import unistd; // libc
-import fcntl;  // libc
-import string; // libc
-import netinet::in; // libc
-import sys::epoll;  // libc
-import sys::event;  // libc
-import sys::select; // libc
-import sys::socket; // libc
-import errno;  // libc
+import c::stdlib; // libc
+import c::unistd; // libc
+import c::fcntl;  // libc
+import c::string; // libc
+import c::netinet::in; // libc
+import c::sys::epoll;  // libc
+import c::sys::event;  // libc
+import c::sys::select; // libc
+import c::sys::socket; // libc
+import c::errno;  // libc
 
 const usz MAX_EVENTS = 1024;
 const usz MAX_FD_WATCH  = 4096;

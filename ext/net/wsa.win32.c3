@@ -4,8 +4,8 @@ bool __wsa_initialized = false;
 
 module ext::net::wsa @if(env::WIN32);
 
-import errno;
-import winsock2;
+import c::errno;
+import c::winsock2;
 
 fn void? startup() 
 {

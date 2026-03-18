@@ -5,8 +5,8 @@
 
 module ext::io::dir @if(env::WIN32);
 
-import errno;
-import windows;
+import c::errno;
+import c::windows;
 import std::io;
 import ext::io::stat;
 import std::collections::list;

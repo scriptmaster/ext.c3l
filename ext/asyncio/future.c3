@@ -5,8 +5,8 @@ module ext::asyncio;
 import std::io;
 import std::thread;
 import std::time::clock;
-import stdlib; // libc
-import errno; // libc
+import c::stdlib; // libc
+import c::errno; // libc
 
 import ext::thread::fiber;
 

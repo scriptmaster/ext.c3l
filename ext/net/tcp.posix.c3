@@ -2,12 +2,12 @@
 
 module ext::net::tcp @if(!env::WIN32);
 
-import string;
-import netinet::in;
-import sys::socket;
-import unistd;
-import fcntl;
-import errno;
+import c::string;
+import c::netinet::in;
+import c::sys::socket;
+import c::unistd;
+import c::fcntl;
+import c::errno;
 
 typedef TcpSocket = inline int;
 

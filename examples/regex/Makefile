@@ -16,7 +16,7 @@ clean:
 
 C3C = c3c compile
 EXT = ../../ext
-LIBC = $(EXT)/libc/*.c3
+LIBC = $(EXT)/c/*.c3
 REGEX = $(EXT)/regex/*.c3 
 
 slre: slre.c slre_test.c

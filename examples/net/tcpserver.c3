@@ -1,7 +1,7 @@
 // tcpserver.c3
 
 import std::io;
-import stdlib;
+import c::stdlib;
 import ext::net::tcp;
 
 fn void main()

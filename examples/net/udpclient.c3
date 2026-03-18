@@ -1,8 +1,8 @@
 // udpclient.c3
 
 import std::io;
-import stdlib;
-import stdio;
+import c::stdlib;
+import c::stdio;
 import ext::net::udp;
 
 fn void main(String[] args)

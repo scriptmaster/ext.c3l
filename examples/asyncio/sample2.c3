@@ -12,7 +12,7 @@
 module sample2;
 
 import std::io;
-import stdlib; // libc
+import c::stdlib; // libc
 import ext::asyncio;
 
 macro void warn(String fmt, args...)

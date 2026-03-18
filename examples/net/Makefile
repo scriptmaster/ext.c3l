@@ -16,7 +16,7 @@ clean:
 
 C3C = c3c compile
 EXT = ../../ext
-LIBC = $(EXT)/libc/*.c3
+LIBC = $(EXT)/c/*.c3
 NET = $(EXT)/net/*.c3 
 
 tcpclient: tcpclient.c3

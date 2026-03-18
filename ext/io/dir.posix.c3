@@ -6,8 +6,8 @@
 
 module ext::io::dir @if(!env::WIN32); // Posix
 
-import errno;
-import dirent;
+import c::errno;
+import c::dirent;
 import ext::io::stat;
 import std::collections::list;
 const int MAX_PATH = 1024;

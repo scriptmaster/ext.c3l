@@ -33,7 +33,7 @@ clean:
 C3C = c3c compile
 
 EXT = ../../ext
-LIBC = $(EXT)/libc/*.c3
+LIBC = $(EXT)/c/*.c3
 FIBER = $(EXT)/fiber/*.c3 
 ASYNCIO = $(EXT)/asyncio/*.c3
 

@@ -4,7 +4,7 @@ module example;
 
 import std::io;
 import ext::asyncio;
-import string; // libc
+import c::string; // libc
 
 
 asyncio::Server* g_server;

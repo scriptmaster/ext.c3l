@@ -2,10 +2,10 @@
 
 module ext::io::stat @if(env::WIN32);
 
-import errno;
-import ioapiset;
-import windows;
-import fileapi;
+import c::errno;
+import c::ioapiset;
+import c::windows;
+import c::fileapi;
 
 fn Char16*? utf8to16(String path, Char16[] wpath) 
 {

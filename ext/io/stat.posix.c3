@@ -11,7 +11,7 @@
 
 module ext::io::stat @if(!env::WIN32); // Posix
 
-import errno;
+import c::errno;
 
 // extern fn CInt stat(char* path, Stat* buf) ;
 extern fn CInt lstat(char* path, Stat* buf);

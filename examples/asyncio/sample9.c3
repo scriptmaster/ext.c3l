@@ -8,7 +8,7 @@ module example;
 
 import std::io;
 import ext::asyncio;
-import string;
+import c::string;
 
 // ========================================
 //  Server-side Protocol

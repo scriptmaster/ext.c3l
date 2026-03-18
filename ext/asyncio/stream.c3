@@ -4,9 +4,9 @@ module ext::asyncio;
 
 import std::io;
 
-import stdlib; // libc
-import string; // libc
-import errno; // libc
+import c::stdlib; // libc
+import c::string; // libc
+import c::errno; // libc
 
 const usz READ_BUF_SIZE  = 64 * 1024;
 
@@ -191,10 +191,10 @@ fn Stream* open_pipe(int pipe_fd)
 
 module ext::asyncio @if(!env::WIN32);
 
-import string; // libc
-import fcntl; // libc
-import unistd; // libc
-import errno; // libc
+import c::string; // libc
+import c::fcntl; // libc
+import c::unistd; // libc
+import c::errno; // libc
 
 fn void Stream.close(&self) 
 {
@@ -240,8 +240,8 @@ fn Stream* stdout_stream()
 
 module ext::asyncio @if(env::WIN32);
 
-import winbase; // libc
-import winsock2; // libc
+import c::winbase; // libc
+import c::winsock2; // libc
 
 fn void Stream.close(&self) 
 {

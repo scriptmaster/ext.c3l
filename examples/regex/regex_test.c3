@@ -1,10 +1,10 @@
 
 import ext::regex;
 
-import stdio;
-import string;
+import c::stdio;
+import c::string;
 import std::io;
-import stdlib;
+import c::stdlib;
 
 int total_tests = 0;
 int failed_tests = 0;

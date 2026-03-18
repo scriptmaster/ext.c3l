@@ -1,8 +1,8 @@
 // tcpclient.c3
 
 import std::io;
-import stdlib;
-import stdio;
+import c::stdlib;
+import c::stdio;
 import ext::net::tcp;
 
 fn void main(String[] args)

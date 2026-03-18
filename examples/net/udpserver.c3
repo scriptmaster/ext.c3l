@@ -1,7 +1,7 @@
 // udpserver.c3
 
 import std::io;
-import stdlib;
+import c::stdlib;
 import ext::net::udp;
 
 fn void main()

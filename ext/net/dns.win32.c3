@@ -2,12 +2,13 @@
 
 module ext::net::dns @if(env::WIN32);
 
-import stdio;
-import stdlib;
-import string;
-import errno;
-import winsock2;
-import ws2tcpip;
+import c::stdio;
+import c::stdlib;
+import c::string;
+import c::errno;
+import c::winsock2;
+import c::ws2tcpip;
+
 import std::collections::list;
 import ext::net::wsa;
 

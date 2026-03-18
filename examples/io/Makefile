@@ -10,7 +10,7 @@ clean:
 
 C3C = c3c compile
 EXT = ../../ext
-LIBC = $(EXT)/libc/*.c3
+LIBC = $(EXT)/c/*.c3
 IO = $(EXT)/io/*.c3 
 
 cfile_example: cfile_example.c3

@@ -3,15 +3,15 @@
 module ext::asyncio @if(!env::WIN32);
 
 import std::io;
-import stdio; // libc
-import string; // libc
-import stdlib; // libc
-import netinet::in; // libc
-import netdb; // libc
-import sys::socket; // libc
-import unistd; // libc
-import fcntl; // libc
-import errno; // libc
+import c::stdio; // libc
+import c::string; // libc
+import c::stdlib; // libc
+import c::netinet::in; // libc
+import c::netdb; // libc
+import c::sys::socket; // libc
+import c::unistd; // libc
+import c::fcntl; // libc
+import c::errno; // libc
 
 fn char* str2cptr(String str, char[] buf) @inline
 {

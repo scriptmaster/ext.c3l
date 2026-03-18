@@ -8,7 +8,7 @@ module sample2;
 
 import ext::asyncio;
 import std::io;
-import stdlib; // libc
+import c::stdlib; // libc
 
 macro void warn(String fmt, args...)
 {

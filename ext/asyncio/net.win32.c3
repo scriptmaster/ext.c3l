@@ -3,16 +3,16 @@
 module ext::asyncio @if(env::WIN32);
 
 import std::io;
-import stdio; // libc
-import stdlib; // libc
-import string; // libc
-import errno; // libc
+import c::stdio; // libc
+import c::stdlib; // libc
+import c::string; // libc
+import c::errno; // libc
 
-import winbase; // libc
-import winsock2; // libc
-import ws2tcpip; // libc
-import guiddef; // libc
-import mswsock; // libc
+import c::winbase; // libc
+import c::winsock2; // libc
+import c::ws2tcpip; // libc
+import c::guiddef; // libc
+import c::mswsock; // libc
 
 fn char* str2cptr(String str, char[] buf) @inline
 {

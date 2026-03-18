@@ -3,9 +3,9 @@
 module ext::thread::fiber @if(env::POSIX && (!env::X86_64 && !env::AARCH64));
 
 import std::io;
-import ucontext;
-import string;
-import stdlib;
+import c::ucontext;
+import c::string;
+import c::stdlib;
 
 struct Fiber {
     UContext context;

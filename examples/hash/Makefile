@@ -12,7 +12,7 @@ clean:
 
 C3C = c3c compile
 EXT = ../../ext
-LIBC = $(EXT)/libc/*.c3
+LIBC = $(EXT)/c/*.c3
 HASH = $(EXT)/hash/*.c3 
 
 murmurtest: murmurtest.c3
