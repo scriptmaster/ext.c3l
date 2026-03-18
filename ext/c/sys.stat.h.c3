@@ -1,5 +1,13 @@
 // sys.stat.h.c3
 
+// three files
+//
+// sys.stat.def.h.c3
+// sys.stat.posix.h.c3
+// sys.stat.win32.h.c3
+
+
+/*
 // sys/stat.h
 
 module c::sys::stat @if(!env::WIN32);
@@ -113,3 +121,4 @@ const Mode S_IROTH = 0o0004;
 const Mode S_IWOTH = 0o0002;
 const Mode S_IXOTH = 0o0001;
 
+*/
