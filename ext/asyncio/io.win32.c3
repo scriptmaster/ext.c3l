@@ -4,13 +4,15 @@ module ext::asyncio @if(env::WIN32);
 
 import std::io;
 
-import c::stdio; // libc
-import c::stdlib; // libc
-import c::string; // libc
-import c::winbase; // libc
-import c::winsock2; // libc
-import c::ws2tcpip; // libc
-import c::errno; // libc
+import c::stdio;
+import c::stdlib;
+import c::string;
+import c::winbase;
+import c::winsock2;
+import c::ws2tcpip;
+import c::errno;
+import ext::debug;
+import ext::mem;
 
 const usz MAX_EVENTS = 1024;
 const usz MAX_FD_WATCH = 2048;
@@ -63,7 +65,7 @@ fn IocpOp* _op_alloc()
             return &_op_pool[i];
         }
     }
-    _assert(false, "asyncio/iocp: operation pool exhausted");
+    @assert(false, "asyncio/iocp: operation pool exhausted");
     return null;
 }
 
@@ -87,7 +89,7 @@ fn bool _is_socket(winbase::Handle h)
     int rc  = winsock2::getsockopt((winsock2::Socket)h, winsock2::SOL_SOCKET, winsock2::SO_ERROR, (char*)&err, &len);
     if (rc == 0) return true;
     if (winsock2::wsaGetLastError() == winsock2::WSAENOTSOCK) return false;
-    _assert(false, "getsockopt() failed");
+    @assert(false, "getsockopt() failed");
     return false;
 }
 
@@ -103,7 +105,7 @@ fn bool _iocp_associate(winbase::Handle h)
 
 }
 
-bool initialized = false;
+tlocal bool initialized = false;
 fn void io_init() 
 {
     if (initialized) return;
@@ -111,11 +113,11 @@ fn void io_init()
     
     // Winsock initialize
     winsock2::WSAData wsa;
-    _assert(winsock2::wsaStartup(0x0202, &wsa) == 0, "asyncio: WSAStartup failed");
+    @assert(winsock2::wsaStartup(0x0202, &wsa) == 0, "asyncio: WSAStartup failed");
 
     // create IOCP (threads 1)
     _iocp = winbase::createIoCompletionPort(winbase::INVALID_HANDLE_VALUE, null, 0, 1);
-    _assert(_iocp != null, "asyncio: CreateIoCompletionPort failed");
+    @assert(_iocp != null, "asyncio: CreateIoCompletionPort failed");
 }
 
 tlocal bool _io_shutting_down = false;
@@ -177,7 +179,7 @@ fn void io_destroy()
     }
 
     // 4. _active_op_count == 0 
-    _assert(_active_op_count == 0, "asyncio/win32: pending IOCP ops remain at destroy");
+    @assert(_active_op_count == 0, "asyncio/win32: pending IOCP ops remain at destroy");
 
     winbase::closeHandle(_iocp);
     _iocp = null;
@@ -197,45 +199,11 @@ fn bool set_nonblocking(int fd)
     return true; // For files, OVERLAPPED is nonblocking
 }
 
-/*
-struct FdWatch {
-    int fd;
-    bool active;
-    Future* read_fut;
-    Future* write_fut;
-}
 
-tlocal FdWatch[MAX_FD_WATCH] _fd_table;
-tlocal usz _fd_count;
-
-fn FdWatch* _find_or_create(int fd) 
-{
-    for (usz i = 0; i < MAX_FD_WATCH; i++) {
-        if (_fd_table[i].active && _fd_table[i].fd == fd) return &_fd_table[i];
-    }
-    for (usz i = 0; i < MAX_FD_WATCH; i++) {
-        if (!_fd_table[i].active) {
-            _fd_table[i] = { fd, true, null, null };
-            _fd_count++;
-            return &_fd_table[i];
-        }
-    }
-    _assert(false, "asyncio: FD watch table full");
-    return null;
-}
-
-fn FdWatch* _find(int fd) 
-{
-    for (usz i = 0; i < MAX_FD_WATCH; i++) {
-        if (_fd_table[i].active && _fd_table[i].fd == fd) return &_fd_table[i];
-    }
-    return null;
-}
-*/
 
 // Public API
 
-fn void register_read(int fd, Future* future, ulong offset) 
+fn void register_read(int fd, Future* future, ulong offset) @private
 {
     if (_io_shutting_down) {
         future.set_exception(IO_ERROR);
@@ -253,10 +221,6 @@ fn void register_read(int fd, Future* future, ulong offset)
     op.future = future;
     op.file_offset = offset;
 
-    if (!is_sock) {
-        op.ov.offset = (winbase::DWord)(offset & 0xFFFFFFFF);
-        op.ov.offset_high = (winbase::DWord)(offset >> 32);
-    }
     
     // _iocp_associate(h);
     if (!_iocp_associate(h)) {
@@ -278,6 +242,8 @@ fn void register_read(int fd, Future* future, ulong offset)
             _op_free(op);
         }
     } else {
+        op.ov.offset = curPos[h];
+        op.ov.offsetHigh = curPos[h] >> 32;
         winbase::Bool rc = winbase::readFile(h, &op.buf[0], IOCP_BUF_SIZE, null, &op.ov);
         if (rc) return;
         if (winbase::getLastError() != winbase::ERROR_IO_PENDING) {
@@ -285,12 +251,21 @@ fn void register_read(int fd, Future* future, ulong offset)
             future.cancel("io error");
             _op_free(op);
         }
+        
+        winbase::DWord bytesTransferred;
+        winbase::Bool success = winbase::getOverlappedResult(h, &op.ov, &bytesTransferred, winbase::TRUE);
+        if (success) {
+            // If you started at 'ol.Offset' and wrote 'bytesTransferred',
+            // your new "Tell" position is:
+            ulong newPos = ((ulong)op.ov.offsetHigh << 32 | op.ov.offset) + bytesTransferred;
+            curPos[h] = newPos;
+        }
     }
 }
 
-fn void register_write(int fd, Future* future) 
+fn void register_write(int fd, Future* future) @private
 {
-    _assert(false, "not used on win32/iocp");
+    @assert(false, "not used on win32/iocp");
 }
 
 fn void _start_write(int fd, void* data, usz len, Future* future, ulong offset) 
@@ -338,12 +313,23 @@ fn void _start_write(int fd, void* data, usz len, Future* future, ulong offset)
             _op_free(op);
         }
     } else {
+        op.ov.offset = curPos[h];
+        op.ov.offsetHigh = curPos[h] >> 32;
         winbase::Bool rc = winbase::writeFile(h, &op.buf[0], (winbase::DWord)copy_len, null, &op.ov);
         if (rc) return;
         if (winbase::getLastError() != winbase::ERROR_IO_PENDING) {
             future.set_exception(IO_ERROR);
             future.cancel("io error");
             _op_free(op);
+        }
+
+        winbase::DWord bytesTransferred;
+        winbase::Bool success = winbase::getOverlappedResult(h, &op.ov, &bytesTransferred, winbase::TRUE);
+        if (success) {
+            // If you started at 'ol.Offset' and wrote 'bytesTransferred',
+            // your new "Tell" position is:
+            ulong newPos = ((ulong)op.ov.offsetHigh << 32 | op.ov.offset) + bytesTransferred;
+            curPos[h] = newPos;
         }
     }
 }
@@ -362,17 +348,6 @@ fn void unregister(int fd)
             // _op_free, on abort completion packet arrive at poll()
         }
     }
-
-/*
-    FdWatch* w = _find(fd);
-    if (w == null) return;
-    
-    if (w.read_fut)  { w.read_fut.cancel("fd unregistered");  w.read_fut  = null; }
-    if (w.write_fut) { w.write_fut.cancel("fd unregistered"); w.write_fut = null; }
-
-    w.active = false;
-    _fd_count--;
-*/
 }
 
 fn bool io_pending() @inline
@@ -411,16 +386,6 @@ fn void io_poll(ulong timeout_us)
             _op_free(op);   // cancelIoEx abort packet: future is already cancelled
             continue;
         }
-        /*
-        if (transferred == 0) {
-            fut.set_exception(IO_ERROR);
-            fut.cancel("io error");
-        } else {
-            fut.set_result((void*)op);
-            // _op_free(op); // after data read/write in async_read/write
-            continue;
-        }
-        */
         if (transferred == 0 && !op.is_write) {
             fut.set_result(null); // EOF: caller gets read() == 0
         } else if (transferred == 0) {
@@ -660,7 +625,7 @@ fn usz? async_sendto(int fd, void* buf, usz len, char* ip_str, ushort port)
 
 // additional functions window specific
 
-fn Char16*? utf8to16(String path, Char16[] wpath) 
+fn Char16*? utf8to16(String path, Char16[] wpath) @private
 {
     if (path.len == 0) return errno::F_INVAL~;
     Char16[] p2 = path.to_utf16(_allox)!;
@@ -670,24 +635,68 @@ fn Char16*? utf8to16(String path, Char16[] wpath)
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
+    for (usz i = 0; i < p2.len; i++) {
+        if (p2[i] == (Char16)'/') {
+            wpath[i] = (Char16)'\\';
+        }
+    }
     
     return wpath.ptr;
 }
 
-fn int? open_file_async(String path, bool write_mode) 
+fn int? open_file(String path, String mode) 
 {
-    winbase::DWord access = write_mode ? (winbase::GENERIC_WRITE) : (winbase::GENERIC_READ);
+    winbase::DWord access = 0;
+    winbase::DWord disposition = 0;
+    winbase::DWord attributes = winbase::FILE_ATTRIBUTE_NORMAL;
+
+    if (mode == "r") {
+        access = winbase::GENERIC_READ;
+        disposition = winbase::OPEN_EXISTING;
+    } else if (mode == "r+") {
+        access = winbase::GENERIC_READ | winbase::GENERIC_WRITE;
+        disposition = winbase::OPEN_EXISTING;
+    } else if (mode == "w") {
+        access = winbase::GENERIC_WRITE;
+        disposition = winbase::CREATE_ALWAYS;
+    } else if (mode == "w+") {
+        access = winbase::GENERIC_READ | winbase::GENERIC_WRITE;
+        disposition = winbase::CREATE_ALWAYS;
+    } else if (mode == "a") {
+        access = winbase::FILE_APPEND_DATA; // or GENERIC_WRITE
+        disposition = winbase::OPEN_ALWAYS;
+    } else if (mode == "a+") {
+        access = winbase::GENERIC_READ | winbase::FILE_APPEND_DATA;
+        disposition = winbase::OPEN_ALWAYS;
+    } else {
+        return errno::E_INVALID_ARG~;
+    }
+    
+    // Overlapped IO for asynchronous
+    winbase::DWord flags = attributes | winbase::FILE_FLAG_OVERLAPPED;
+
     winbase::DWord share = winbase::FILE_SHARE_READ;
-    winbase::DWord disposition = write_mode ? winbase::CREATE_ALWAYS : winbase::OPEN_EXISTING;
-    winbase::DWord flags = winbase::FILE_ATTRIBUTE_NORMAL | winbase::FILE_FLAG_OVERLAPPED;
 
     Char16[260] wbuf;
     Char16*? wpath = utf8to16(path, &wbuf);
     if (catch err = wpath) {
         return err~;
     }
+    
     winbase::Handle h = winbase::createFileW(wpath, access, share, null, disposition, flags, null);
     if (h == winbase::INVALID_HANDLE_VALUE) return errno::get_fault()~;
+
+    // For append mode, seek to end
+    if (mode[0] == 'a') {
+        // windows::setFilePointerEx(h, 0, null, windows::FILE_END);
+        winbase::Overlapped ol = {0};
+        ol.offset = 0xFFFFFFFF;     // Special value for "End of File"
+        ol.offsetHigh = 0xFFFFFFFF;
+        ulong file_size;
+        winbase::getFileSizeEx(h, &file_size);
+        curPos[(int)(iptr)h] = file_size;
+    }
+
     return (int) (iptr) h;
 }
 
@@ -733,12 +742,71 @@ fn PipePair? create_pipe_async()
     return { (int)(iptr)rh, (int)(iptr)wh, _pipe_conn_ov };
 }
 
-fn void close_socket(int fd) 
+fn void close_file(int fd) 
 {
-    winsock2::closesocket((winsock2::Socket)fd);
+    unregister(fd);
+
+    if (_is_socket(fd)) {
+        winsock2::closesocket((winsock2::Socket)fd);
+    } else {
+        winbase::closeHandle((winbase::Handle)(iptr)fd);
+    }
 }
 
-fn void close_handle(int fd) 
+tlocal Hashmap{int,ulong} curPos; // remembers current position after every file operation
+
+fn long io_seek(int fd, long pos, int whence)
 {
-    winbase::closeHandle((winbase::Handle)(iptr)fd);
+    if (whence == 0) { // SEEK_SET
+        curPos[fd] = pos;
+    } else if (whence == 1) {
+        curPos[fd] += pos;
+    } else {
+        ulong size;
+        winbase::getFileSizeEx((winbase::Handle)fd, &size);
+        curPos[fd] = size+pos;
+    }
+    return (long)curPos[fd];
+}
+
+fn ulong io_tell(int fd)
+{
+    return curPos[fd];
+}
+
+fn int io_truncate(int fd, long pos)
+{
+    winbase::setFilePointerEx((winbase::Handle)fd, pos, null, winbase::FILE_BEGIN);
+    winbase::setEndOfFile((winbase::Handle)fd);
+    return 0;
+}
+
+fn void io_flush(int fd)
+{
+    winbase::flushFileBuffers((winbase::Handle) fd);
+}
+
+fn ulong io_size(int fd)
+{
+    ulong size;
+    winbase::getFileSizeEx((winbase::Handle) fd, &size);
+    return size;
+}
+
+fn int io_stdin() 
+{
+    winbase::Handle h = winbase::getStdHandle(winbase::STD_INPUT_HANDLE);
+    return (int)(iptr)h;
+}
+
+fn int io_stdout() 
+{
+    winbase::Handle h = winbase::getStdHandle(winbase::STD_OUTPUT_HANDLE);
+    return (int)(iptr)h;
+}
+
+fn int io_stderr() 
+{
+    winbase::Handle h = winbase::getStdHandle(winbase::STD_ERROR_HANDLE);
+    return (int)(iptr)h;
 }

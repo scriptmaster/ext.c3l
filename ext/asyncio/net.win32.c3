@@ -3,16 +3,17 @@
 module ext::asyncio @if(env::WIN32);
 
 import std::io;
-import c::stdio; // libc
-import c::stdlib; // libc
-import c::string; // libc
-import c::errno; // libc
-
-import c::winbase; // libc
-import c::winsock2; // libc
-import c::ws2tcpip; // libc
-import c::guiddef; // libc
-import c::mswsock; // libc
+import c::stdio;
+import c::stdlib;
+import c::string;
+import c::errno;
+import c::winbase;
+import c::winsock2;
+import c::ws2tcpip;
+import c::guiddef;
+import c::mswsock;
+import ext::debug;
+import ext::mem;
 
 fn char* str2cptr(String str, char[] buf) @inline
 {
@@ -288,7 +289,7 @@ fn Server* server_new()
 
 fn void Server.free(&self)
 {
-    _assert(self.accept_task == null, "Server.free(): accept task still running");
+    @assert(self.accept_task == null, "Server.free(): accept task still running");
     if (self.transport != null) { // protocol.c3
         self.transport.free();
     }
@@ -349,7 +350,7 @@ fn void _accept_loop_win(Server* self)
 {
     winsock2::Socket listen_sock = (winsock2::Socket)self.listen_fd;
     _load_acceptex(listen_sock);
-    _assert(_acceptEx != null, "_load_acceptex() failed");
+    @assert(_acceptEx != null, "_load_acceptex() failed");
   
     // AcceptEx buffer
     const usz ADDR_SIZE_EACH = 28 + 16;        // 44
@@ -410,7 +411,7 @@ fn void _accept_loop_win(Server* self)
             continue;
         }
 
-        // _assert(_client_ctx_count < 256, "asyncio::net: client pool overflow");
+        // @assert(_client_ctx_count < 256, "asyncio::net: client pool overflow");
         ClientCtx* ctx = mem_alloc(ClientCtx);
         *ctx = { (int)accept_sock, self.handler };
 
@@ -446,7 +447,7 @@ fn Server*? start_server(ClientHandler handler, String host_str, ushort port)
     }
     
     winsock2::Socket sock = winsock2::wsaSocketW(family, winsock2::SOCK_STREAM, winsock2::IPPROTO_TCP, null, 0, winsock2::WSA_FLAG_OVERLAPPED);
-    _assert(sock != winsock2::INVALID_SOCKET, "asyncio::net: WSASocket failed");
+    @assert(sock != winsock2::INVALID_SOCKET, "asyncio::net: WSASocket failed");
     
     //._iocp_associate((winbase::Handle)sock);
     if (!_iocp_associate((winbase::Handle)sock)) {
@@ -490,7 +491,7 @@ fn Server*? start_server(ClientHandler handler, String host_str, ushort port)
         return asyncio::IO_ERROR~;
     }
 
-    _assert(winsock2::listen((winsock2::Socket)fd, 128) == 0, "asyncio::net: listen() failed");
+    @assert(winsock2::listen((winsock2::Socket)fd, 128) == 0, "asyncio::net: listen() failed");
 
     Server* server = server_new();
     // *server = { fd, true, port, family, handler, null, null };

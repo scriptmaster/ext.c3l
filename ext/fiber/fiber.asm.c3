@@ -7,6 +7,8 @@ import c::sys::mman; // mprotect
 import std::io;
 import c::string;
 import c::stdlib;
+import ext::debug;
+import ext::mem;
 
 // alias Fiber = void*;
 alias SwapFn = fn void(void*, void*) @callconv("stdcall");
@@ -31,8 +33,8 @@ const char[] CANARY = "CANARYCANARYCANARYCANARY"; // 24 bytes
 fn void init(Allocator allocx = mem, bool debug = true) @private
 {
     if (running != null) return;
-    set_allocator(allocx);
-    set_debug(debug);
+    mem::set_allocator(allocx);
+    debug::set_debug(debug);
 
     asmblock[0:ASM.len] = ASM[0:ASM.len];
     ulong addr = (ulong)(void*)&asmblock;
@@ -98,12 +100,11 @@ fn Fiber* create(uint stack_size, Coroutine coroutine)
     char* block;
     void* handle;
 
-    if (debug) {
-        block = mem_malloc(stack_size + CANARY.len * 2);
-        string::memcpy(&block[0], CANARY.ptr, CANARY.len);
-        string::memset(&block[CANARY.len], 'Z', stack_size);
-        string::memcpy(&block[CANARY.len + stack_size], CANARY.ptr, CANARY.len);
-        handle = block + CANARY.len;
+    if (debug::debug) {
+        block = mem_malloc(stack_size + CANARY.len);
+        string::memset(&block[0], 'Z', stack_size);
+        string::memcpy(&block[stack_size], CANARY.ptr, CANARY.len);
+        handle = block;
     } else {
         block = mem_malloc(stack_size);
         handle = block;
@@ -141,33 +142,33 @@ fn Fiber* create(uint stack_size, Coroutine coroutine)
 
 fn void check_canary(Fiber* fiber) @inline @private
 {
-    if (!debug) return;
+    if (!debug::debug) return;
     if (fiber.block == null) return; // primary has no block
     usz stack_size = fiber.stack_size;
 
-    if (string::strncmp(fiber.block, CANARY.ptr, CANARY.len) != 0) {
-        warn("Prefix canary breached");
+    if (string::strncmp(fiber.block + stack_size, CANARY.ptr, CANARY.len) != 0) {
+        warn("Postfix canary breached, fiber stack size is too small. current stack_size:%d", stack_size);
         stdlib::exit(0);
     }
-
-    if (string::strncmp(fiber.block + CANARY.len + stack_size, CANARY.ptr, CANARY.len) != 0) {
-        warn("Postfix canary breached");
-        stdlib::exit(0);
+    
+    usz used = stack_used(fiber);
+    float usage = (float)used/(float)stack_size;
+    if (usage > (float)0.9) {
+        warn("STACK WARN stack_size:%d, used:%d, usage:%.1f%%, fiber stack size need to be enlarged", stack_size, used, usage*100);
     }
 }
 
 fn usz stack_used(Fiber* fiber)
 {
-    if (!debug) return 0;
+    if (!debug::debug) return 0;
     if (fiber.block == null) return 0; // primary has no block
 
     usz stack_size = fiber.stack_size;
-    usz untouched;
+    usz untouched = 0;
     for (isz i = 0; i < stack_size; i++) {
-        usz idx = i + CANARY.len;
-        if (fiber.block[idx] != 'Z') {
-            untouched = i;
-            break;
+        usz idx = i;
+        if (fiber.block[idx] == 'Z') {
+            untouched += 1;
         }
     }
     return stack_size - untouched;

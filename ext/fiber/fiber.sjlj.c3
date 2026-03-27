@@ -7,6 +7,8 @@ import c::signal;
 import c::setjmp;
 import c::string;
 import c::stdlib;
+import ext::mem;
+import ext::debug;
 
 // Coroutine implementation based on POSIX sigsetjmp/siglongjmp
 //  Original: Based on ideas from a paper by Ralf Engelschall
@@ -36,8 +38,8 @@ tlocal Volatile{Fiber*} creating;
 fn void init(Allocator allocx = mem, bool dbg = true) @private
 {
     if (running != null) return;
-    set_allocator(allocx);
-    set_debug(dbg);
+    mem::set_allocator(allocx);
+    debug::set_debug(dbg);
     running = &primary;
     creating.set(null);
 }

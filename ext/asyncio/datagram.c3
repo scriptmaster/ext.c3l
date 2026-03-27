@@ -3,9 +3,10 @@
 module ext::asyncio;
 
 import std::io;
-
 import c::stdlib; // libc
 import c::string; // libc
+import ext::debug;
+import ext::mem;
 
 struct Datagram {
     int fd;

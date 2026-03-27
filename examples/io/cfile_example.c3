@@ -7,7 +7,8 @@ import std::io;
 // ─────────────────────────────────────────────
 // 1. Writing to a File
 // ─────────────────────────────────────────────
-fn void example_write() {
+fn void example_write()
+{
     cfile::File? fp = cfile::open("hello.txt", "w");
     if (catch err = fp) {
         io::printfn("Failed to open file: %s", err);
@@ -29,7 +30,8 @@ fn void example_write() {
 // ─────────────────────────────────────────────
 // 2. Reading Line by Line
 // ─────────────────────────────────────────────
-fn void example_readline() {
+fn void example_readline()
+{
     cfile::File? fp = cfile::open("hello.txt", "r");
     if (catch err = fp) {
         io::printfn("Failed to open file: %s", err);
@@ -50,7 +52,8 @@ fn void example_readline() {
 // ─────────────────────────────────────────────
 // 3. Buffer Read + seek / tell
 // ─────────────────────────────────────────────
-fn void example_read_buffer() {
+fn void example_read_buffer()
+{
     cfile::File? fp = cfile::open("hello.txt", "r");
     if (catch err = fp) { return; }
     defer fp.close();
@@ -76,7 +79,8 @@ fn void example_read_buffer() {
 // ─────────────────────────────────────────────
 // 4. Reading One Byte at a Time
 // ─────────────────────────────────────────────
-fn void example_read_byte() {
+fn void example_read_byte()
+{
     cfile::File? fp = cfile::open("hello.txt", "r");
     if (catch err = fp) { return; }
     defer fp.close();
@@ -94,7 +98,8 @@ fn void example_read_byte() {
 // ─────────────────────────────────────────────
 // 5. Load / Save an Entire File
 // ─────────────────────────────────────────────
-fn void example_load_save() {
+fn void example_load_save()
+{
     char[]? buf = cfile::load(mem, "hello.txt");
     if (catch err = buf) {
         io::printfn("Load failed: %s", err);
@@ -112,7 +117,8 @@ fn void example_load_save() {
 // ─────────────────────────────────────────────
 // 6. File Existence, Size, and Modification Time
 // ─────────────────────────────────────────────
-fn void example_stat() {
+fn void example_stat()
+{
     String path = "hello.txt";
 
     if (!cfile::exists(path)) {
@@ -120,7 +126,7 @@ fn void example_stat() {
         return;
     }
 
-    long? sz = cfile::size(path);
+    usz? sz = cfile::size(path);
     if (try sz) {
         io::printfn("Size           : %d bytes", sz);
     }
@@ -134,7 +140,8 @@ fn void example_stat() {
 // ─────────────────────────────────────────────
 // 7. File Type and Permission Flags
 // ─────────────────────────────────────────────
-fn void example_file_type() {
+fn void example_file_type()
+{
     String path = "hello.txt";
 
     io::printfn("Is directory ? %s", cfile::is_dir(path)        ? "yes" : "no");
@@ -148,7 +155,8 @@ fn void example_file_type() {
 // ─────────────────────────────────────────────
 // 8. Copy, Rename, and Remove
 // ─────────────────────────────────────────────
-fn void example_ops() {
+fn void example_ops()
+{
     cfile::copy("hello.txt", "hello_backup.txt")!!;
     io::printfn("Copied   → hello_backup.txt");
 
@@ -162,7 +170,8 @@ fn void example_ops() {
 // ─────────────────────────────────────────────
 // 9. Read Symbolic Link Target (POSIX only)
 // ─────────────────────────────────────────────
-fn void example_read_link() {
+fn void example_read_link()
+{
     char[512] link_buf;
 
     usz? len = cfile::read_link("/proc/self/exe", &link_buf);
@@ -176,7 +185,8 @@ fn void example_read_link() {
 // ─────────────────────────────────────────────
 // 10. Change File Permissions (POSIX only)
 // ─────────────────────────────────────────────
-fn void example_chmod() {
+fn void example_chmod()
+{
     // 0o644 = owner rw, group/others r
     cfile::change_mode("hello.txt", 0o644)!!;
     io::printfn("Permissions changed to 0644");
@@ -185,7 +195,8 @@ fn void example_chmod() {
 // ─────────────────────────────────────────────
 // main
 // ─────────────────────────────────────────────
-fn void main() {
+fn void main()
+{
     io::printfn("=== ext::io::cfile examples ===\n");
 
     io::printfn("[1] Write");
@@ -218,6 +229,8 @@ fn void main() {
     io::printfn("\n[10] Change mode (POSIX)");
     example_chmod();
 
+    cfile::remove("hello.txt");
+    cfile::remove("output.txt");
     io::printfn("\nDone.");
 }
 

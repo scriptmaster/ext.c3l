@@ -6,9 +6,9 @@ Cross-platform file/directory operations in C3, filling the gap of missing piece
 
 | Module | Description |
 |--------|-------------|
-| `ext::io::stat` | File stat operations: exists(), size(), is_(file/dir/link), is_(readable/writable/executable), read_link(), last_modified(), change_mode() |
+| `ext::io::stat` | File stat operations: exists(), size(), is_(file/dir/link), is_(readable/writable/executable), read_link(), link(), symlink(), last_modified(), change_mode() |
 | `ext::io::cfile` | File operations: open(), close(), read(), read_byte(), write(), write_byte(), printf(), seek(), tell(), eof(), load(), save(), copy(), rename(), remove(), exists(), size(), last_modified(), is_file(), is_dir(), change_mode() |
-| `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode() |
+| `ext::io::dir` | Directory/folder operations: get_cur_dir(), change_dir(), make_dir(), remove_dir(), rename(), list_dir(), exists(), is_dir(), is_file(), change_mode(), scan_dir() |
 
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
@@ -16,7 +16,6 @@ Back to [ext.c3l](../../README.md) library.
 ### File Status Operations
 
 Three abstraction for status operations.
-* [stat.def.c3](stat.def.c3) : cross-platform definition of `struct Stat`
 * [stat.posix.c3](stat.posix.c3) : functions for posix systems.
 * [stat.win32.c3](stat.win32.c3) : functions for win32 systems.
 
@@ -37,13 +36,15 @@ bool b = stat::is_executable(String path); // missing in std lib
 usz? n = stat::read_link(String path, char[] output); // missing in std lib
 Mode_t prev = stat::umask(Mode_t mode); // missing in std lib
 void? stat::change_mode(String path, Mode_t mode) @maydiscard; // missing in std lib
+void? stat::link(String file, String link);
+void? stat::symlink(String file, String link);
 ```
 
 ### File Operations
 
 Abstraction for file operations.
-* [file.posix.c3](file.posix.c3) : functions for posix systems.
-* [file.win32.c3](file.win32.c3) : functions for win32 systems.
+* [cfile.posix.c3](cfile.posix.c3) : functions for posix systems.
+* [cfile.win32.c3](cfile.win32.c3) : functions for win32 systems.
 
 Available functions are:
 
@@ -70,7 +71,7 @@ void? cfile::rename(String file, String target) @maydiscard;
 void? cfile::copy(String file, String target) @maydiscard;
 
 bool b = cfile::exists(String file);
-long? n = cfile::size(String file);
+usz? n = cfile::size(String file);
 long? mtime = cfile::last_modified(String file); // missing in std lib
 bool b = cfile::is_dir(String file);
 bool b = cfile::is_file(String file);
@@ -85,7 +86,7 @@ void? cfile::change_mode(String file, Mode_t mode) @maydiscard; // missing in st
 ### Directory/folder Operations
 
 Abstraction for dir operations.
-* [dir.def.c3](dir.def.c3) : cross-platform definition of `struct Dir/DirEnt`
+
 * [dir.posix.c3](dir.posix.c3) : functions for posix systems.
 * [dir.win32.c3](dir.win32.c3) : functions for win32 systems.
 
@@ -109,11 +110,26 @@ bool b = dir::is_readable(String path); // missing in std lib
 bool b = dir::is_writeable(String path); // missing in std lib
 usz? n = dir::read_link(String path, char[] output); // missing in std lib
 void? dir::change_mode(String path, Mode_t mode) @maydiscard; // missing in std lib
+
+DirIterator? iter = dir::scan_dir(Allocator allocx, String path);
+void? iter.close() @maydiscard;
+DirEntry entry = iter.next();
+void? entry.free() @maydiscard;
+String name = entry.name; // filename
+long? mtime = entry.last_modified();
+usz? size = entry.size();
+bool b = entry.is_file();
+bool b = entry.is_dir();
+bool b = entry.is_link();
 ```
 
 Back to [ext.c3l](../../README.md) library.
 
 ### Example
+
+Examples
+* [../../examples/io/cfile_example.c3](../../examples/io/cfile_example.c3)
+* [../../examples/io/scan_dir.c3](../../examples/io/scan_dir.c3)
 
 ```c3
 import ext::io::stat;

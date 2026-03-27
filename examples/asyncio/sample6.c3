@@ -3,22 +3,13 @@
 //   - Lock:  only one task may enter the critical section at a time
 //   - Queue: producer/consumer ordering is correct and the queue blocks when full
 
-module sample1;
+module sample6;
 
 import ext::asyncio;
 import std::io;
-import c::stdlib; // libc
-
-macro void warn(String fmt, args...)
-{
-    io::printf("%s:%s():%d: ", $$FILE, $$FUNC, $$LINE);
-    io::printfn(fmt, ...args);
-}
-
-macro _assert(expr, String msg)
-{
-    if (!(expr)) { warn("%s", msg); stdlib::exit(1); }
-}
+import c::stdlib;
+import ext::debug;
+import ext::mem;
 
 // Shared counter — without a Lock, concurrent access would corrupt the value
 int g_counter = 0;

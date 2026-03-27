@@ -3,8 +3,8 @@
 
 module c::sys::stat @if(env::WIN32);
 
-extern fn CInt _wstat(Char16* path, Stat* stat) @if(env::ARCH_32_BIT) @private;
-extern fn CInt _wstat64(Char16* path, Stat* stat) @if(env::ARCH_64_BIT) @private;
+extern fn CInt _wstat(Char16* path, Stat_t* stat) @if(env::ARCH_32_BIT) @private;
+extern fn CInt _wstat64(Char16* path, Stat_t* stat) @if(env::ARCH_64_BIT) @private;
 
 fn isz utf8to16(ZString zpath, Char16[] wpath) @private
 {
@@ -21,7 +21,7 @@ fn isz utf8to16(ZString zpath, Char16[] wpath) @private
 }
 
 
-fn CInt stat(ZString path, Stat* stbuf) 
+fn CInt stat(ZString path, Stat_t* stbuf) 
 {
     Char16[520] wpath;
     isz n = utf8to16(path, &wpath);
@@ -48,9 +48,9 @@ module c::sys::stat @if((env::LINUX || env::ANDROID) &&
 
 alias Ino_t = ulong;
 alias Dev_t = ulong;
-alias Mode_t  = uint;
+alias Mode_t = uint;
 
-struct Stat
+struct Stat_t
 {
     ulong st_dev;       // 8 bytes
     ulong st_ino;       // 8 bytes
@@ -79,7 +79,7 @@ alias Ino_t = ulong;
 alias Dev_t = ulong;
 alias Mode_t = uint;
 
-struct Stat
+struct Stat_t
 {
     ulong st_dev;        // 8 bytes
     ulong st_ino;        // 8 bytes
@@ -109,7 +109,7 @@ alias Ino_t = uint;
 alias Dev_t = ulong;
 alias Mode_t = uint;
 
-struct Stat 
+struct Stat_t 
 {
     ulong st_dev;       // 8 bytes
     uint __padding1;    // 2 bytes
@@ -139,7 +139,7 @@ alias Ino_t = ulong;
 alias Dev_t = uint;
 alias Mode_t = ushort;
 
-struct Stat
+struct Stat_t
 {
     uint st_dev;        // 4 bytes
     ushort st_mode;     // 2 bytes
@@ -174,7 +174,7 @@ alias Ino_t = ulong;
 alias Dev_t = ulong;
 alias Mode_t = ushort;
 
-struct Stat
+struct Stat_t
 {
     ulong st_dev;       // 8 bytes
     ulong st_ino;       // 8 bytes
@@ -238,7 +238,7 @@ alias Ino_t = ulong;
 alias Dev_t = uint;
 alias Mode_t = uint;
 
-struct Stat
+struct Stat_t
 {
     uint st_mode;       // 4 bytes
     uint st_dev;        // 4 bytes
@@ -270,7 +270,7 @@ alias Ino_t = ulong;
 alias Dev_t = ulong;
 alias Mode_t = uint;
 
-struct Stat
+struct Stat_t
 {
     ulong st_dev;       // 8 bytes
     uint st_mode;       // 4 bytes
@@ -305,7 +305,7 @@ alias Ino_t = ushort;
 alias Dev_t = uint;
 alias Mode_t = ushort;
 
-struct Stat
+struct Stat_t
 {
     uint st_dev;        // 4 bytes
     ushort st_ino;      // 2 bytes 
@@ -329,7 +329,7 @@ alias Ino_t = ushort;
 alias Dev_t = uint;
 alias Mode_t = ushort;
 
-struct Stat
+struct Stat_t
 {
     uint st_dev;        // 4 bytes
     ushort st_ino;      // 2 bytes 

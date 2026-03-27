@@ -7,7 +7,7 @@ import c::ioapiset;
 import c::windows;
 import c::fileapi;
 
-fn Char16*? utf8to16(String path, Char16[] wpath) 
+fn Char16*? utf8to16(String path, Char16[] wpath) @private
 {
     if (path.len == 0) return errno::F_BAD_LENGTH~;
     Char16[] p2 = path.to_utf16(tmem)!;
@@ -17,6 +17,12 @@ fn Char16*? utf8to16(String path, Char16[] wpath)
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
+    for (usz i = 0; i < p2.len; i++) {
+        if (p2[i] == (Char16)'/') {
+            wpath[i] = (Char16)'\\';
+        }
+    }
+
     return wpath.ptr;
 }
 
@@ -30,7 +36,7 @@ fn bool exists(String path)
     return attrs != windows::INVALID_FILE_ATTRIBUTES;
 }
 
-fn long? size(String path) 
+fn usz? size(String path) 
 {
     Char16[260] wpath;
     Char16* name = utf8to16(path, &wpath)!;
@@ -41,7 +47,7 @@ fn long? size(String path)
     }
     
     long size = ((long)file_info.nFileSizeHigh << 32) | (long)file_info.nFileSizeLow;
-    return size;
+    return (usz)size;
 }
 
 fn long? last_modified(String path) 
@@ -227,3 +233,35 @@ fn void? change_mode(String file, Mode_t mode) @maydiscard
         return errno::get_fault()~;
     }
 }
+
+fn void? link(String old, String new) @maydiscard
+{
+    Char16[260] wpath1;
+    Char16* wold = utf8to16(old, &wpath1)!;
+
+    Char16[260] wpath2;
+    Char16* wnew = utf8to16(new, &wpath2)!;
+
+    windows::Bool r = windows::CreateHardLinkW(wnew, wold, null);
+    if (! r) {
+        return errno::get_fault()~;
+    }
+}
+
+fn void? symlink(String old, String new) @maydiscard
+{
+    Char16[260] wpath1;
+    Char16* wold = utf8to16(old, &wpath1)!;
+
+    Char16[260] wpath2;
+    Char16* wnew = utf8to16(new, &wpath2)!;
+
+    int flag = 0; // file 
+    if (is_dir(old)) flag = 1;
+    
+    windows::Bool r = windows::CreateSymbolicLinkW(wnew, wold, 1);
+    if (! r) {
+        return errno::get_fault()~;
+    }
+}
+

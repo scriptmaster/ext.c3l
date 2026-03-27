@@ -1,21 +1,18 @@
 // sys.stat.posix.h.c3
-//
-// This module provides following functions for Posix systems.
-// file_exists() file_size() last_modified() 
-// is_dir() is_file() is_link() 
-// is_readable() is_writeable()
-// is_executable()
-// read_link()
-
 
 module c::sys::stat @if(!env::WIN32); // Posix
 
 import c::errno;
 
-extern fn CInt stat(char* path, Stat* buf) ;
-extern fn CInt lstat(char* path, Stat* buf);
+extern fn CInt stat(char* path, Stat_t* buf);
+extern fn CInt lstat(char* path, Stat_t* buf);
+extern fn CInt fstat(CInt fd, Stat_t* buf);
+
 extern fn CInt access(char* path, CInt mode);
 extern fn CLong readlink(char* path, char* buf, CULong bufsize);
+extern fn CInt chmod(char* path, Mode_t mode);
+extern fn CInt mkdir(char *pathname, Mode_t mode);
+extern fn Mode_t umask(Mode_t);
 
 // File mode constants
 const CUInt S_IFMT   = 0o170000;  // Bit mask for file type
@@ -46,7 +43,7 @@ const CInt X_OK = 1;  // Execute permission
 
 const int MAX_PATH = 1024;
 
-
+/*
 // Helper macro to convert String to ZString safely
 macro ZString? path_to_zstr(String path, char[] buffer)
 {
@@ -62,7 +59,7 @@ fn ulong? file_size(String path)
     char[MAX_PATH] p2; 
     ZString zpath = path_to_zstr(path, &p2)!;
     
-    Stat st;
+    Stat_t st;
     if (stat(zpath, &st) != 0) {
         return errno::get_fault()~;
     }
@@ -85,7 +82,7 @@ fn bool is_dir(String path)
     ZString? zpath = path_to_zstr(path, &p2);
     if (catch zpath) return false;
     
-    Stat st;
+    Stat_t st;
     if (stat(zpath, &st) != 0) return false;
     
     return (st.st_mode & S_IFMT) == S_IFDIR;
@@ -97,7 +94,7 @@ fn bool is_file(String path)
     ZString? zpath = path_to_zstr(path, &p2);
     if (catch zpath) return false;
     
-    Stat st;
+    Stat_t st;
     if (stat(zpath, &st) != 0) return false;
     
     return (st.st_mode & S_IFMT) == S_IFREG;
@@ -109,7 +106,7 @@ fn bool is_link(String path)
     ZString? zpath = path_to_zstr(path, &p2);
     if (catch zpath) return false;
     
-    Stat st;
+    Stat_t st;
     // lstat doesn't follow symbolic links
     if (lstat(zpath, &st) != 0) return false;
     
@@ -121,7 +118,7 @@ fn long? last_modified(String path)
     char[MAX_PATH] p2; 
     ZString zpath = path_to_zstr(path, &p2)!;
     
-    Stat st;
+    Stat_t st;
     if (stat(zpath, &st) != 0) {
         return errno::get_fault()~;
     }
@@ -176,3 +173,4 @@ fn usz? read_link(String path, char[] output)
     return (usz)n;
 }
 
+*/

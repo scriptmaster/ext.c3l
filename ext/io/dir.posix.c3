@@ -8,15 +8,14 @@ module ext::io::dir @if(!env::WIN32); // Posix
 
 import c::errno;
 import c::dirent;
+import c::sys::stat;
+import c::string;
+import c::unistd;
 import ext::io::stat;
 import std::collections::list;
 const int MAX_PATH = 1024;
 
-// Additional POSIX functions not in dirent module
-extern fn char* getcwd(char* buf, CULong size);
-extern fn CInt chdir(char* path);
-extern fn CInt mkdir(char* path, CUInt mode);
-extern fn CInt rmdir(char* path);
+faultdef NO_MORE_ENTRY;
 
 
 fn char*? path_to_cstr(String path, char[] buffer)
@@ -33,7 +32,7 @@ fn char*? path_to_cstr(String path, char[] buffer)
 fn String? get_cur_dir(char[] buf)
 {
     // on success, result == buf.ptr
-    char* result = getcwd(buf.ptr, buf.len);
+    char* result = unistd::getcwd(buf.ptr, buf.len);
     
     if (result == null) {
         return errno::get_fault()~;
@@ -48,7 +47,7 @@ fn void? change_dir(String path) @maydiscard
     char[MAX_PATH] p2;
     char* zpath = path_to_cstr(path, &p2)!;
     
-    if (chdir(zpath) != 0) {
+    if (unistd::chdir(zpath) != 0) {
         return errno::get_fault()~;
     }
 }
@@ -59,8 +58,9 @@ fn void? make_dir(String path, bool recursive = false, CUInt mode = 0o755) @mayd
     char[MAX_PATH] p2;
     char* zpath = path_to_cstr(path, &p2)!;
     
+    stat::umask(0);
     if (!recursive) {
-        if (mkdir(zpath, mode) != 0) {
+        if (stat::mkdir(zpath, mode) != 0) {
             return errno::get_fault()~;
         }
         return;
@@ -95,7 +95,7 @@ fn void? make_dir(String path, bool recursive = false, CUInt mode = 0o755) @mayd
             temp[i] = 0;
             
             // Try to create directory (ignore EEXIST)
-            if (mkdir(&temp[0], mode) != 0) {
+            if (stat::mkdir(&temp[0], mode) != 0) {
                 if (errno::errno() != errno::EEXIST) {
                     return errno::get_fault()~;
                 }
@@ -112,7 +112,7 @@ fn void? remove_dir(String path) @maydiscard
     char[MAX_PATH] p2;
     char* zpath = path_to_cstr(path, &p2)!;
     
-    if (rmdir(zpath) != 0) {
+    if (unistd::rmdir(zpath) != 0) {
         return errno::get_fault()~;
     }
 }
@@ -154,6 +154,120 @@ fn List{String}? list_dir(Allocator allocx, String path)
     
     return entries;
 }
+
+struct DirIterator {
+    dirent::Dir* dir;
+    String path;
+    Allocator allocx;
+}
+
+struct DirEntry {
+    String path;
+    String name;
+    Allocator allocx;
+}
+
+
+fn DirIterator? scan_dir(Allocator allocx, String path)
+{
+    if (path[path.len-1] == '/') {
+        path = path.trim_right("/");
+    }
+ 
+    char[MAX_PATH] p2;
+    char* zpath = path_to_cstr(path, &p2)!;
+    
+    dirent::Dir* dir = dirent::opendir(zpath);
+    if (dir == null) {
+        return errno::get_fault()~;
+    }
+ 
+    return {
+        .dir = dir,
+        .path = path.copy(allocx),
+        .allocx = allocx
+    };
+}
+
+fn void DirIterator.close(&self)
+{
+    self.path.free(self.allocx);
+    dirent::closedir(self.dir);
+}
+
+fn DirEntry? DirIterator.next(&self)
+{
+    dirent::DirEnt* entry;
+    while ((entry = dirent::readdir(self.dir))) 
+    {
+        // Skip "." and ".."
+        char* name = (char*)&entry.d_name[0];
+        String name_str = ((ZString)name).str_view();
+        if (name_str == "." || name_str == "..") continue;
+        
+        return {
+            .path = self.path,
+            .name = name_str.copy(self.allocx),
+            .allocx = self.allocx,
+        };
+    }
+    return NO_MORE_ENTRY~;
+}
+
+fn void DirEntry.free(&self)
+{
+    self.name.free(self.allocx);
+}
+
+fn String bcat(char[] buf, String... args) @inline @private
+{
+    buf[0] = 0;
+    foreach (arg: args) {
+        string::strncat(buf.ptr, arg.ptr, buf.len);
+    }
+    usz n = string::strlen(buf.ptr);
+    buf[n] = 0;
+    return (String)buf[0..n-1];
+}
+
+fn long? DirEntry.last_modified(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "/", self.name);
+    return stat::last_modified(fullpath)!;
+}
+
+fn usz? DirEntry.size(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "/", self.name);
+    return stat::size(fullpath)!;
+}
+
+fn bool DirEntry.is_dir(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "/", self.name);
+
+    return stat::is_dir(fullpath);
+}
+
+fn bool DirEntry.is_file(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "/", self.name);
+
+    return stat::is_file(fullpath);
+}
+
+fn bool DirEntry.is_link(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "/", self.name);
+
+    return stat::is_link(fullpath);
+}
+
 
 fn bool exists(String path) => stat::exists(path);
 

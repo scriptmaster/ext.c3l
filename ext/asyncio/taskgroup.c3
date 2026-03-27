@@ -2,6 +2,9 @@
  
 module ext::asyncio;
 
+import ext::debug;
+import ext::mem;
+
 const usz TG_MAX_TASKS = 128;
 
 struct TaskGroup {
@@ -34,7 +37,7 @@ fn void TaskGroup.free(&self)
 
 fn Task* TaskGroup.create_task(&self, Coroutine coro, String name = "tg_task", uint stack_size = 64_000) 
 {
-    _assert(self.count < TG_MAX_TASKS, "TaskGroup: task limit exceeded");
+    @assert(self.count < TG_MAX_TASKS, "TaskGroup: task limit exceeded");
     Task* t = self.loop.create_task(coro, name, stack_size);
     self.tasks[self.count++] = t;
     return t;

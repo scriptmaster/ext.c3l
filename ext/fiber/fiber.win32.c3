@@ -3,6 +3,7 @@
 module ext::thread::fiber @if(env::WIN32);
 
 import c::winbase;
+import ext::mem;
 
 alias FiberProc = fn void(void* param);
 alias WinFiber = void*;
@@ -39,7 +40,7 @@ fn Fiber* active()
 fn Fiber* create(uint stack_size, Coroutine coroutine) 
 {
     if (running == null) init();
-    Fiber* fiber = mem::alloc(Fiber);
+    Fiber* fiber = mem_alloc(Fiber);
     fiber.wfiber = winbase::createFiber(stack_size, &thunk, (void*)coroutine);
     fiber.done = false;
     return fiber;
@@ -49,7 +50,7 @@ fn void delete(Fiber* fiber)
 {
     if (fiber == null || fiber == &primary) return;
     winbase::deleteFiber(fiber.wfiber);
-    mem::free(fiber);
+    mem_free(fiber);
 }
 
 fn void switch_to(Fiber* fiber) 

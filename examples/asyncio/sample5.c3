@@ -22,8 +22,8 @@ import ext::asyncio;
 //  Shared result (written by worker, read by loop)
 // ---------------------------------------------
 
-int    g_result;
-bool   g_result_ready;
+int g_result;
+bool g_result_ready;
 
 // ---------------------------------------------
 //  Loop-side callback: invoked on the loop thread via call_soon_threadsafe

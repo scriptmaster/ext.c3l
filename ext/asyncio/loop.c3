@@ -1,15 +1,15 @@
-// asyncio.c3
+// loop.c3
 
 module ext::asyncio;
 
 import std::io;
 import std::thread;
 import std::time::clock;
-import c::stdlib; // libc
-import c::errno; // libc
-
+import c::stdlib;
+import c::errno;
+import ext::debug;
+import ext::mem;
 import ext::thread::fiber;
-
 
 enum State : char {
     INIT,
@@ -32,7 +32,7 @@ fn void? sleep_zero() @maydiscard
     EventLoop* loop = get_running_loop();
 
     Task* cur = loop.current;
-    _assert(cur != null, "asyncio: sleep_zero() called outside a task");
+    @assert(cur != null, "asyncio: sleep_zero() called outside a task");
     cur.state = State.PENDING;
     loop._enqueue(cur);
     fiber::yield();
@@ -72,8 +72,6 @@ fn void? sleep(double s) @maydiscard
     sleep_us((ulong)(s * 1_000_000))!;
 }
 
-
-
 // ---------------------------------------
 //  shield / gather / wait_any / as_completed
 // ---------------------------------------
@@ -96,7 +94,7 @@ fn void _shield_relay()
 // Protect fut from external cancellation; returns a new proxy Future
 fn Future* shield(Future* fut)
 {
-    _assert(_shield_src == null, "shield() is running, no two shield() at the same time");
+    @assert(_shield_src == null, "shield() is running, no two shield() at the same time");
     Future* outer = fut.loop.create_future();
     outer.add_done_callback(&_cancel_free_future, outer);
     _shield_src = fut;
@@ -153,7 +151,7 @@ fn usz? wait_any(Future** futs, usz count) @maydiscard
 alias CompletedCallback = fn void(Task*, usz);
 fn void? as_completed(Task** tasks, usz count, CompletedCallback cb) @maydiscard
 {
-    _assert(count <= cfg.task_queue_size, "too many tasks as_completed");
+    @assert(count <= cfg.task_queue_size, "too many tasks as_completed");
     
     bool[] flags = mem_alloc_array(bool, cfg.task_queue_size);
     defer mem_free(flags);
@@ -171,9 +169,9 @@ fn void? as_completed(Task** tasks, usz count, CompletedCallback cb) @maydiscard
     }
 }
 
-// ----------------------------------------
+// ---------------------------------------
 //  Timer (min-heap)
-// ----------------------------------------
+// ---------------------------------------
 
 struct TimerEntry {
     ulong deadline_us;
@@ -181,11 +179,11 @@ struct TimerEntry {
     bool cancelled;
 }
 
-// ----------------------------------------
+// ---------------------------------------
 //  CallbackHandle
 //  Returned by call_soon / call_later / call_at.
 //  The caller can cancel it before it fires.
-// ----------------------------------------
+// ---------------------------------------
 
 alias SoonCb = fn void(void*);
 
@@ -214,18 +212,18 @@ fn void CallbackHandle.free(&self)
     mem_free(self);
 }
 
-// ----------------------------------------
+// ---------------------------------------
 //  CallbackTimerEntry  (separate heap from Future timers)
-// ----------------------------------------
+// ---------------------------------------
 
 struct CallbackTimerEntry {
     ulong deadline_us;
     CallbackHandle* handle;
 }
 
-// ----------------------------------------
+// ---------------------------------------
 //  EventLoop
-// ----------------------------------------
+// ---------------------------------------
 
 struct EventLoopConfig {
     usz task_queue_size;
@@ -243,9 +241,7 @@ fn void set_eventloop_config(usz taskq=1024, usz timerq=512, usz soonq=512)
         return;
     }
     cfg = { taskq, timerq, soonq, true };
-    if (allocx == null) {
-        allocx = mem;
-    }
+    mem::set_allocator(mem);
 }
 
 struct EventLoop {
@@ -379,7 +375,7 @@ fn void EventLoop._enqueue(&self, Task* task)
     
     task.queued = true;
 
-    _assert(self.q_count < self.q_cap, "asyncio: task queue overflow. Set by calling\nasyncio::set_eventloop_config(queue_size=1024, timer=512, soon_queue=512)");
+    @assert(self.q_count < self.q_cap, "asyncio: task queue overflow. Set by calling\nasyncio::set_eventloop_config(queue_size=1024, timer=512, soon_queue=512)");
     self.queue[self.q_tail] = task;
     self.q_tail = (self.q_tail + 1) % self.q_cap;
     self.q_count++;
@@ -399,16 +395,16 @@ fn Task* EventLoop._dequeue(&self)
 
 fn void EventLoop._timer_push(&self, ulong deadline_us, Future* fut)
 {
-    _assert(self.timer_count < self.timer_cap, "asyncio: timer queue overflow. Set by calling\nasyncio::set_eventloop_config(queue_size=1024, timer=512, soon_queue=512)");
+    @assert(self.timer_count < self.timer_cap, "asyncio: timer queue overflow. Set by calling\nasyncio::set_eventloop_config(queue_size=1024, timer=512, soon_queue=512)");
     usz i = self.timer_count++;
     self.timers[i] = { deadline_us, fut, false };
     // Sift up
     while (i > 0) {
         usz p = (i - 1) / 2;
         if (self.timers[p].deadline_us <= self.timers[i].deadline_us) break;
-        TimerEntry tmp   = self.timers[p];
-        self.timers[p]   = self.timers[i];
-        self.timers[i]   = tmp;
+        TimerEntry tmp = self.timers[p];
+        self.timers[p] = self.timers[i];
+        self.timers[i] = tmp;
         i = p;
     }
 }
@@ -426,9 +422,9 @@ fn void EventLoop._timer_pop(&self)
         if (l < self.timer_count && self.timers[l].deadline_us < self.timers[s].deadline_us) s = l;
         if (r < self.timer_count && self.timers[r].deadline_us < self.timers[s].deadline_us) s = r;
         if (s == i) break;
-        TimerEntry tmp   = self.timers[i];
-        self.timers[i]   = self.timers[s];
-        self.timers[s]   = tmp;
+        TimerEntry tmp = self.timers[i];
+        self.timers[i] = self.timers[s];
+        self.timers[s] = tmp;
         i = s;
     }
 }
@@ -569,7 +565,7 @@ fn void EventLoop._flush_deferred_task_frees(&self)
 
 fn Task* EventLoop.create_task(&self, Coroutine coro, String name = "", usz stack_size = 128_000, bool autofree = false, void* arg = null)
 {
-    // _assert(self.running, "asyncio: create_task() called outside run()");
+    // @assert(self.running, "asyncio: create_task() called outside run()");
     Task* task = task_new(self, coro, name, stack_size, autofree, arg);
     if (self.current != null) {
         while (task.state == State.INIT) {
@@ -626,7 +622,7 @@ fn void EventLoop.close(&self)
     if (self.closing) return;
     self.closing = true;
     
-    _assert(!self.running, "asyncio: cannot close a running loop");
+    @assert(!self.running, "asyncio: cannot close a running loop");
 
     // Cancel and free all pending call_soon handles
     while (self.soon_count > 0) {
@@ -650,7 +646,7 @@ fn void EventLoop.close(&self)
     for (usz i = 0; i < self.ts_count; i++) {
         self.ts_queue[i].cancel();
         self.ts_queue[i].free();
-        self.ts_queue[i] = null;
+        //self.ts_queue[i] = null;
     }
     self.ts_count = 0;
     self.ts_mutex.unlock()!!;
@@ -701,8 +697,8 @@ fn void EventLoop.close(&self)
 // Unlike run(), no initial task is registered; the caller sets up tasks beforehand.
 fn void EventLoop.run_forever(&self)
 {
-    _assert(!self.closed,  "asyncio: run_forever() called on a closed loop");
-    _assert(!self.running, "asyncio: run_forever() called on an already running loop");
+    @assert(!self.closed,  "asyncio: run_forever() called on a closed loop");
+    @assert(!self.running, "asyncio: run_forever() called on an already running loop");
 
     self.running = true;
 
@@ -773,24 +769,24 @@ fn void EventLoop.run_forever(&self)
 // ---------------------------------------
 
 // Schedule cb(arg) to be called on the next loop iteration.
-// Returns a CallbackHandle that can be cancelled before it fires.
+
 fn CallbackHandle* EventLoop.call_soon(&self, SoonCb cb, void* arg = null)
 {
     if (self.closing) return null;
     
-    _assert(!self.closed, "asyncio: call_soon() on a closed loop");
+    @assert(!self.closed, "asyncio: call_soon() on a closed loop");
 
-    _assert(self.soon_count < self.soon_cap, "asyncio: soon queue overflow. Set by calling\nasyncio::set_eventloop_config(queue_size=1024, timer=512, soon_queue=512)");
+    @assert(self.soon_count < self.soon_cap, "asyncio: soon queue overflow. Set by calling\nasyncio::set_eventloop_config(queue_size=1024, timer=512, soon_queue=512)");
 
     CallbackHandle* h = callbackhandle_new(cb, arg);
     self.soon_queue[self.soon_tail] = h;
-    self.soon_tail  = (self.soon_tail + 1) % self.soon_cap;
+    self.soon_tail = (self.soon_tail + 1) % self.soon_cap;
     self.soon_count++;
     return h;
 }
 
 // Schedule cb(arg) to be called after delay_us microseconds.
-// Returns a cancellable CallbackHandle.
+
 fn CallbackHandle* EventLoop.call_later_us(&self, ulong delay_us, SoonCb cb, void* arg = null)
 {
     if (self.closing) return null;
@@ -812,15 +808,16 @@ fn CallbackHandle* EventLoop.call_later(&self, double delay_sec, SoonCb cb, void
 
 // Schedule cb(arg) to be called at an absolute loop timestamp (microseconds).
 // Use loop.time() to get the current timestamp.
-// Returns a cancellable CallbackHandle.
+
 fn CallbackHandle* EventLoop.call_at_us(&self, ulong when_us, SoonCb cb, void* arg = null)
 {
     if (self.closing) return null;
-    _assert(!self.closed, "asyncio: call_at() on a closed loop");
-    _assert(self.cb_timer_count < self.timer_cap, "asyncio: cb_timer queue overflow");
+    @assert(!self.closed, "asyncio: call_at() on a closed loop");
+    @assert(self.cb_timer_count < self.timer_cap, "asyncio: cb_timer queue overflow");
 
     CallbackHandle* h = callbackhandle_new(cb, arg);
     self._cb_timer_push(when_us, h);
+    
     return h;
 }
 
@@ -832,48 +829,26 @@ fn CallbackHandle* EventLoop.call_at(&self, double when_sec, SoonCb cb, void* ar
 
 // Thread-safe variant of call_soon.
 // Safe to call from any OS thread; the callback will be executed on the event-loop thread.
-// Returns a CallbackHandle for cancellation (cancel() itself is also thread-safe).
-/*
-fn CallbackHandle* EventLoop.call_soon_threadsafe(&self, SoonCb cb, void* arg = null)
-{
-    if (self.closing) return null;
-    
-    _assert(!self.closed, "asyncio: call_soon_threadsafe() on a closed loop");
-
-    CallbackHandle* h = callbackhandle_new(cb, arg);
-
-    self.ts_mutex.lock()!!;
-    _assert(self.ts_count < self.soon_cap, "asyncio: threadsafe queue overflow");
-    self.ts_queue[self.ts_count++] = h;
-    self.ts_mutex.unlock()!!;
-
-    return h;
-}
-*/
 
 fn CallbackHandle* EventLoop.call_soon_threadsafe(&self, SoonCb cb, void* arg = null)
 {
     // lock first: close/free prevent race
     self.ts_mutex.lock()!!;
-
     if (self.closing || self.closed) {
         self.ts_mutex.unlock()!!;
         return null;
     }
 
     CallbackHandle* h = callbackhandle_new(cb, arg);
-
     if (self.ts_count == self.soon_cap) {
         self.ts_mutex.unlock()!!;
-        h.cancel();
-        h.free();
-        _assert(false, "asyncio: threadsafe queue overflow");
+        @assert(false, "asyncio: threadsafe queue overflow");
         return null;
     }
-
+    
     self.ts_queue[self.ts_count++] = h;
     self.ts_mutex.unlock()!!;
-
+    
     return h;
 }
 
@@ -899,14 +874,18 @@ fn void EventLoop._drain_threadsafe(&self)
     // will write starting at ts_queue[0] — no overlap until we're done.
     for (usz i = 0; i < n; i++) {
         CallbackHandle* h = self.ts_queue[i];
+        if (h.cancelled) {
+            h.free();
+            continue;
+        }
+
         if (self.soon_count < self.soon_cap) {
-            self.soon_queue[self.soon_tail] = h;
+            CallbackHandle* h1 = callbackhandle_new(h.cb, h.arg);
+      
+            self.soon_queue[self.soon_tail] = h1;
             self.soon_tail  = (self.soon_tail + 1) % self.soon_cap;
             self.soon_count++;
-        } else {
-            h.cancel();
-            h.free();
-        }
+        } 
     }
 }
 
@@ -940,8 +919,8 @@ fn void EventLoop._cb_timer_push(&self, ulong deadline_us, CallbackHandle* h)
         usz p = (i - 1) / 2;
         if (self.cb_timers[p].deadline_us <= self.cb_timers[i].deadline_us) break;
         CallbackTimerEntry tmp = self.cb_timers[p];
-        self.cb_timers[p]      = self.cb_timers[i];
-        self.cb_timers[i]      = tmp;
+        self.cb_timers[p] = self.cb_timers[i];
+        self.cb_timers[i] = tmp;
         i = p;
     }
 }
@@ -960,8 +939,8 @@ fn void EventLoop._cb_timer_pop(&self)
         if (r < self.cb_timer_count && self.cb_timers[r].deadline_us < self.cb_timers[s].deadline_us) s = r;
         if (s == i) break;
         CallbackTimerEntry tmp = self.cb_timers[i];
-        self.cb_timers[i]      = self.cb_timers[s];
-        self.cb_timers[s]      = tmp;
+        self.cb_timers[i]  = self.cb_timers[s];
+        self.cb_timers[s] = tmp;
         i = s;
     }
 }
@@ -986,7 +965,7 @@ fn void run(Coroutine main_coro)
     loop.running = true;
     
     // Register the main coroutine as the first Task
-    Task* tt = loop.create_task(main_coro, "main", 64_000);
+    Task* tt = loop.create_task(main_coro, "main", 80_000);
     
     while (loop.running) {
         // 1. Drain thread-safe queue into soon_queue

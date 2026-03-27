@@ -123,6 +123,7 @@ extern fn Bool findClose(Handle find_file) @cname("FindClose");
 
 extern fn Dword getLastError() @cname("GetLastError");
 
+/*
 fn fault win_error_to_fault()
 {
     Dword err = getLastError();
@@ -341,3 +342,4 @@ fn bool is_executable(String path)
             return false;
     }
 }
+*/

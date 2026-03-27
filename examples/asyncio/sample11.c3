@@ -10,7 +10,6 @@ import std::io;
 import ext::asyncio;
 import c::string;
 
-
 // ========================================
 //  Shared globals
 // ========================================

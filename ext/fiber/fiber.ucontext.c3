@@ -6,6 +6,8 @@ import std::io;
 import c::ucontext;
 import c::string;
 import c::stdlib;
+import ext::debug;
+import ext::mem;
 
 struct Fiber {
     UContext context;
@@ -23,8 +25,8 @@ fn void init(Allocator allocx = mem, bool debug = true) @private
 {
     if (running != null) return;
     running = &primary;
-    set_allocator(allocx);
-    set_debug(debug);
+    mem::set_allocator(allocx);
+    debug::set_debug(debug);
 }
 
 fn Fiber* active() 

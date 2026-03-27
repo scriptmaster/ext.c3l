@@ -4,11 +4,13 @@ module ext::asyncio;
 
 import std::io;
 
-import c::stdlib; // libc
-import c::string; // libc
-import c::errno; // libc
+import c::stdlib;
+import c::string;
+import c::errno;
+import ext::debug;
+import ext::mem;
 
-const usz READ_BUF_SIZE  = 64 * 1024;
+const usz READ_BUF_SIZE  = 4 * 1024;
 
 struct Stream {
     int fd;
@@ -189,42 +191,32 @@ fn Stream* open_pipe(int pipe_fd)
     return stream_new(pipe_fd);
 }
 
-module ext::asyncio @if(!env::WIN32);
+fn Stream*? open_file_stream(String path, String mode)
+{
+    int fd = open_file(path, mode)!;
+    
+    if (fd < 0) return errno::get_fault()~;
 
-import c::string; // libc
-import c::fcntl; // libc
-import c::unistd; // libc
-import c::errno; // libc
+    return stream_new(fd);
+}
 
 fn void Stream.close(&self) 
 {
     if (self.closed) return;
     self.closed = true;
     
-    unregister(self.fd);
-    unistd::close(self.fd);
+    close_file(self.fd);
+
     self._free();
 }
 
-fn Stream*? open_file(String path, bool write_mode)
-{
-    ZString fname = path.zstr_copy(allocx);
-    defer mem_free(fname);
 
-    int fd = 0;
-    int flags = 0;
-    if (write_mode) {
-        flags |= fcntl::O_RDWR | fcntl::O_CREAT;
-        fd = fcntl::open(fname, flags, 0644);
-    } else {
-        flags |= fcntl::O_RDONLY;
-        fd = fcntl::open(fname, flags);
-    }
-    
-    if (fd < 0) return errno::get_fault()~;
+module ext::asyncio @if(!env::WIN32);
 
-    return stream_new(fd);
-}
+import c::string; // libc
+import c::fcntl; // libc
+import c::unistd; // libc
+import c::errno; // libc
 
 
 fn Stream* stdin_stream() 
@@ -242,30 +234,6 @@ module ext::asyncio @if(env::WIN32);
 
 import c::winbase; // libc
 import c::winsock2; // libc
-
-fn void Stream.close(&self) 
-{
-    if (self.closed) return;
-    self.closed = true;
-
-    unregister(self.fd);
-
-    if (_is_socket((winbase::Handle)(iptr)self.fd)) {
-        winsock2::closesocket((winsock2::Socket)self.fd);
-    } else {
-        winbase::closeHandle((winbase::Handle)(iptr)self.fd);
-    }
-    self._free();
-}
-
-fn Stream*? open_file(String path, bool write_mode)
-{
-    int fd = open_file_async(path, write_mode)!;
-    
-    if (fd < 0) return IO_ERROR~;
-
-    return stream_new(fd);
-}
 
 
 fn Stream* stdin_stream() 

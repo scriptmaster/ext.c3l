@@ -1,4 +1,4 @@
-// processthread.h.c3
+// processthreadapi.h.c3
 
 module c::processthreadapi @if(env::WIN32);
 
@@ -115,15 +115,15 @@ const uint STARTF_UNTRUSTEDSOURCE = 0x00008000;
 // Structures
 struct SecurityAttributes {
     DWord length;
-    PVoid security_descriptor;
-    Bool inherit_handle;
+    PVoid securityDescriptor;
+    Bool inheritHandle;
 }
 
 struct ProcessInformation {
     Handle process;
     Handle thread;
-    DWord process_id;
-    DWord thread_id;
+    DWord processId;
+    DWord threadId;
 }
 
 struct Coord {
@@ -138,18 +138,18 @@ struct StartupInfoA {
     char* title;
     DWord x;
     DWord y;
-    DWord x_size;
-    DWord y_size;
-    DWord x_count_chars;
-    DWord y_count_chars;
-    DWord fill_attribute;
+    DWord xSize;
+    DWord ySize;
+    DWord xCountChars;
+    DWord yCountChars;
+    DWord fillAttribute;
     DWord flags;
-    Word show_window;
-    Word cb_reserved2;
-    Byte* lp_reserved2;
-    Handle std_input;
-    Handle std_output;
-    Handle std_error;
+    Word showWindow;
+    Word cbReserved2;
+    Byte* lpReserved2;
+    Handle stdInput;
+    Handle stdOutput;
+    Handle stdError;
 }
 
 struct StartupInfoW {
@@ -159,287 +159,287 @@ struct StartupInfoW {
     short* title;
     DWord x;
     DWord y;
-    DWord x_size;
-    DWord y_size;
-    DWord x_count_chars;
-    DWord y_count_chars;
-    DWord fill_attribute;
+    DWord xSize;
+    DWord ySize;
+    DWord xCountChars;
+    DWord yCountChars;
+    DWord fillAttribute;
     DWord flags;
-    Word show_window;
-    Word cb_reserved2;
-    Byte* lp_reserved2;
-    Handle std_input;
-    Handle std_output;
-    Handle std_error;
+    Word showWindow;
+    Word cbReserved2;
+    Byte* lpReserved2;
+    Handle stdInput;
+    Handle stdOutput;
+    Handle stdError;
 }
 
 struct ProcessMemoryCounters {
     DWord cb;
-    DWord page_fault_count;
-    Size peak_working_set_size;
-    Size working_set_size;
-    Size quota_peak_paged_pool_usage;
-    Size quota_paged_pool_usage;
-    Size quota_peak_non_paged_pool_usage;
-    Size quota_non_paged_pool_usage;
-    Size pagefile_usage;
-    Size peak_pagefile_usage;
+    DWord pageFaultCount;
+    Size peakWorkingSetSize;
+    Size workingSetSize;
+    Size quotaPeakPagedPoolUsage;
+    Size quotaPagedPoolUsage;
+    Size quotaPeakNonPagedPoolUsage;
+    Size quotaNonPagedPoolUsage;
+    Size pagefileUsage;
+    Size peakPagefileUsage;
 }
 
 struct ProcessMemoryCountersEx {
     DWord cb;
-    DWord page_fault_count;
-    Size peak_working_set_size;
-    Size working_set_size;
-    Size quota_peak_paged_pool_usage;
-    Size quota_paged_pool_usage;
-    Size quota_peak_non_paged_pool_usage;
-    Size quota_non_paged_pool_usage;
-    Size pagefile_usage;
-    Size peak_pagefile_usage;
-    Size private_usage;
+    DWord pageFaultCount;
+    Size peakWorkingSetSize;
+    Size workingSetSize;
+    Size quotaPeakPagedPoolUsage;
+    Size quotaPagedPoolUsage;
+    Size quotaPeakNonPagedPoolUsage;
+    Size quotaNonPagedPoolUsage;
+    Size pagefileUsage;
+    Size peakPagefileUsage;
+    Size privateUsage;
 }
 
 // Thread callback type
 alias ThreadStartRoutine = fn DWord(PVoid);
 
 // Process and Thread Functions
-extern fn Bool create_process_a(
-    char* application_name,
-    char* command_line,
-    SecurityAttributes* process_attributes,
-    SecurityAttributes* thread_attributes,
-    Bool inherit_handles,
-    DWord creation_flags,
+extern fn Bool createProcessA(
+    char* applicationName,
+    char* commandLine,
+    SecurityAttributes* processAttributes,
+    SecurityAttributes* threadAttributes,
+    Bool inheritHandles,
+    DWord creationFlags,
     PVoid environment,
-    char* current_directory,
-    StartupInfoA* startup_info,
-    ProcessInformation* process_information
+    char* currentDirectory,
+    StartupInfoA* startupInfo,
+    ProcessInformation* processInformation
 ) @cname("CreateProcessA");
 
-extern fn Bool create_process_w(
-    short* application_name,
-    short* command_line,
-    SecurityAttributes* process_attributes,
-    SecurityAttributes* thread_attributes,
-    Bool inherit_handles,
-    DWord creation_flags,
+extern fn Bool createProcessW(
+    short* applicationName,
+    short* commandLine,
+    SecurityAttributes* processAttributes,
+    SecurityAttributes* threadAttributes,
+    Bool inheritHandles,
+    DWord creationFlags,
     PVoid environment,
-    short* current_directory,
-    StartupInfoW* startup_info,
-    ProcessInformation* process_information
+    short* currentDirectory,
+    StartupInfoW* startupInfo,
+    ProcessInformation* processInformation
 ) @cname("CreateProcessW");
 
-extern fn Handle create_thread(
-    SecurityAttributes* thread_attributes,
-    Size stack_size,
-    ThreadStartRoutine start_address,
+extern fn Handle createThread(
+    SecurityAttributes* threadAttributes,
+    Size stackSize,
+    ThreadStartRoutine startAddress,
     PVoid parameter,
-    DWord creation_flags,
-    DWord* thread_id
+    DWord creationFlags,
+    DWord* threadId
 ) @cname("CreateThread");
 
-extern fn Handle create_remote_thread(
+extern fn Handle createRemoteThread(
     Handle process,
-    SecurityAttributes* thread_attributes,
-    Size stack_size,
-    ThreadStartRoutine start_address,
+    SecurityAttributes* threadAttributes,
+    Size stackSize,
+    ThreadStartRoutine startAddress,
     PVoid parameter,
-    DWord creation_flags,
-    DWord* thread_id
+    DWord creationFlags,
+    DWord* threadId
 ) @cname("CreateRemoteThread");
 
-extern fn Handle get_current_process() @cname("GetCurrentProcess");
+extern fn Handle getCurrentProcess() @cname("GetCurrentProcess");
 
-extern fn DWord get_current_process_id() @cname("GetCurrentProcessId");
+extern fn DWord getCurrentProcessId() @cname("GetCurrentProcessId");
 
-extern fn Handle get_current_thread() @cname("GetCurrentThread");
+extern fn Handle getCurrentThread() @cname("GetCurrentThread");
 
-extern fn DWord get_current_thread_id() @cname("GetCurrentThreadId");
+extern fn DWord getCurrentThreadId() @cname("GetCurrentThreadId");
 
-extern fn Bool terminate_process(Handle process, uint exit_code) @cname("TerminateProcess");
+extern fn Bool terminateProcess(Handle process, uint exitCode) @cname("TerminateProcess");
 
-extern fn Bool terminate_thread(Handle thread, DWord exit_code) @cname("TerminateThread");
+extern fn Bool terminateThread(Handle thread, DWord exitCode) @cname("TerminateThread");
 
-extern fn DWord suspend_thread(Handle thread) @cname("SuspendThread");
+extern fn DWord suspendThread(Handle thread) @cname("SuspendThread");
 
-extern fn DWord resume_thread(Handle thread) @cname("ResumeThread");
+extern fn DWord resumeThread(Handle thread) @cname("ResumeThread");
 
-extern fn void exit_process(uint exit_code) @cname("ExitProcess");
+extern fn void exitProcess(uint exitCode) @cname("ExitProcess");
 
-extern fn void exit_thread(DWord exit_code) @cname("ExitThread");
+extern fn void exitThread(DWord exitCode) @cname("ExitThread");
 
-extern fn Bool get_exit_code_process(Handle process, DWord* exit_code) @cname("GetExitCodeProcess");
+extern fn Bool getExitCodeProcess(Handle process, DWord* exitCode) @cname("GetExitCodeProcess");
 
-extern fn Bool get_exit_code_thread(Handle thread, DWord* exit_code) @cname("GetExitCodeThread");
+extern fn Bool getExitCodeThread(Handle thread, DWord* exitCode) @cname("GetExitCodeThread");
 
-extern fn Handle open_process(DWord desired_access, Bool inherit_handle, DWord process_id) @cname("OpenProcess");
+extern fn Handle openProcess(DWord desiredAccess, Bool inheritHandle, DWord processId) @cname("OpenProcess");
 
-extern fn Handle open_thread(DWord desired_access, Bool inherit_handle, DWord thread_id) @cname("OpenThread");
+extern fn Handle openThread(DWord desiredAccess, Bool inheritHandle, DWord threadId) @cname("OpenThread");
 
-extern fn Bool set_priority_class(Handle process, DWord priority_class) @cname("SetPriorityClass");
+extern fn Bool setPriorityClass(Handle process, DWord priorityClass) @cname("SetPriorityClass");
 
-extern fn DWord get_priority_class(Handle process) @cname("GetPriorityClass");
+extern fn DWord getPriorityClass(Handle process) @cname("GetPriorityClass");
 
-extern fn Bool set_thread_priority(Handle thread, int priority) @cname("SetThreadPriority");
+extern fn Bool setThreadPriority(Handle thread, int priority) @cname("SetThreadPriority");
 
-extern fn int get_thread_priority(Handle thread) @cname("GetThreadPriority");
+extern fn int getThreadPriority(Handle thread) @cname("GetThreadPriority");
 
-extern fn Bool get_process_times(
+extern fn Bool getProcessTimes(
     Handle process,
-    void* creation_time,
-    void* exit_time,
-    void* kernel_time,
-    void* user_time
+    void* creationTime,
+    void* exitTime,
+    void* kernelTime,
+    void* userTime
 ) @cname("GetProcessTimes");
 
-extern fn Bool get_thread_times(
+extern fn Bool getThreadTimes(
     Handle thread,
-    void* creation_time,
-    void* exit_time,
-    void* kernel_time,
-    void* user_time
+    void* creationTime,
+    void* exitTime,
+    void* kernelTime,
+    void* userTime
 ) @cname("GetThreadTimes");
 
-extern fn DWord get_process_id(Handle process) @cname("GetProcessId");
+extern fn DWord getProcessId(Handle process) @cname("GetProcessId");
 
-extern fn DWord get_thread_id(Handle thread) @cname("GetThreadId");
+extern fn DWord getThreadId(Handle thread) @cname("GetThreadId");
 
-extern fn DWord get_process_id_of_thread(Handle thread) @cname("GetProcessIdOfThread");
+extern fn DWord getProcessIdOfThread(Handle thread) @cname("GetProcessIdOfThread");
 
-extern fn Bool get_process_handle_count(Handle process, DWord* handle_count) @cname("GetProcessHandleCount");
+extern fn Bool getProcessHandleCount(Handle process, DWord* handleCount) @cname("GetProcessHandleCount");
 
-extern fn ULongPtr set_thread_affinity_mask(Handle thread, ULongPtr thread_affinity_mask) @cname("SetThreadAffinityMask");
+extern fn ULongPtr setThreadAffinityMask(Handle thread, ULongPtr threadAffinityMask) @cname("SetThreadAffinityMask");
 
-extern fn Bool set_process_affinity_mask(Handle process, ULongPtr process_affinity_mask) @cname("SetProcessAffinityMask");
+extern fn Bool setProcessAffinityMask(Handle process, ULongPtr processAffinityMask) @cname("SetProcessAffinityMask");
 
-extern fn Bool get_process_affinity_mask(
+extern fn Bool getProcessAffinityMask(
     Handle process,
-    ULongPtr* process_affinity_mask,
-    ULongPtr* system_affinity_mask
+    ULongPtr* processAffinityMask,
+    ULongPtr* systemAffinityMask
 ) @cname("GetProcessAffinityMask");
 
-extern fn DWord wait_for_single_object(Handle handle, DWord milliseconds) @cname("WaitForSingleObject");
+extern fn DWord waitForSingleObject(Handle handle, DWord milliseconds) @cname("WaitForSingleObject");
 
-extern fn DWord wait_for_multiple_objects(
+extern fn DWord waitForMultipleObjects(
     DWord count,
     Handle* handles,
-    Bool wait_all,
+    Bool waitAll,
     DWord milliseconds
 ) @cname("WaitForMultipleObjects");
 
 extern fn void sleep(DWord milliseconds) @cname("Sleep");
 
-extern fn Bool switch_to_thread() @cname("SwitchToThread");
+extern fn Bool switchToThread() @cname("SwitchToThread");
 
-extern fn DWord tls_alloc() @cname("TlsAlloc");
+extern fn DWord tlsAlloc() @cname("TlsAlloc");
 
-extern fn Bool tls_free(DWord tls_index) @cname("TlsFree");
+extern fn Bool tlsFree(DWord tlsIndex) @cname("TlsFree");
 
-extern fn PVoid tls_get_value(DWord tls_index) @cname("TlsGetValue");
+extern fn PVoid tlsGetValue(DWord tlsIndex) @cname("TlsGetValue");
 
-extern fn Bool tls_set_value(DWord tls_index, PVoid tls_value) @cname("TlsSetValue");
+extern fn Bool tlsSetValue(DWord tlsIndex, PVoid tlsValue) @cname("TlsSetValue");
 
-extern fn Bool is_processor_feature_present(DWord processor_feature) @cname("IsProcessorFeaturePresent");
+extern fn Bool isProcessorFeaturePresent(DWord processorFeature) @cname("IsProcessorFeaturePresent");
 
-extern fn void get_current_processor_number() @cname("GetCurrentProcessorNumber");
+extern fn void getCurrentProcessorNumber() @cname("GetCurrentProcessorNumber");
 
-extern fn Bool get_process_memory_info(
+extern fn Bool getProcessMemoryInfo(
     Handle process,
     ProcessMemoryCounters* counters,
     DWord cb
 ) @cname("GetProcessMemoryInfo");
 
-extern fn Bool set_process_working_set_size(
+extern fn Bool setProcessWorkingSetSize(
     Handle process,
-    Size minimum_working_set_size,
-    Size maximum_working_set_size
+    Size minimumWorkingSetSize,
+    Size maximumWorkingSetSize
 ) @cname("SetProcessWorkingSetSize");
 
-extern fn Bool get_process_working_set_size(
+extern fn Bool getProcessWorkingSetSize(
     Handle process,
-    Size* minimum_working_set_size,
-    Size* maximum_working_set_size
+    Size* minimumWorkingSetSize,
+    Size* maximumWorkingSetSize
 ) @cname("GetProcessWorkingSetSize");
 
-extern fn Bool flush_process_write_buffers() @cname("FlushProcessWriteBuffers");
+extern fn Bool flushProcessWriteBuffers() @cname("FlushProcessWriteBuffers");
 
-extern fn DWord get_process_version(DWord process_id) @cname("GetProcessVersion");
+extern fn DWord getProcessVersion(DWord processId) @cname("GetProcessVersion");
 
-extern fn Bool set_thread_ideal_processor(Handle thread, DWord ideal_processor) @cname("SetThreadIdealProcessor");
+extern fn Bool setThreadIdealProcessor(Handle thread, DWord idealProcessor) @cname("SetThreadIdealProcessor");
 
-extern fn DWord set_thread_ideal_processor_ex(
+extern fn DWord setThreadIdealProcessorEx(
     Handle thread,
-    void* ideal_processor,
-    void* previous_ideal_processor
+    void* idealProcessor,
+    void* previousIdealProcessor
 ) @cname("SetThreadIdealProcessorEx");
 
-extern fn Bool get_thread_ideal_processor_ex(Handle thread, void* ideal_processor) @cname("GetThreadIdealProcessorEx");
+extern fn Bool getThreadIdealProcessorEx(Handle thread, void* idealProcessor) @cname("GetThreadIdealProcessorEx");
 
-extern fn void get_startup_info_a(StartupInfoA* startup_info) @cname("GetStartupInfoA");
+extern fn void getStartupInfoA(StartupInfoA* startupInfo) @cname("GetStartupInfoA");
 
-extern fn void get_startup_info_w(StartupInfoW* startup_info) @cname("GetStartupInfoW");
+extern fn void getStartupInfoW(StartupInfoW* startupInfo) @cname("GetStartupInfoW");
 
-extern fn Bool create_process_as_user_a(
+extern fn Bool createProcessAsUserA(
     Handle token,
-    char* application_name,
-    char* command_line,
-    SecurityAttributes* process_attributes,
-    SecurityAttributes* thread_attributes,
-    Bool inherit_handles,
-    DWord creation_flags,
+    char* applicationName,
+    char* commandLine,
+    SecurityAttributes* processAttributes,
+    SecurityAttributes* threadAttributes,
+    Bool inheritHandles,
+    DWord creationFlags,
     PVoid environment,
-    char* current_directory,
-    StartupInfoA* startup_info,
-    ProcessInformation* process_information
+    char* currentDirectory,
+    StartupInfoA* startupInfo,
+    ProcessInformation* processInformation
 ) @cname("CreateProcessAsUserA");
 
-extern fn Bool create_process_as_user_w(
+extern fn Bool createProcessAsUserW(
     Handle token,
-    short* application_name,
-    short* command_line,
-    SecurityAttributes* process_attributes,
-    SecurityAttributes* thread_attributes,
-    Bool inherit_handles,
-    DWord creation_flags,
+    short* applicationName,
+    short* commandLine,
+    SecurityAttributes* processAttributes,
+    SecurityAttributes* threadAttributes,
+    Bool inheritHandles,
+    DWord creationFlags,
     PVoid environment,
-    short* current_directory,
-    StartupInfoW* startup_info,
-    ProcessInformation* process_information
+    short* currentDirectory,
+    StartupInfoW* startupInfo,
+    ProcessInformation* processInformation
 ) @cname("CreateProcessAsUserW");
 
-extern fn DWord queue_user_apc(void* apc_func, Handle thread, ULongPtr data) @cname("QueueUserAPC");
+extern fn DWord queueUserApc(void* apcFunc, Handle thread, ULongPtr data) @cname("QueueUserAPC");
 
-extern fn Bool get_thread_io_pending_flag(Handle thread, Bool* io_is_pending) @cname("GetThreadIOPendingFlag");
+extern fn Bool getThreadIoPendingFlag(Handle thread, Bool* ioIsPending) @cname("GetThreadIOPendingFlag");
 
-extern fn DWord get_thread_error_mode() @cname("GetThreadErrorMode");
+extern fn DWord getThreadErrorMode() @cname("GetThreadErrorMode");
 
-extern fn Bool set_thread_error_mode(DWord new_mode, DWord* old_mode) @cname("SetThreadErrorMode");
+extern fn Bool setThreadErrorMode(DWord newMode, DWord* oldMode) @cname("SetThreadErrorMode");
 
-extern fn Bool set_thread_stack_guarantee(ULong* stack_size_in_bytes) @cname("SetThreadStackGuarantee");
+extern fn Bool setThreadStackGuarantee(ULong* stackSizeInBytes) @cname("SetThreadStackGuarantee");
 
-extern fn DWord set_thread_description(Handle thread, short* thread_description) @cname("SetThreadDescription");
+extern fn DWord setThreadDescription(Handle thread, short* threadDescription) @cname("SetThreadDescription");
 
-extern fn DWord get_thread_description(Handle thread, short** thread_description) @cname("GetThreadDescription");
+extern fn DWord getThreadDescription(Handle thread, short** threadDescription) @cname("GetThreadDescription");
 
 // Process/Thread attribute list functions
-extern fn Bool initialize_proc_thread_attribute_list(
-    void* attribute_list,
-    DWord attribute_count,
+extern fn Bool initializeProcThreadAttributeList(
+    void* attributeList,
+    DWord attributeCount,
     DWord flags,
     Size* size
 ) @cname("InitializeProcThreadAttributeList");
 
-extern fn void delete_proc_thread_attribute_list(void* attribute_list) @cname("DeleteProcThreadAttributeList");
+extern fn void deleteProcThreadAttributeList(void* attributeList) @cname("DeleteProcThreadAttributeList");
 
-extern fn Bool update_proc_thread_attribute(
-    void* attribute_list,
+extern fn Bool updateProcThreadAttribute(
+    void* attributeList,
     DWord flags,
     ULongPtr attribute,
     PVoid value,
     Size size,
-    PVoid previous_value,
-    Size* return_size
+    PVoid previousValue,
+    Size* returnSize
 ) @cname("UpdateProcThreadAttribute");
 
 // Constants for WAIT functions

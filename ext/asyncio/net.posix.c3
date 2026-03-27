@@ -3,17 +3,19 @@
 module ext::asyncio @if(!env::WIN32);
 
 import std::io;
-import c::stdio; // libc
-import c::string; // libc
-import c::stdlib; // libc
-import c::netinet::in; // libc
-import c::netdb; // libc
-import c::sys::socket; // libc
-import c::unistd; // libc
-import c::fcntl; // libc
-import c::errno; // libc
+import c::stdio;
+import c::string;
+import c::stdlib;
+import c::netinet::in;
+import c::netdb;
+import c::sys::socket;
+import c::unistd;
+import c::fcntl;
+import c::errno;
+import ext::debug;
+import ext::mem;
 
-fn char* str2cptr(String str, char[] buf) @inline
+fn char* str2cptr(String str, char[] buf) @inline @private
 {
     usz len = (str.len <= buf.len-1)? str.len: buf.len-1;
     string::memcpy(&buf[0], &str[0], len);
@@ -183,7 +185,7 @@ fn Server* server_new()
 
 fn void Server.free(&self)
 {
-    _assert(self.accept_task == null, "Server.free(): accept task still running");
+    @assert(self.accept_task == null, "Server.free(): accept task still running");
     if (self.transport != null) { // protocol.c3
         self.transport.free();
     }
@@ -290,7 +292,7 @@ fn Server*? start_server(ClientHandler handler, String host_str, ushort port)
     }
     
     int fd = socket::socket(family, socket::SOCK_STREAM, 0);
-    _assert(fd >= 0, "asyncio::net: socket() failed");
+    @assert(fd >= 0, "asyncio::net: socket() failed");
 
     int yes = 1;
     socket::setsockopt(fd, socket::SOL_SOCKET, socket::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
@@ -338,7 +340,7 @@ fn Server*? start_server(ClientHandler handler, String host_str, ushort port)
         return IO_ERROR~;
     }
 
-    _assert(socket::listen(fd, 128) == 0, "asyncio::net: listen() failed");
+    @assert(socket::listen(fd, 128) == 0, "asyncio::net: listen() failed");
 
     Server* server = server_new();
     

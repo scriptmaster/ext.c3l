@@ -8,18 +8,8 @@ module sample_tg;
 
 import ext::asyncio;
 import std::io;
-import c::stdlib; // libc
-
-macro void warn(String fmt, args...)
-{
-    io::printf("%s:%s():%d: ", $$FILE, $$FUNC, $$LINE);
-    io::printfn(fmt, ...args);
-}
-
-macro _assert(expr, String msg)
-{
-    if (!(expr)) { warn("%s", msg); stdlib::exit(1); }
-}
+import c::stdlib;
+import ext::debug;
 
 // ---------------------------------------
 //  Shared state
@@ -86,7 +76,7 @@ fn void slow_task_1()
 
 fn void main_coro()
 {
-    asyncio::warn("-");
+    //warn("-");
     EventLoop* loop = asyncio::get_running_loop();
 
     // ====================================

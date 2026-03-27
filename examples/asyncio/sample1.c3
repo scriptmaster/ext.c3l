@@ -6,6 +6,8 @@
 module sample1;
 
 import std::io;
+import ext::debug; // warn, @assert
+import ext::mem;
 import ext::asyncio;
 import ext::thread::fiber;
 
@@ -18,12 +20,6 @@ int[3] g_counts;   // each task writes to its own slot
 // -----------------------------------------
 //  Worker coroutines
 // -----------------------------------------
-
-macro void warn(String fmt, args...)
-{
-    io::printf("%s:%s():%s:%d ", $$FILE, $$FUNC, $$LINE, (ulong)fiber::active()%100);
-    io::printfn(fmt, ...args);
-}
 
 fn void counter_a()
 {

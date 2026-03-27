@@ -2,6 +2,9 @@
 
 module ext::asyncio;
 
+import ext::debug;
+import ext::mem;
+
 //import example;
 /* python api functions 
 transport,protocol = loop.create_connection(protocol, host, port)
@@ -254,7 +257,7 @@ fn void Transport.write(&self, char[] data)
         self.stream.write(data);
     }
     if (self.type == 'u') {
-        _assert(false, "UDP does not have write(). Use sendto() instead");
+        @assert(false, "UDP does not have write(). Use sendto() instead");
     }
 }
 

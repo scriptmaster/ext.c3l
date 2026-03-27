@@ -1,5 +1,5 @@
 
-// file.win32.c3
+//  file.win32.c3
 
 module ext::io::cfile @if(env::WIN32);
 
@@ -12,7 +12,7 @@ struct File
     windows::Handle fp;
 }
 
-fn Char16*? utf8to16(String path, Char16[] wpath) 
+fn Char16*? utf8to16(String path, Char16[] wpath) @private
 {
     if (path.len == 0) return errno::F_INVAL~;
     Char16[] p2 = path.to_utf16(mem)!;
@@ -22,48 +22,54 @@ fn Char16*? utf8to16(String path, Char16[] wpath)
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
+    for (usz i = 0; i < p2.len; i++) {
+        if (p2[i] == (Char16)'/') {
+            wpath[i] = (Char16)'\\';
+        }
+    }
     
     return wpath.ptr;
 }
 
-fn File? open(String fname, String fmode) 
+fn File? open(String fname, String mode) 
 {
     Char16[512] namebuf;
     Char16* name = utf8to16(fname, &namebuf)!;
 
-    // Parse mode string
-    uint access = 0;
-    uint creation = windows::OPEN_EXISTING;
-    
-    // Simple mode parsing (r, w, a, r+, w+, a+)
-    if (fmode.len == 0) return errno::F_INVAL~;
-    if (fmode[0] == 'r') {
-        access = windows::GENERIC_READ;
-        if (fmode.len > 1 && fmode[1] == '+') {
-            access |= windows::GENERIC_WRITE;
-        }
-    } else if (fmode[0] == 'w') {
-        access = windows::GENERIC_WRITE;
-        creation = windows::CREATE_ALWAYS;
-        if (fmode.len > 1 && fmode[1] == '+') {
-            access |= windows::GENERIC_READ;
-        }
-    } else if (fmode[0] == 'a') {
-        access = windows::GENERIC_WRITE;
-        creation = windows::OPEN_ALWAYS;
-        if (fmode.len > 1 && fmode[1] == '+') {
-            access |= windows::GENERIC_READ;
-        }
+    winbase::DWord access = 0;
+    winbase::DWord disposition = 0;
+    winbase::DWord attributes = winbase::FILE_ATTRIBUTE_NORMAL;
+
+    if (mode == "r") {
+        access = winbase::GENERIC_READ;
+        disposition = winbase::OPEN_EXISTING;
+    } else if (mode == "r+") {
+        access = winbase::GENERIC_READ | winbase::GENERIC_WRITE;
+        disposition = winbase::OPEN_EXISTING;
+    } else if (mode == "w") {
+        access = winbase::GENERIC_WRITE;
+        disposition = winbase::CREATE_ALWAYS;
+    } else if (mode == "w+") {
+        access = winbase::GENERIC_READ | winbase::GENERIC_WRITE;
+        disposition = winbase::CREATE_ALWAYS;
+    } else if (mode == "a") {
+        access = winbase::FILE_APPEND_DATA; // or GENERIC_WRITE
+        disposition = winbase::OPEN_ALWAYS;
+    } else if (mode == "a+") {
+        access = winbase::GENERIC_READ | winbase::FILE_APPEND_DATA;
+        disposition = winbase::OPEN_ALWAYS;
     } else {
-        return errno::F_INVAL~;
+        return errno::E_INVALID_ARG~;
     }
     
+    winbase::DWord share = winbase::FILE_SHARE_READ;
+   
     File f;
-    f.fp = windows::createFileW(name, access, windows::FILE_SHARE_READ | windows::FILE_SHARE_WRITE, null, creation, windows::FILE_ATTRIBUTE_NORMAL, null);
+    f.fp = windows::createFileW(name, access, share, null, disposition, flags, null);
     if (f.fp == windows::INVALID_HANDLE_VALUE) return errno::get_fault()~;
     
     // For append mode, seek to end
-    if (fmode[0] == 'a') {
+    if (mode[0] == 'a') {
         windows::setFilePointerEx(f.fp, 0, null, windows::FILE_END);
     }
     
@@ -246,7 +252,7 @@ fn void? copy(String fname, String fname2) @maydiscard
     }
 }
 
-fn long? size(String file) => stat::size(file);
+fn usz? size(String file) => stat::size(file);
 
 fn bool exists(String file) => stat::exists(file);
 

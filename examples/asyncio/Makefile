@@ -36,12 +36,13 @@ EXT = ../../ext
 LIBC = $(EXT)/c/*.c3
 FIBER = $(EXT)/fiber/*.c3 
 ASYNCIO = $(EXT)/asyncio/*.c3
+MEM = $(EXT)/mem/*.c3 $(EXT)/debug/*.c3
 
 T = --target windows-x64 --winsdk ~/p/msvc_sdk/x64
 T = 
 SAN = --sanitize=address
 SAN = 
-LIBS = $(LIBC) $(FIBER) $(ASYNCIO)
+LIBS = $(LIBC) $(MEM) $(FIBER) $(ASYNCIO)
 
 sample1: sample1.c3
 	$(C3C) $^ $(LIBS) -o $@

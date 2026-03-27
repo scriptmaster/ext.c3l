@@ -3,7 +3,9 @@
 module ext::asyncio;
 
 import std::io;
-import c::stdlib; // libc
+import c::stdlib;
+import ext::debug;
+import ext::mem;
 import ext::thread::fiber;
 
 const usz LOCK_WAITER_MAX = 64;
@@ -35,9 +37,9 @@ fn void Lock.acquire(&self)
     EventLoop* loop = get_running_loop();
     while (self.locked) {
         Task* me = loop.current;
-        _assert(me != null, "asyncio: Lock.acquire() called outside a task");
+        @assert(me != null, "asyncio: Lock.acquire() called outside a task");
         
-        _assert(self.waiter_count < LOCK_WAITER_MAX, "asyncio: Lock waiter overflow");
+        @assert(self.waiter_count < LOCK_WAITER_MAX, "asyncio: Lock waiter overflow");
         self.waiters[self.waiter_count++] = me;
         me.state = State.SUSPENDED;
         fiber::yield();
@@ -47,7 +49,7 @@ fn void Lock.acquire(&self)
 
 fn void Lock.release(&self) 
 {
-    _assert(self.locked, "asyncio: Lock.release() called on unlocked lock");
+    @assert(self.locked, "asyncio: Lock.release() called on unlocked lock");
     EventLoop* loop = get_running_loop();
     self.locked = false;
     if (self.waiter_count > 0) {
@@ -89,8 +91,8 @@ fn void Semaphore.acquire(&self)
     EventLoop* loop = get_running_loop();
     while (self.value <= 0) {
         Task* me = loop.current;
-        _assert(me != null, "asyncio: Semaphore.acquire() called outside a task");
-        _assert(self.waiter_count < SEM_WAITER_MAX, "asyncio: Semaphore waiter overflow");
+        @assert(me != null, "asyncio: Semaphore.acquire() called outside a task");
+        @assert(self.waiter_count < SEM_WAITER_MAX, "asyncio: Semaphore waiter overflow");
         self.waiters[self.waiter_count++] = me;
         me.state = State.SUSPENDED;
         fiber::yield();
@@ -211,8 +213,8 @@ fn void Queue.put(&self, void* item)
     EventLoop* loop = get_running_loop();
     while (self.full()) {
         Task* me = loop.current;
-        _assert(me != null, "asyncio: Queue.put() called outside a task");
-        _assert(self.put_waiter_count < LOCK_WAITER_MAX, "asyncio: Queue put_waiter overflow");
+        @assert(me != null, "asyncio: Queue.put() called outside a task");
+        @assert(self.put_waiter_count < LOCK_WAITER_MAX, "asyncio: Queue put_waiter overflow");
         usz idx = self.put_waiter_count;
         self.put_waiters[idx] = me;
         self.put_waiter_count++;
@@ -241,8 +243,8 @@ fn void* Queue.get(&self)
     EventLoop* loop = get_running_loop();
     while (self.empty()) {
         Task* me = loop.current;
-        _assert(me != null, "asyncio: Queue.get() called outside a task");
-        _assert(self.get_waiter_count < LOCK_WAITER_MAX, "asyncio: Queue get_waiter overflow");
+        @assert(me != null, "asyncio: Queue.get() called outside a task");
+        @assert(self.get_waiter_count < LOCK_WAITER_MAX, "asyncio: Queue get_waiter overflow");
         self.get_waiters[self.get_waiter_count++] = me;
         me.state = State.SUSPENDED;
         fiber::yield();

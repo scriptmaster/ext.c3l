@@ -3,16 +3,19 @@
 module ext::asyncio @if(!env::WIN32);
 
 import std::io;
-import c::stdlib; // libc
-import c::unistd; // libc
-import c::fcntl;  // libc
-import c::string; // libc
-import c::netinet::in; // libc
-import c::sys::epoll;  // libc
-import c::sys::event;  // libc
-import c::sys::select; // libc
-import c::sys::socket; // libc
-import c::errno;  // libc
+import c::stdlib;
+import c::unistd;
+import c::fcntl;
+import c::string;
+import c::netinet::in;
+import c::sys::epoll;
+import c::sys::event;
+import c::sys::select;
+import c::sys::socket;
+import c::errno;
+import c::sys::stat;
+import ext::debug;
+import ext::mem;
 
 const usz MAX_EVENTS = 1024;
 const usz MAX_FD_WATCH  = 4096;
@@ -25,11 +28,11 @@ struct FdWatch {
     Future* write_fut;
 }
 
-FdWatch[MAX_FD_WATCH] _fd_table;
-usz _fd_count;
-int _poll_fd; // epoll fd or kqueue fd
+tlocal FdWatch[MAX_FD_WATCH] _fd_table;
+tlocal usz _fd_count;
+tlocal int _poll_fd; // epoll fd or kqueue fd
 
-bool initialized = false;
+tlocal bool initialized = false;
 fn void io_init() 
 {
     if (initialized) return;
@@ -41,10 +44,10 @@ fn void io_init()
     $switch:
       $case env::LINUX:
         _poll_fd = epoll::epoll_create1(0);
-        _assert(_poll_fd >= 0, "asyncio: epoll_create1 failed");
+        @assert(_poll_fd >= 0, "asyncio: epoll_create1 failed");
       $case env::DARWIN || env::FREEBSD || env::OPENBSD || env::NETBSD:
         _poll_fd = event::kqueue();
-        _assert(_poll_fd >= 0, "asyncio: kqueue failed");
+        @assert(_poll_fd >= 0, "asyncio: kqueue failed");
     $endswitch
 }
 
@@ -62,7 +65,7 @@ fn bool set_nonblocking(int fd)
 
 fn FdWatch* _find_or_create(int fd) 
 {
-    _assert(fd >= 0 && (usz)fd < MAX_FD_WATCH, "asyncio: fd out of range");
+    @assert(fd >= 0 && (usz)fd < MAX_FD_WATCH, "asyncio: fd out of range");
     FdWatch* w = &_fd_table[fd];
     if (!w.active) {
         *w = { fd, true, false, null, null };
@@ -117,7 +120,7 @@ fn void _kqueue_ctl(FdWatch* w, bool want_read, bool want_write)
     $endif
 }
 
-fn void register_read(int fd, Future* future) 
+fn void register_read(int fd, Future* future) @private
 {
     FdWatch* w = _find_or_create(fd);
     if (w.read_fut != null) {
@@ -128,7 +131,7 @@ fn void register_read(int fd, Future* future)
     _kqueue_ctl(w, true, w.write_fut != null);
 }
 
-fn void register_write(int fd, Future* future) 
+fn void register_write(int fd, Future* future) @private
 {
     FdWatch* w = _find_or_create(fd);
     if (w.write_fut != null) {
@@ -139,7 +142,7 @@ fn void register_write(int fd, Future* future)
     _kqueue_ctl(w, w.read_fut != null, true);
 }
 
-fn void unregister(int fd) 
+fn void unregister(int fd) @private
 {
     FdWatch* w = _find(fd);
     if (w == null) return;
@@ -468,4 +471,89 @@ fn usz? async_sendto(int fd, void* buf, usz len, char* ip_str, ushort port)
         fut.free();
     }
     return 0;
+}
+
+/*
+fn char* str2cptr(String str, char[] buf) @inline @private
+{
+    usz len = (str.len <= buf.len-1)? str.len: buf.len-1;
+    string::memcpy(&buf[0], &str[0], len);
+    buf[len] = 0;
+    return &buf[0];
+}
+*/
+
+fn int? open_file(String path, String mode) 
+{
+    char[256] buf;
+    char* path_cstr = str2cptr(path, &buf);
+    
+    int flags = 0;
+    switch (mode) {
+      case "r": flags = fcntl::O_RDONLY;
+      case "r+": flags = fcntl::O_CREAT | fcntl::O_RDWR;
+      case "w": flags = fcntl::O_RDWR | fcntl::O_CREAT | fcntl::O_TRUNC;
+      case "w+": flags = fcntl::O_RDWR | fcntl::O_CREAT | fcntl::O_TRUNC;
+      case "a": flags = fcntl::O_CREAT | fcntl::O_APPEND | fcntl::O_WRONLY;
+      case "a+": flags = fcntl::O_CREAT | fcntl::O_APPEND | fcntl::O_RDWR;
+      default: return errno::E_INVALID_ARG~;
+    }
+    stat::umask(0);
+    int fd = fcntl::open(path_cstr, flags, 0o644);
+    if (fd < 0) {
+        return errno::get_fault()~;
+    }
+    set_nonblocking(fd);
+    return fd;
+}
+
+fn void close_file(int fd) 
+{
+    unregister(fd);
+    unistd::close(fd);
+}
+
+fn long io_seek(int fd, long pos, int whence)
+{
+    return unistd::lseek(fd, pos, whence);
+}
+
+fn ulong io_tell(int fd)
+{
+    return unistd::lseek(fd, 0, unistd::SEEK_CUR);
+}
+
+fn int io_truncate(int fd, long pos)
+{
+    return unistd::ftruncate(fd, pos);
+}
+
+fn void io_flush(int fd)
+{
+    unistd::fsync(fd);
+}
+
+fn ulong io_size(int fd)
+{
+    stat::Stat_t st;
+    stat::fstat(fd, &st);
+    return (ulong)st.st_size;
+}
+
+fn int io_stdin()
+{
+    set_nonblocking(0);
+    return 0;
+}
+
+fn int io_stdout()
+{
+    set_nonblocking(1);
+    return 1;
+}
+
+fn int io_stderr()
+{
+    set_nonblocking(2);
+    return 2;
 }

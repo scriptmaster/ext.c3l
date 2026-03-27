@@ -13,7 +13,9 @@ import std::collections::list;
 
 const int MAX_PATH = 1024;
 
-fn Char16*? utf8to16(String path, Char16[] wpath) 
+faultdef NO_MORE_ENTRY;
+
+fn Char16*? utf8to16(String path, Char16[] wpath) @private
 {
     if (path.len == 0) return errno::F_BAD_LENGTH~;
 
@@ -24,10 +26,16 @@ fn Char16*? utf8to16(String path, Char16[] wpath)
     
     wpath[0:p2.len] = p2[0:p2.len];
     wpath[p2.len] = 0;
+    for (usz i = 0; i < p2.len; i++) {
+        if (p2[i] == (Char16)'/') {
+            wpath[i] = (Char16)'\\';
+        }
+    }
+
     return wpath.ptr;
 }
 
-fn String? u16to8(Char16[] from, char[] buf)
+fn String? u16to8(Char16[] from, char[] buf) @private
 {
     String s = string::from_utf16(tmem, from)!;
     defer s.free(tmem);
@@ -223,6 +231,148 @@ fn List{String}? list_dir(Allocator allocx, String path)
     
     return entries;
 }
+
+struct DirIterator {
+    windows::Handle handle;
+    String path;
+    Allocator allocx;
+    Char16* spath;
+}
+
+struct DirEntry {
+    String path;
+    String name;
+}
+
+
+fn DirIterator? scan_dir(Allocator allocx, String path)
+{
+    if (path.len+2 >= MAX_PATH) return errno::F_BAD_LENGTH~;
+
+    if (path[path.len-1] == '\\') {
+        path = path.trim_right("\\");
+    }
+    
+    // create search pattern (path\*)
+    
+    char[MAX_PATH] p1;
+    p1[0:path.len] = path[0:path.len];
+    usz pos = path.len;
+    if (p1[pos-1] != '/' && p1[pos-1] != '\\') {
+        p1[pos++] = '\\';
+    }
+    p1[pos] = '*';
+    
+    Char16[MAX_PATH + 2] p2;
+    Char16* spath = utf8to16((String)p1[0..pos], &p2)!;
+
+ 
+    return { .handle = 0, .spath = spath_copy, .path = path.copy(allocx), .allocx = allocx };
+}
+
+fn void DirIterator.close(&self)
+{
+    self.path.free(self.allocx);
+    allocator::free(self.allocx, self.spath);
+    windows::findClose(self.handle);
+}
+
+fn DirEntry? DirIterator.next(&self)
+{
+    while (true) {
+        windows::Win32FindDataW find_data;
+
+        if (self.handle == 0) {
+            windows::Handle handle = windows::findFirstFileW(self.spath, &find_data);
+            
+            if (handle == windows::INVALID_HANDLE_VALUE) {
+                return errno::get_fault()~;
+            }
+            self.handle = handle;
+        } else {
+            // get next file
+            if (!windows::findNextFileW(self.handle, &find_data)) {
+                if (errno::errno() == errno::ERROR_NO_MORE_FILES) { // ERROR_NO_MORE_FILES
+                    break;
+                }
+                return errno::get_fault()~;
+            }
+        }
+        
+                // Skip "." and ".."
+        Char16* wname = &find_data.cFileName[0];
+        usz n = 0;
+        while (wname[n] != 0) { n++; }
+        
+        char[MAX_PATH] name_buf;
+        String name_str = u16to8(wname[:n], &name_buf)!;
+        
+        if (name_str == "." && name_str == "..") {
+            continue;
+        }
+        
+        return {
+            .path = self.path,
+            .name = name_str.copy(self.allocx),
+        };
+    }
+    return NO_MORE_ENTRY~;
+}
+
+fn void DirEntry.free(&self)
+{
+    self.name.free(self.allocx);
+}
+
+fn String bcat(char[] buf, String... args) @inline @private
+{
+    buf[0] = 0;
+    foreach (arg: args) {
+        string::strncat(buf.ptr, arg.ptr, buf.len);
+    }
+    usz n = string::strlen(buf.ptr);
+    buf[n] = 0;
+    return (String)buf[0..n-1];
+}
+
+fn long? DirEntry.last_modified(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "\\", self.name);
+    return stat::last_modified(fullpath)!;
+}
+
+fn usz? DirEntry.size(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "\\", self.name);
+    return stat::size(fullpath)!;
+}
+
+fn bool DirEntry.is_dir(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "\\", self.name);
+
+    return stat::is_dir(fullpath);
+}
+
+fn bool DirEntry.is_file(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "\\", self.name);
+
+    return stat::is_file(fullpath);
+}
+
+fn bool DirEntry.is_link(&self)
+{
+    char[256] buf;
+    String fullpath = bcat(&buf, self.path, "\\", self.name);
+
+    return stat::is_link(fullpath);
+}
+
 
 fn bool exists(String path) => stat::exists(path);
 

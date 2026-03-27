@@ -553,7 +553,7 @@ faultdef
     F_QOS_ESDMODEOBJ,
     F_QOS_ESHAPERATEOBJ,
     F_QOS_RESERVED_PETYPE,
-    EOF, GENERAL_ERR;
+    EOF, E_INVALID_INPUT, E_INVALID_ARG, GENERAL_ERR;
 
 
 fn fault errno_to_fault(long err)

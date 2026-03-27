@@ -12,41 +12,8 @@
 module ext::io::stat @if(!env::WIN32); // Posix
 
 import c::errno;
-
-// extern fn CInt stat(char* path, Stat* buf) ;
-extern fn CInt lstat(char* path, Stat* buf);
-extern fn CInt access(char* path, CInt mode);
-extern fn CLong readlink(char* path, char* buf, CULong bufsize);
-
-extern fn Mode_t umask(Mode_t mode);
-extern fn CInt chmod(char *file, Mode_t mode);
-
-// File mode constants
-const CUInt S_IFMT   = 0o170000;  // Bit mask for file type
-const CUInt S_IFSOCK = 0o140000;  // Socket
-const CUInt S_IFLNK  = 0o120000;  // Symbolic link
-const CUInt S_IFREG  = 0o100000;  // Regular file
-const CUInt S_IFBLK  = 0o060000;  // Block device
-const CUInt S_IFDIR  = 0o040000;  // Directory
-const CUInt S_IFCHR  = 0o020000;  // Character device
-const CUInt S_IFIFO  = 0o010000;  // FIFO
-
-// Permission bits
-const CUInt S_ISUID  = 0o4000;    // Set UID bit
-const CUInt S_ISGID  = 0o2000;    // Set GID bit
-const CUInt S_ISVTX  = 0o1000;    // Sticky bit
-const CUInt S_IRWXU  = 0o0700;    // Owner permissions
-const CUInt S_IRUSR  = 0o0400;    // Owner read
-const CUInt S_IWUSR  = 0o0200;    // Owner write
-const CUInt S_IXUSR  = 0o0100;    // Owner execute
-const CUInt S_IRWXG  = 0o0070;    // Group permissions
-const CUInt S_IRWXO  = 0o0007;    // Other permissions
-
-// Access mode constants
-const CInt F_OK = 0;  // File exists
-const CInt R_OK = 4;  // Read permission
-const CInt W_OK = 2;  // Write permission
-const CInt X_OK = 1;  // Execute permission
+import c::unistd;
+import c::sys::stat;
 
 const int MAX_PATH = 1024;
 
@@ -59,17 +26,17 @@ fn char*? path_to_cstr(String path, char[] buffer) @inline
     return buffer.ptr;
 }
 
-fn long? size(String path)
+fn usz? size(String path)
 {
     char[MAX_PATH] p2; 
     char* zpath = path_to_cstr(path, &p2)!;
     
-    Stat st;
-    if (stat(zpath, &st) != 0) {
+    Stat_t st;
+    if (stat::stat(zpath, &st) != 0) {
         return errno::get_fault()~;
     }
     
-    return (long)st.st_size;
+    return (usz)st.st_size;
 }
 
 fn bool exists(String path)
@@ -78,7 +45,7 @@ fn bool exists(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
     
-    return access(zpath, F_OK) == 0;
+    return unistd::access(zpath, stat::F_OK) == 0;
 }
 
 fn bool is_dir(String path)
@@ -87,10 +54,10 @@ fn bool is_dir(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
    
-    Stat st;
-    if (stat(zpath, &st) != 0) return false;
+    Stat_t st;
+    if (stat::stat(zpath, &st) != 0) return false;
     
-    return (st.st_mode & S_IFMT) == S_IFDIR;
+    return (st.st_mode & stat::S_IFMT) == stat::S_IFDIR;
 }
 
 fn bool is_file(String path)
@@ -99,10 +66,10 @@ fn bool is_file(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
    
-    Stat st;
-    if (stat(zpath, &st) != 0) return false;
+    Stat_t st;
+    if (stat::stat(zpath, &st) != 0) return false;
     
-    return (st.st_mode & S_IFMT) == S_IFREG;
+    return (st.st_mode & stat::S_IFMT) == stat::S_IFREG;
 }
 
 fn bool is_link(String path)
@@ -111,11 +78,11 @@ fn bool is_link(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
   
-    Stat st;
+    Stat_t st;
     // lstat doesn't follow symbolic links
-    if (lstat(zpath, &st) != 0) return false;
+    if (stat::lstat(zpath, &st) != 0) return false;
     
-    return (st.st_mode & S_IFMT) == S_IFLNK;
+    return (st.st_mode & stat::S_IFMT) == stat::S_IFLNK;
 }
 
 fn long? last_modified(String path)
@@ -123,8 +90,8 @@ fn long? last_modified(String path)
     char[MAX_PATH] p2; 
     char* zpath = path_to_cstr(path, &p2)!;
     
-    Stat st;
-    if (stat(zpath, &st) != 0) {
+    Stat_t st;
+    if (stat::stat(zpath, &st) != 0) {
         return errno::get_fault()~;
     }
     
@@ -137,7 +104,7 @@ fn bool is_readable(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
 
-    return access(zpath, R_OK) == 0;
+    return unistd::access(zpath, stat::R_OK) == 0;
 }
 
 fn bool is_writeable(String path)
@@ -146,7 +113,7 @@ fn bool is_writeable(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
    
-    return access(zpath, W_OK) == 0;
+    return unistd::access(zpath, stat::W_OK) == 0;
 }
 
 fn bool is_executable(String path)
@@ -155,7 +122,7 @@ fn bool is_executable(String path)
     char*? zpath = path_to_cstr(path, &p2);
     if (catch err = zpath) return false;
 
-    return access(zpath, X_OK) == 0;
+    return unistd::access(zpath, stat::X_OK) == 0;
 }
 
 fn usz? read_link(String path, char[] output)
@@ -166,7 +133,7 @@ fn usz? read_link(String path, char[] output)
     // Check for empty buffer
     if (output.len == 0) return errno::E_INVALID~;
 
-    CLong n = readlink(zpath, output.ptr, (CULong)output.len-1);
+    CLong n = unistd::readlink(zpath, output.ptr, (CULong)output.len-1);
     if (n < 0) {
         return errno::get_fault()~;
     }
@@ -180,98 +147,33 @@ fn void? change_mode(String file, Mode_t mode) @maydiscard
     char[MAX_PATH] p2; 
     char* zpath = path_to_cstr(file, &p2)!;
     
-    int r = chmod(zpath, mode);
+    int r = stat::chmod(zpath, mode);
     if (r != 0) return errno::get_fault()~;
 }
 
-/*
-module stat::test;
-
-import std::io;
-
-fn void test_stat()
+fn void? link(String oldpath, String newpath) @maydiscard
 {
-    // Test with detailed error handling
-    ulong? size = io::file_size("test.txt");
-    if (catch err = size) {
-        switch (err)
-        {
-            case PATH_NOT_FOUND:
-                io::printn("Error: File not found");
-            case PERMISSION_DENIED:
-                io::printn("Error: Permission denied");
-            case PATH_TOO_LONG:
-                io::printn("Error: Path too long for buffer");
-            case PATH_TOO_LONG:
-                io::printn("Error: Path name too long (system limit)");
-            default:
-                io::printfn("Error: %s", err);
-        }
-    } else {
-        io::printfn("File size: %d bytes", size);
-    }
-    
-    // Test basic checks - these now safely return false on path errors
-    if (io::file_exists("test.txt")) {
-        io::printn("File exists!");
-        
-        if (io::is_readable("test.txt")) {
-            io::printn("File is readable");
-        }
-        
-        if (io::is_writeable("test.txt")) {
-            io::printn("File is writeable");
-        }
-        
-        if (io::is_executable("test.txt")) {
-            io::printn("File is executable");
-        }
-    }
-    
-    // Test with very long path - safely returns false instead of panic
-    char[2000] long_path;
-    for (int i = 0; i < 1999; i++) {
-        long_path[i] = 'a';
-    }
-    long_path[1999] = 0;
-    String long_str = (String)&long_path;
-    
-    if (io::file_exists(long_str)) {
-        io::printn("Impossible - path too long!");
-    } else {
-        io::printn("Long path correctly handled (returns false)");
-    }
-    
-    // Test directory check
-    if (io::is_dir("/tmp")) {
-        io::printn("/tmp is a directory");
-    }
-    
-    // Test symbolic link reading with error handling
-    if (io::is_link("mylink")) {
-        char[MAX_PATH] target;
-        usz? len = io::read_link("mylink", &target);
-        if (catch err = len) {
-            switch (err)
-            {
-                case PATH_TOO_LONG:
-                    io::printn("Error: Link path too long for buffer");
-                case INVALID_ARG:
-                    io::printn("Error: Invalid buffer provided");
-                default:
-                    io::printfn("Cannot read link: %s", err);
-            }
-        } else {
-            io::printfn("Link target: %s", (char*)target.ptr);
-        }
-    }
-    
-    // Test modification time with error handling
-    long? mtime = io::last_modified("test.txt");
-    if (catch err = mtime) {
-        io::printfn("Cannot get modification time: %s", err);
-    } else {
-        io::printfn("Last modified: %d", mtime);
+    char[MAX_PATH] p1; 
+    char* zold = path_to_cstr(oldpath, &p1)!;
+    char[MAX_PATH] p2; 
+    char* znew = path_to_cstr(newpath, &p2)!;
+
+    int r = unistd::link(zold, znew);
+    if (r < 0) {
+        return errno::get_fault()~;
     }
 }
-*/
+
+fn void? symlink(String oldpath, String newpath) @maydiscard
+{
+    char[MAX_PATH] p1; 
+    char* zold = path_to_cstr(oldpath, &p1)!;
+    char[MAX_PATH] p2; 
+    char* znew = path_to_cstr(newpath, &p2)!;
+
+    int r = unistd::symlink(zold, znew);
+    if (r < 0) {
+        return errno::get_fault()~;
+    }
+}
+

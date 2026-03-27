@@ -12,19 +12,9 @@
 module sample2;
 
 import std::io;
-import c::stdlib; // libc
+import c::stdlib;
+import ext::debug;
 import ext::asyncio;
-
-macro void warn(String fmt, args...)
-{
-    io::printf("%s:%s():%d: ", $$FILE, $$FUNC, $$LINE);
-    io::printfn(fmt, ...args);
-}
-
-macro _assert(expr, String msg)
-{
-    if (!(expr)) { warn("%s", msg); stdlib::exit(1); }
-}
 
 // ----------------------------------------
 //  Shared state

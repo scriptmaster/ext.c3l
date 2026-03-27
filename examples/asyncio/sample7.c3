@@ -4,22 +4,13 @@
 //   - Event:     a single set() wakes all waiting tasks simultaneously
 //   - Channel:   a send/recv pair delivers the correct value
 
-module sample2;
+module sample7;
 
 import ext::asyncio;
 import std::io;
-import c::stdlib; // libc
-
-macro void warn(String fmt, args...)
-{
-    io::printf("%s:%s():%d: ", $$FILE, $$FUNC, $$LINE);
-    io::printfn(fmt, ...args);
-}
-
-macro _assert(expr, String msg)
-{
-    if (!(expr)) { warn("%s", msg); stdlib::exit(1); }
-}
+import c::stdlib;
+import ext::debug;
+import ext::mem;
 
 // -------------------------------------------------------
 //  Semaphore validation

@@ -1,0 +1,103 @@
+# ext::aiofiles
+
+Asynchronous file I/O on top of [ext::asyncio](../asyncio/README.md) framework.
+API is mostly like in Python.
+
+### Available modules
+
+| Module | Description |
+|--------|-------------|
+| `ext::aiofiles` | Asynchronous file operations: open(), file_size(), read(), write(), readline(), read_unbuffered(), at_eof(), read_until(), writef(), flush(), seek(), tell(), truncate(), stdin(), stdout(), stderr() |
+| `ext::aiofiles::os` | Asynchronous os operations: stat(), rename(), replace(), remove(), mkdir(), makedirs(), rmdir(), removedirs(), listdir(), scandir(), link(), symlink(), readlink() |
+| `ext::aiofiles::os::path` | Asynchronous Directory/folder operations: exists(), getsize(), isfile(), isdir(), islink() |
+| ext::aiofiles::tempfile` | Asynchronous tempfile operations: exists(), getsize(), isfile(), isdir(), islink() |
+
+This is a part of extended C3 library.
+Back to [ext.c3l](../../README.md) library.
+
+### Files
+
+* [aiofiles.c3](aiofiles.c3)
+* [aiofiles.os.c3](aiofiles.os.c3)
+* [aiofiles.tempfile.c3](aiofiles.tempfile.c3)
+
+Available functions are:
+
+```c3
+import ext::asyncio;
+import ext::aiofiles;
+
+usz? size = aiofiles::file_size(String path);
+AioFile? afile = aiofiles::open(String path, String mode);
+void? afile.close();
+
+usz? n = afile.read_unbuffered(char[] buf); // .seek(), .tell() compatible
+usz? n = afile.read(char[] buf); // buffered, not compatible with .seek() and .tell();
+usz? n = afile.read_until(char delimiter, char[] buf);
+
+bool b = afile.at_eof();
+
+usz? n = afile.write(char[] buf);
+usz? n = afile.writef(String format, ...args);
+void afile.flush();
+
+long afile.seek(long pos, int whence);
+long afile.tell();
+
+void? afile.truncate(long size);
+
+AioFile in = aiofiles::stdin();
+AioFile out = aiofiles::stdout();
+AioFile err = aiofiles::stderr();
+```
+
+```c3
+import ext::asyncio;
+import ext::aiofiles;
+import ext::aiofiles::os;
+import std::collections::list;
+
+Stat? st = os::stat(String path);
+long mtime = st.st_mtime;
+long size = st.st_size;
+
+void? os::rename(String name, String to_name) @maydiscard;
+void? os::replace(String name, String to_name) @maydiscard; // overwrite if exists
+void? os::remove(String name) @maydiscard;
+usz? os::sendfile(int to_sock, int from_fd, long offset, long count);
+
+void? os::mkdir(String name, int mode=0o777) @maydiscard;
+void? os::makedirs(String name, int mode=0o777, bool exist_ok=true) @maydiscard;
+void? os::removedirs(String path) @maydiscard; // remove recursively, if empty
+List{String}? files = os::listdir(Allocator allocx, String path);
+
+DirIterator? iter = os::scandir(Allocator allocx, String path);
+void iter.close();
+
+DirEntry? entry = iter.next();
+void entry.free();
+String name = entry.name;
+usz? size = entry.size();
+long? mtime = entry.last_modified();
+bool b = entry.is_file();
+bool b = entry.is_link();
+bool b = entry.is_link();
+
+void? os::link(String path, String newlink);
+void? os::symlink(String path, String newlink);
+usz? n = os::readlink(Stri g path, char[] buf);
+
+```
+
+```c3
+import ext::asyncio;
+import ext::aiofiles;
+import ext::aiofiles::os::path;
+import std::collections::list;
+
+usz? size = path::getsize(String path);
+bool b = path::exists(String path);
+bool b = path::isdir();
+bool b = path::isfile();
+bool b = path::islink();
+```

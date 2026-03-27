@@ -1,10 +1,25 @@
-// file.posix.c3
+// cfile.posix.c3
 
 module ext::io::cfile @if(!env::WIN32);
 
 import c::errno;
 import c::stdio;
+import c::unistd;
+import c::stdlib;
+import c::sys::stat;
+import std::io;
 import ext::io::stat;
+
+macro void warn(String fmt, args...)
+{
+    io::printf("%s,%d: ", $$FILE, $$LINE);
+    io::printfn(fmt, ...args);
+}
+
+macro _assert(expr, String msg) @builtin
+{
+    if (!(expr)) { warn("%s", msg); stdlib::exit(1); }
+}
 
 struct File 
 {
@@ -29,6 +44,7 @@ fn File? open(String fname, String fmode)
     char[16] modebuf;
     char* mode = scopy(&modebuf, fmode)!;
     
+    stat::umask(0);
     File file;
     file.fp = (CFile)stdio::fopen(name, mode);
     if (file.fp == null) return errno::get_fault()~;
@@ -159,7 +175,12 @@ fn void? remove(String fname) @maydiscard
 {
     char[256] namebuf;
     char* name = scopy(&namebuf, fname)!;
-    int n = stdio::remove(name);
+    int n = 0;
+    if (! is_link(fname)) {
+        n = stdio::remove(name);
+    } else {
+        n = unistd::unlink(name);
+    }
     if (n != 0) return errno::get_fault()~;
 }
 
@@ -189,7 +210,7 @@ fn void? copy(String fname, String fname2) @maydiscard
     }
 }
 
-fn long? size(String file) => stat::size(file);
+fn usz? size(String file) => stat::size(file);
 
 fn bool exists(String file) => stat::exists(file);
 

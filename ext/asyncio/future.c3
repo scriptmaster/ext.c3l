@@ -5,9 +5,10 @@ module ext::asyncio;
 import std::io;
 import std::thread;
 import std::time::clock;
-import c::stdlib; // libc
-import c::errno; // libc
-
+import c::stdlib;
+import c::errno;
+import ext::debug;
+import ext::mem;
 import ext::thread::fiber;
 
 // ----------------------------------------
@@ -205,7 +206,7 @@ fn void*? Future.await(&self) @maydiscard
     if (self.done()) return self.result;
 
     Task* cur = self.loop.current;
-    _assert(cur != null, "asyncio: await() called outside a task");
+    @assert(cur != null, "asyncio: await() called outside a task");
 
     cur.state = State.SUSPENDED;
     cur.awaiting = self;
@@ -265,7 +266,7 @@ fn fault? Future.wait_for(&self, ulong timeout_us)
 
     EventLoop* lp  = self.loop;
     Task* cur = lp.current;
-    _assert(cur != null, "asyncio: wait_for() called outside a task");
+    @assert(cur != null, "asyncio: wait_for() called outside a task");
 
     // timeout Future 
     Future* timer = lp.create_future();
