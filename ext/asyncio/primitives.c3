@@ -27,7 +27,7 @@ fn void Lock.free(&self)
     mem_free(self);
 }
 
-fn bool Lock.is_locked(&self) @inline 
+fn bool Lock.is_locked(&self) @inline
 {
     return self.locked;
 }
@@ -67,7 +67,7 @@ fn void Lock.release(&self)
 const usz SEM_WAITER_MAX = 64;
 
 struct Semaphore {
-    int value;
+    int value; // number of available slots
     Task*[SEM_WAITER_MAX] waiters;
     usz waiter_count;
 }
@@ -84,7 +84,10 @@ fn void Semaphore.free(&self)
     mem_free(self);
 }
 
-fn int Semaphore.count(&self) @inline { return self.value; }
+fn int Semaphore.count(&self) @inline 
+{
+    return self.value;
+}
 
 fn void Semaphore.acquire(&self) 
 {
@@ -317,7 +320,7 @@ fn void*? Channel.recv(&self)
     return self.future.await()!;
 }
 
-fn bool Channel.ready(Channel* self) @inline 
+fn bool Channel.ready(&self) @inline 
 {
     return self.future.done();
 }

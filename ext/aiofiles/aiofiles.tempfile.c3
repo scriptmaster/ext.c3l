@@ -12,7 +12,9 @@ import ext::debug;
 import ext::mem;
 import ext::io::dir;
 import ext::io::cfile;
+import ext::asyncio;
 import ext::aiofiles;
+import ext::aiofiles::os::path;
 
 struct AioTempFile {
     inline AioFile file;
@@ -63,16 +65,23 @@ fn AioTempFile? temporaryFile()
     String fullpath = (String)pbuf[0:n];
     
     AioFile file = aiofiles::open(fullpath, "w+")!;
-    
-    return { .file = file, .name = fname.copy(mem), .fullpath = fullpath.copy(mem) };
+
+    return { .file = file, .name = mem_copy_str(fname), .fullpath = mem_copy_str(fullpath) };
+}
+
+fn void AioTempFile.close_handle(&self)
+{
+    self.file.close();
 }
 
 fn void AioTempFile.close(&self)
 {
     self.file.close();
-    self.name.free(mem);
-    cfile::remove(self.fullpath);
-    self.fullpath.free(mem);
+    mem_free(self.name);
+    if (path::exists(self.fullpath)) {
+        os::remove(self.fullpath);
+    }
+    mem_free(self.fullpath);
 }
 
 struct AioTempDir {
@@ -89,21 +98,31 @@ fn AioTempDir temporayDirectory()
     int n = stdio::snprintf(&pbuf[0], pbuf.len, "%s/_aio_/%s", tdir.ptr, fname.ptr);
     String fullpath = (String)pbuf[0:n];
 
-    dir::make_dir(fullpath, true);
+    os::makedirs(fullpath);
     
-    return { .fullpath = fullpath.copy(mem) };
+    return { .fullpath = mem_copy_str(fullpath) };
 }
 
-fn void? clean_dir(String dir) @maydiscard
+faultdef NONE;
+
+struct Arg {
+    String path;
+    fault error;
+}
+
+fn void* _clean_dir(void* arg)
 {
-    List{String}? files = dir::list_dir(mem, dir);
+    Arg* a = (Arg*) arg;
+    
+    List{String}? files = dir::list_dir(mem::allocx, a.path);
     if (catch err = files) {
-        return err~;
+        a.error = err;
+        return (void*) a;;
     }
     defer files.free();
     foreach (file: files) {
         char[1024] pbuf;
-        int n = stdio::snprintf(&pbuf[0], pbuf.len, "%s/%s", dir.ptr, file.ptr);
+        int n = stdio::snprintf(&pbuf[0], pbuf.len, "%s/%s", a.path.ptr, file.ptr);
         String fullpath = (String)pbuf[0:n];
         
         if (dir::is_file(fullpath)) {
@@ -118,11 +137,26 @@ fn void? clean_dir(String dir) @maydiscard
             clean_dir(fullpath);
         }
     }
-    dir::remove_dir(dir);
+    dir::remove_dir(a.path);
+    
+    return (void*) a;
+}
+
+fn void? clean_dir(String path) @maydiscard @private
+{
+    Arg arg = { .path = path, .error = NONE };
+    Arg*? a = asyncio::run_in_executor(&_clean_dir, &arg);
+    if (catch err = a) {
+        return err~;
+    }
+
+    if (a.error != NONE) {
+        return a.error~;
+    }
 }
 
 fn void AioTempDir.close(&self)
 {
     clean_dir(self.fullpath);
-    self.fullpath.free(mem);
+    mem_free(self.fullpath);
 }

@@ -26,7 +26,7 @@ struct Stream {
     Stream* writer; // python StreamWriter
 }
 
-fn Stream* stream_new(int fd) 
+fn Stream* stream_new(int fd) @private
 {
     Stream* s = mem_alloc(Stream);
     *s = {};
@@ -148,8 +148,7 @@ fn usz Stream.readline(&self, char[] buf)
     return len - 1;
 }
 
-
-fn bool Stream.read_u32be(&self, uint* out) 
+fn bool Stream.read_u32be(&self, uint* out)
 {
     char[4] buf;
     if (self.read(&buf) < 4) return false;
@@ -213,10 +212,10 @@ fn void Stream.close(&self)
 
 module ext::asyncio @if(!env::WIN32);
 
-import c::string; // libc
-import c::fcntl; // libc
-import c::unistd; // libc
-import c::errno; // libc
+import c::string;
+import c::fcntl;
+import c::unistd;
+import c::errno;
 
 
 fn Stream* stdin_stream() 
@@ -229,11 +228,16 @@ fn Stream* stdout_stream()
     return stream_new(1);
 }
 
+fn Stream* stderr_stream() 
+{
+    return stream_new(2);
+}
+
 
 module ext::asyncio @if(env::WIN32);
 
-import c::winbase; // libc
-import c::winsock2; // libc
+import c::winbase;
+import c::winsock2;
 
 
 fn Stream* stdin_stream() 
@@ -245,5 +249,11 @@ fn Stream* stdin_stream()
 fn Stream* stdout_stream() 
 {
     winbase::Handle h = winbase::getStdHandle(winbase::STD_OUTPUT_HANDLE);
+    return stream_new((int)(iptr)h);
+}
+
+fn Stream* stderr_stream() 
+{
+    winbase::Handle h = winbase::getStdHandle(winbase::STD_ERROR_HANDLE);
     return stream_new((int)(iptr)h);
 }

@@ -213,6 +213,54 @@ fn Stream*? open_connection(String host_str, ushort port)
     return stream_new(fd); // close() must be done at caller
 }
 
+fn int? _resolve_and_datagram(char* host, ushort port) 
+{
+    char[16] port_str;
+    stdio::snprintf(&port_str[0], 16, "%d", (int)port);
+
+    ws2tcpip::AddrInfo hints = {};
+    hints.ai_family = winsock2::AF_UNSPEC;
+    hints.ai_socktype = winsock2::SOCK_DGRAM;
+    hints.ai_protocol = winsock2::IPPROTO_UDP;
+    // host == null or "", bind with INADDR_ANY
+    hints.ai_flags    = ws2tcpip::AI_PASSIVE;
+
+    ws2tcpip::AddrInfo* res = null;
+    char* bind_host = (host != null && host[0] != 0) ? host : null;
+    if (ws2tcpip::getAddrInfo(bind_host, &port_str[0], &hints, &res) != 0) {
+        return IO_ERROR~;
+    }
+    defer ws2tcpip::freeAddrInfo(res);
+
+    int result = -1;
+    ws2tcpip::AddrInfo* rp = res;
+    while (rp != null) {
+        int fd = socket_new(rp.ai_family, rp.ai_socktype);
+        
+        winsock2::Socket sock = (winsock2::Socket)(iptr)fd;
+
+        if (fd < 0) { rp = rp.ai_next; continue; }
+
+        int yes = 1;
+        winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+
+        result = (int)sock;
+        break;
+    }
+
+    if (result == -1) return asyncio::IO_ERROR~;
+    return result;
+}
+
+fn Datagram*? open_datagram(String host_str, ushort port)
+{
+    char[256] buf;
+    char* host = str2cptr(host_str, &buf);
+
+    int fd = _resolve_and_datagram(host, port)!;
+    return datagram_new(fd); // close() must be call at caller
+}
+
 fn int? _resolve_and_bind_win(char* host, ushort port) 
 {
     char[16] port_str;

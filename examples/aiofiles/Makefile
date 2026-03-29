@@ -4,9 +4,11 @@ all:
 
 build:
 	@make aio_sample
+	@make aio_tempfile
 
 clean:
 	-@rm -f aio_sample
+	-@rm -f aio_tempfile
 
 C3C = c3c compile
 EXT = ../../ext
@@ -22,5 +24,8 @@ SAN = --sanitize=address
 SAN =
 
 aio_sample: aio_sample.c3
+	$(C3C) $^ $(LIBS) -o $@ $(SAN)
+
+aio_tempfile: aio_tempfile.c3
 	$(C3C) $^ $(LIBS) -o $@ $(SAN)
 

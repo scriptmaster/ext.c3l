@@ -41,9 +41,9 @@ fn void? sleep_zero() @maydiscard
     if (cur.cancelling() > 0) return CANCELLED_ERR~;
 }
 
-fn ulong clock_now() @inline // nano to micro second
+fn ulong clock_now() @inline // micro second
 {
-    return (ulong) clock::now()/1000;
+    return (ulong) clock::now()/1000; // nano to micro
 }
 
 fn void? sleep_us(ulong us) @maydiscard
@@ -93,7 +93,7 @@ fn void _shield_relay()
 
 // Protect fut from external cancellation; returns a new proxy Future
 fn Future* shield(Future* fut)
-{
+    {
     @assert(_shield_src == null, "shield() is running, no two shield() at the same time");
     Future* outer = fut.loop.create_future();
     outer.add_done_callback(&_cancel_free_future, outer);
@@ -181,19 +181,19 @@ struct TimerEntry {
 
 // ---------------------------------------
 //  CallbackHandle
-//  Returned by call_soon / call_later / call_at.
-//  The caller can cancel it before it fires.
+//  Returned by call_soon() / call_lat()er / call_at().
+//  The caller can cancel() it before it fires.
 // ---------------------------------------
 
-alias SoonCb = fn void(void*);
+alias SoonCallback = fn void(void*);
 
 struct CallbackHandle {
-    SoonCb cb;
+    SoonCallback cb;
     void* arg;
     bool cancelled;
 }
 
-fn CallbackHandle* callbackhandle_new(SoonCb cb, void* arg)
+fn CallbackHandle* callbackhandle_new(SoonCallback cb, void* arg) @private
 {
     CallbackHandle* h = mem_alloc(CallbackHandle);
     *h = { cb, arg, false };
@@ -575,9 +575,9 @@ fn Task* EventLoop.create_task(&self, Coroutine coro, String name = "", usz stac
     return task;
 }
 
-// ----------------------------------------
+// ---------------------------------------
 //  EventLoop — control methods
-// ----------------------------------------
+// ---------------------------------------
 
 // Return the loop-internal monotonic clock value in microseconds.
 // Use this instead of raw clock::now() when scheduling relative to the loop.
@@ -770,7 +770,7 @@ fn void EventLoop.run_forever(&self)
 
 // Schedule cb(arg) to be called on the next loop iteration.
 
-fn CallbackHandle* EventLoop.call_soon(&self, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_soon(&self, SoonCallback cb, void* arg = null)
 {
     if (self.closing) return null;
     
@@ -787,20 +787,20 @@ fn CallbackHandle* EventLoop.call_soon(&self, SoonCb cb, void* arg = null)
 
 // Schedule cb(arg) to be called after delay_us microseconds.
 
-fn CallbackHandle* EventLoop.call_later_us(&self, ulong delay_us, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_later_us(&self, ulong delay_us, SoonCallback cb, void* arg = null)
 {
     if (self.closing) return null;
     return self.call_at_us(clock_now() + delay_us, cb, arg);
 }
 
 // Convenience wrappers matching the sleep_* naming convention.
-fn CallbackHandle* EventLoop.call_later_ms(&self, ulong delay_ms, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_later_ms(&self, ulong delay_ms, SoonCallback cb, void* arg = null)
 {
     if (self.closing) return null;
     return self.call_later_us(delay_ms * 1_000, cb, arg);
 }
 
-fn CallbackHandle* EventLoop.call_later(&self, double delay_sec, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_later(&self, double delay_sec, SoonCallback cb, void* arg = null)
 {
     if (self.closing) return null;
     return self.call_later_us((ulong)(delay_sec * 1_000_000), cb, arg);
@@ -809,7 +809,7 @@ fn CallbackHandle* EventLoop.call_later(&self, double delay_sec, SoonCb cb, void
 // Schedule cb(arg) to be called at an absolute loop timestamp (microseconds).
 // Use loop.time() to get the current timestamp.
 
-fn CallbackHandle* EventLoop.call_at_us(&self, ulong when_us, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_at_us(&self, ulong when_us, SoonCallback cb, void* arg = null)
 {
     if (self.closing) return null;
     @assert(!self.closed, "asyncio: call_at() on a closed loop");
@@ -821,7 +821,7 @@ fn CallbackHandle* EventLoop.call_at_us(&self, ulong when_us, SoonCb cb, void* a
     return h;
 }
 
-fn CallbackHandle* EventLoop.call_at(&self, double when_sec, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_at(&self, double when_sec, SoonCallback cb, void* arg = null)
 {
     if (self.closing) return null;
     return self.call_at_us((ulong)(when_sec * 1_000_000), cb, arg);
@@ -830,7 +830,7 @@ fn CallbackHandle* EventLoop.call_at(&self, double when_sec, SoonCb cb, void* ar
 // Thread-safe variant of call_soon.
 // Safe to call from any OS thread; the callback will be executed on the event-loop thread.
 
-fn CallbackHandle* EventLoop.call_soon_threadsafe(&self, SoonCb cb, void* arg = null)
+fn CallbackHandle* EventLoop.call_soon_threadsafe(&self, SoonCallback cb, void* arg = null)
 {
     // lock first: close/free prevent race
     self.ts_mutex.lock()!!;

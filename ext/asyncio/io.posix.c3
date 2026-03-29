@@ -33,7 +33,7 @@ tlocal usz _fd_count;
 tlocal int _poll_fd; // epoll fd or kqueue fd
 
 tlocal bool initialized = false;
-fn void io_init() 
+fn void io_init() @private
 {
     if (initialized) return;
     initialized = true;
@@ -51,7 +51,7 @@ fn void io_init()
     $endswitch
 }
 
-fn void io_destroy() 
+fn void io_destroy() @private
 {
     unistd::close(_poll_fd);
 }
@@ -172,12 +172,12 @@ fn void unregister(int fd) @private
     _fd_count--;
 }
 
-fn bool io_pending() @inline
+fn bool io_pending() @inline @private
 { 
     return _fd_count > 0; 
 }
 
-fn void io_poll(ulong timeout_us) 
+fn void io_poll(ulong timeout_us) @private
 {
     if (_fd_count == 0) return;
 
@@ -483,7 +483,7 @@ fn char* str2cptr(String str, char[] buf) @inline @private
 }
 */
 
-fn int? open_file(String path, String mode) 
+fn int? open_file(String path, String mode)
 {
     char[256] buf;
     char* path_cstr = str2cptr(path, &buf);

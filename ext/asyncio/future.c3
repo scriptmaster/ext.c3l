@@ -96,6 +96,8 @@ fn int Future.cancelling(&self)
     return (int)self.num_cancel_requested;
 }
 
+// result must be free'd by caller
+
 fn void*? Future.get_result(&self)
 {
     if (self.state == State.PENDING || self.state == State.SUSPENDED) {
@@ -260,9 +262,9 @@ fn void _wait_for_wakeup(Future* completed, CallbackCtx ctxp)
     }
 }
 
-fn fault? Future.wait_for(&self, ulong timeout_us)
+fn void? Future.wait_for(&self, ulong timeout_us) @maydiscard
 {
-    if (self.done()) return self.error;
+    if (self.done()) return self.error~;
 
     EventLoop* lp  = self.loop;
     Task* cur = lp.current;
@@ -301,7 +303,7 @@ fn fault? Future.wait_for(&self, ulong timeout_us)
     self.remove_done_callback(&_wait_for_wakeup);
     lp._cancel_timer_future(timer);
 
-    return timed_out ? TIMEOUT : self.error;
+    return timed_out ? TIMEOUT~ : self.error~;
 }
 
 // ----------------------------------------
@@ -354,7 +356,7 @@ fn void task_return(void* value)
     _return_value = value;
 }
 
-fn Task* task_new(EventLoop* loop, Coroutine coro, String name = "", usz stack_size = 128_000, bool autofree = false, void* arg = null)
+fn Task* task_new(EventLoop* loop, Coroutine coro, String name = "", usz stack_size = 128_000, bool autofree = false, void* arg = null) @private
 {
     Task* t = mem_alloc(Task);
     future_init(&t.fut, loop);
@@ -449,7 +451,7 @@ fn void _task_wakeup(Future* fut, CallbackCtx ctx)
 }
 
 // Advance one step of a Task's execution
-fn void Task.step(&self)
+fn void Task.step(&self) @private
 {
     if (self.running_step) {
         return;

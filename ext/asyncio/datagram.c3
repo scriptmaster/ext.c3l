@@ -14,7 +14,7 @@ struct Datagram {
     fault error;
 }
 
-fn Datagram* datagram_new(int fd) // called at loop.open_datagram(ip, port)
+fn Datagram* datagram_new(int fd) @private // called at loop.open_datagram(ip, port)
 {
     Datagram* d = mem_alloc(Datagram);
     *d = {
@@ -80,9 +80,9 @@ fn usz EventLoop.sock_recvfrom(&self, int sock_fd, char[] data, char[] ip, usz* 
 
 module ext::asyncio @if(!env::WIN32);
 
-import c::string; // libc
-import c::fcntl; // libc
-import c::unistd; // libc
+import c::string;
+import c::fcntl;
+import c::unistd;
 
 fn void Datagram.close(&self) 
 {
@@ -96,8 +96,8 @@ fn void Datagram.close(&self)
 
 module ext::asyncio @if(env::WIN32);
 
-import c::winbase; // libc
-import c::winsock2; // libc
+import c::winbase;
+import c::winsock2;
 
 fn void Datagram.close(&self) 
 {

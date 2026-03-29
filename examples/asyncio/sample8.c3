@@ -92,7 +92,8 @@ fn void main_coro()
     tg1.create_task(&worker_3, "w3");
     tg1.create_task(&worker_4, "w4");
 
-    fault err1 = tg1.wait();
+    fault err1 = asyncio::NONE;
+    if (catch esc1 = tg1.wait()) err1 = esc1;
 
     if (err1 == asyncio::NONE) {
         io::printfn("wait() returned NONE — OK");
@@ -123,7 +124,8 @@ fn void main_coro()
     tg2.create_task(&slow_task_0, "slow0");
     tg2.create_task(&slow_task_1, "slow1");
 
-    fault err2 = tg2.wait();
+    fault err2 = asyncio::NONE;
+    if (catch esc2 = tg2.wait()) err2 = esc2;
 
     io::printfn("faulty task triggered: %s", g_fail_triggered ? "yes" : "no");
     io::printfn("wait() returned error: %s (expected %s)", err2, asyncio::INVALID_STATE_ERR);

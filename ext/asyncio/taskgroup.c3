@@ -35,15 +35,15 @@ fn void TaskGroup.free(&self)
     mem_free(self);
 }
 
-fn Task* TaskGroup.create_task(&self, Coroutine coro, String name = "tg_task", uint stack_size = 64_000) 
+fn Task* TaskGroup.create_task(&self, Coroutine coro, String name = "tg_task", uint stack_size = 64_000, void* arg=null) 
 {
     @assert(self.count < TG_MAX_TASKS, "TaskGroup: task limit exceeded");
-    Task* t = self.loop.create_task(coro, name, stack_size);
+    Task* t = self.loop.create_task(coro, name, stack_size, false, arg);
     self.tasks[self.count++] = t;
     return t;
 }
 
-fn fault TaskGroup.wait(&self) 
+fn void? TaskGroup.wait(&self) @maydiscard
 {
     bool any_running = true;
 
@@ -75,11 +75,9 @@ fn fault TaskGroup.wait(&self)
                     self.tasks[i].await();
                 }
             }
-            return self.first_error;
+            return self.first_error~;
         }
 
         if (any_running) sleep_zero();
     }
-
-    return NONE;
 }

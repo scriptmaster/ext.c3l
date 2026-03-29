@@ -52,26 +52,24 @@ fn void producer()
 fn void consumer1()
 {
     io::printfn("[consumer1] waiting with 500 ms timeout...");
-    fault? err = g_ready.wait_for(500_000);   // 500 ms in us
-    if (catch esc = err) {
-        warn("%s", esc);
-    } else if (err == asyncio::NONE) {
-        io::printfn("[consumer1] received result OK");
-    } else {
-        io::printfn("[consumer1] error: %s", err);
+    if (catch err = g_ready.wait_for(500_000)) {  // 500 ms in us
+        if (err == asyncio::NONE) {
+            io::printfn("[consumer1] received result OK");
+        } else {
+            io::printfn("[consumer1] error: %s", err);
+        }
     }
 }
 
 fn void consumer2()
 {
     io::printfn("[consumer2] waiting with 100 ms timeout (should expire)...");
-    fault? err = g_ready.wait_for(100_000);   // 100 ms in us
-    if (catch esc = err) {
-        warn("%s", esc);
-    } else if (err == asyncio::TIMEOUT) {
-        io::printfn("[consumer2] timed out as expected");
-    } else {
-        io::printfn("[consumer2] unexpected outcome: %s", err);
+    if (catch err = g_ready.wait_for(100_000)) {   // 100 ms in us
+        if (err == asyncio::TIMEOUT) {
+            io::printfn("[consumer2] timed out as expected");
+        } else {
+            io::printfn("[consumer2] unexpected outcome: %s", err);
+        }
     }
 }
 

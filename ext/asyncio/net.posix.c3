@@ -23,7 +23,7 @@ fn char* str2cptr(String str, char[] buf) @inline @private
     return &buf[0];
 }
 
-fn int socket_new(int family, int type)
+fn int socket_new(int family, int type) @private
 {
     int sock = socket::socket(family, type, 0);
     if (sock < 0) {
@@ -118,6 +118,50 @@ fn Stream*? open_connection(String host_str, ushort port)
     return stream_new(fd); // close() must be done at caller
 }
 
+fn int? _resolve_and_datagram(char* host, ushort port)
+{
+    char[16] port_str;
+    stdio::snprintf(&port_str[0], 16, "%d", (int)port);
+
+    netdb::AddrInfo hints = {};
+    hints.ai_family = netdb::AF_UNSPEC;
+    hints.ai_socktype = socket::SOCK_DGRAM;
+    hints.ai_protocol = 0;
+    // host == null or "" -> INADDR_ANY
+    hints.ai_flags = netdb::AI_PASSIVE;
+
+    netdb::AddrInfo* res = null;
+    char* bind_host = (host != null && host[0] != 0) ? host : null;
+    if (netdb::getaddrinfo(bind_host, &port_str[0], &hints, &res) != 0) {
+        return IO_ERROR~;
+    }
+    defer netdb::freeaddrinfo(res);
+
+    int fd = -1;
+    netdb::AddrInfo* rp = res;
+    while (rp != null) {
+        fd = socket_new(rp.ai_family, rp.ai_socktype);
+        if (fd < 0) { rp = rp.ai_next; continue; }
+
+        int yes = 1;
+        socket::setsockopt(fd, socket::SOL_SOCKET, socket::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+        break;
+    }
+
+    if (fd < 0) return IO_ERROR~;
+    return fd;
+}
+
+fn Datagram*? open_datagram(String host_str, ushort port)
+{
+    char[256] buf;
+    char* host = str2cptr(host_str, &buf);
+
+    int fd = _resolve_and_datagram(host, port)!;
+    return datagram_new(fd); // close() must be done at caller
+}
+
+
 fn int? _resolve_and_bind(char* host, ushort port)
 {
     char[16] port_str;
@@ -176,7 +220,7 @@ struct Server {
     Transport* transport; // protocol.c3
 }
 
-fn Server* server_new()
+fn Server* server_new() @private
 {
     Server* s = mem_alloc(Server);
     *s = {};
@@ -265,7 +309,7 @@ fn void? _accept_loop(Server* self)
 
 // tlocal Server* _server_instance;
 
-fn void serv_fn()
+fn void serv_fn() @private
 {
    EventLoop* loop = asyncio::get_running_loop();
     Task* self_task = loop.current;

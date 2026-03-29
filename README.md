@@ -1,20 +1,21 @@
-# ext.c3l
+# ext.c3l - extended C3 library
 
-An extended library for the C3 programming language, providing essential system-level functionality, networking capabilities, and cross-platform C header bindings.
+An extended library for the C3 programming language, providing essential system-level functionality, networking capabilities, and cross-platform C header bindings, and more
 
 ## Overview
 
 `ext.c3l` bridges the gap between C3 and system-level programming by providing:
 - C header bindings (POSIX and Win32)
-- High-level networking APIs (TCP, UDP, DNS)
+- Networking APIs (TCP, UDP, DNS)
 - File system and I/O utilities
 - Regular expression support
 - Fiber coroutine 
-- Async I/O for C3
+- Async I/O (Python-like)
+- Async File I/O (Python-like)
 
 ## Why ext library?
 
-C3 standard library is minimalistic, lacks something. Ext library fills the gap, and it's extremly lightweight.
+C3 standard library is minimalistic, lacks something. Ext library fills the gap.
 
 ## Installation
 
@@ -28,9 +29,9 @@ cd c3l
 sudo make install
 ```
 
-### Adding ext.c3l to Your Project
+### Adding ext.c3l to your project
 
-In your C3 project directory and fetch the library:
+In your C3 project directory, fetch the library by:
 
 ```bash
 c3l fetch https://github.com/nomota/ext.c3l
@@ -46,7 +47,7 @@ And in your `project.json`
 Now it's ready to be used in your project.
 
 
-## Features
+## Available library modules
 
 ### C Header Bindings 
 
@@ -87,6 +88,7 @@ UdpSocket? sock = (UdpSocket)winsock2::socket(winsock2::AF_INET, winsock2::SOCK_
 ```
 
 - More about [C Header bindings](ext/c/README.md)
+
 
 ### Networking 
 
@@ -173,29 +175,42 @@ It's based on C3's [fiber](../fiber/README.md) coroutine.
 - More about [Asyncio for C3](ext/asyncio/README.md)
 
 
-## Usage Example
+### Non-blocking file I/O
 
-```c3
-import ext::net::udp;
-import ext::io::stat;
-import stdio;
+Asynchronous, non-blocking file I/O on top of [ext::asyncio](ext/asyncio/README.md) framework. API is mostly like in Python.
 
-fn int main()
-{
-    // Check if a configuration file exists
-    if (stat::exists("config.ini"))
-    {
-        stdio::printf("Configuration found!\n");
-    }
-    
-    // Create a UDP server
-    UdpSock? server = udp::new_bind(8080);
-    
-    stdio::printf("UDP server listening on port 8080\n");
-    
-    return 0;
-}
-```
+| Module | Description |
+|--------|-------------|
+| `ext::aiofiles` | Asynchronous file operations: open(), file_size(), read(), write(), readline(), read_unbuffered(), at_eof(), read_until(), writef(), flush(), seek(), tell(), truncate(), stdin(), stdout(), stderr() |
+| `ext::aiofiles::os` | Asynchronous os operations: stat(), rename(), replace(), remove(), mkdir(), makedirs(), rmdir(), removedirs(), listdir(), scandir(), link(), symlink(), readlink() |
+| `ext::aiofiles::os::path` | Asynchronous Directory/folder operations: exists(), getsize(), isfile(), isdir(), islink() |
+| ext::aiofiles::tempfile` | Asynchronous tempfile operations: temporaryFile(), temporaryDirectory() |
+
+* [ext/aiofiles](ext/aiofiles)
+- More about [Asynchronous File I/O](ext/aiofiles/README.md)
+
+### Memory allocation macros
+
+`ext::mem` is for giving memory allocation macros within a library.
+
+Module | Description |
+|--------|-------------|
+| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free() |
+
+* [ext/mem](ext/mem)
+- More about [Allocation macros](ext/mem/README.md)
+
+
+## Usage examples
+
+* [../examples/hash](../examples/hash)
+* [../examples/regex](../examples/regex)
+* [../examples/io](../examples/io)
+* [../examples/net](../examples/net)
+* [../examples/fiber](../examples/fiber)
+* [../examples/asyncio](../examples/asyncio)
+* [../examples/aiofiles](../examples/aiofiles)
+
 
 ## Platform Support
 

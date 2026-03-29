@@ -1,6 +1,6 @@
 # ext::aiofiles
 
-Asynchronous file I/O on top of [ext::asyncio](../asyncio/README.md) framework.
+Asynchronous, non-blocking file I/O on top of [ext::asyncio](../asyncio/README.md) framework.
 API is mostly like in Python.
 
 ### Available modules
@@ -10,7 +10,7 @@ API is mostly like in Python.
 | `ext::aiofiles` | Asynchronous file operations: open(), file_size(), read(), write(), readline(), read_unbuffered(), at_eof(), read_until(), writef(), flush(), seek(), tell(), truncate(), stdin(), stdout(), stderr() |
 | `ext::aiofiles::os` | Asynchronous os operations: stat(), rename(), replace(), remove(), mkdir(), makedirs(), rmdir(), removedirs(), listdir(), scandir(), link(), symlink(), readlink() |
 | `ext::aiofiles::os::path` | Asynchronous Directory/folder operations: exists(), getsize(), isfile(), isdir(), islink() |
-| ext::aiofiles::tempfile` | Asynchronous tempfile operations: exists(), getsize(), isfile(), isdir(), islink() |
+| ext::aiofiles::tempfile` | Asynchronous tempfile operations: temporaryFile(), temporaryDirectory() |
 
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
@@ -21,7 +21,11 @@ Back to [ext.c3l](../../README.md) library.
 * [aiofiles.os.c3](aiofiles.os.c3)
 * [aiofiles.tempfile.c3](aiofiles.tempfile.c3)
 
-Available functions are:
+### API functions
+
+Following functions follow Python like behavior, all of them are asynchronous/non-blocking under the framework of `asyncio`.
+
+File I/O functions:
 
 ```c3
 import ext::asyncio;
@@ -50,6 +54,8 @@ AioFile in = aiofiles::stdin();
 AioFile out = aiofiles::stdout();
 AioFile err = aiofiles::stderr();
 ```
+
+`os` functions like in Python:
 
 ```c3
 import ext::asyncio;
@@ -89,11 +95,10 @@ usz? n = os::readlink(Stri g path, char[] buf);
 
 ```
 
+`path` functions like in Python:
+
 ```c3
-import ext::asyncio;
-import ext::aiofiles;
 import ext::aiofiles::os::path;
-import std::collections::list;
 
 usz? size = path::getsize(String path);
 bool b = path::exists(String path);
@@ -101,3 +106,31 @@ bool b = path::isdir();
 bool b = path::isfile();
 bool b = path::islink();
 ```
+
+`tempfile` functions like in Python:
+
+```c3 
+import ext::aiofiles::tempfile;
+
+AioTempFile? tf = tempfile::temporaryFile();
+String name = tf.name;
+String fullpath = tf.fullpath;
+
+void tf.close_handle(); // closes only handle, need to call .close() later
+
+void tf.close(); // close file and remove it
+// AioTempFile inherits all methods of AioFile above.
+
+AioTempDir? td = tempfile::temporaryDirectory();
+String fullpath = td.fullpath;
+void td.close(); // removes everything in the directory
+```
+
+# Examples
+
+* [../../examples/aiofiles/aio_sample.c3](../../examples/aiofiles/aio_sample.c3)
+* [../../examples/aiofiles/aio_tempfile.c3](../../examples/aiofiles/aio_tempfile.c3)
+
+
+This is a part of extended C3 library.
+Back to [ext.c3l](../../README.md) library.

@@ -238,7 +238,7 @@ struct Transport {
     bool closed;
 }
 
-fn Transport* transport_new()
+fn Transport* transport_new() @private
 {
     Transport* t = mem_alloc(Transport);
     *t = {};
