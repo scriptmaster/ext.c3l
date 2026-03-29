@@ -175,7 +175,7 @@ It's based on C3's [fiber](../fiber/README.md) coroutine.
 - More about [Asyncio for C3](ext/asyncio/README.md)
 
 
-### Non-blocking file I/O
+### Asynchronous Non-blocking file I/O
 
 Asynchronous, non-blocking file I/O on top of [ext::asyncio](ext/asyncio/README.md) framework. API is mostly like in Python.
 
@@ -188,6 +188,18 @@ Asynchronous, non-blocking file I/O on top of [ext::asyncio](ext/asyncio/README.
 
 * [ext/aiofiles](ext/aiofiles)
 - More about [Asynchronous File I/O](ext/aiofiles/README.md)
+
+
+## Debugging macros
+
+`ext::debug` is for giving debugging macros within a library.
+
+| Module | Description |
+|--------|-------------|
+| `ext::debug` | Debugging macros: warn(), @assert() |
+
+* [ext/debug](ext/debug)
+- More about [Debugging macros](ext/debug/README.md)
 
 ### Memory allocation macros
 
