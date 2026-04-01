@@ -145,6 +145,8 @@ fn int? _resolve_and_datagram(char* host, ushort port)
 
         int yes = 1;
         socket::setsockopt(fd, socket::SOL_SOCKET, socket::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+        socket::setsockopt(fd, socket::SOL_SOCKET, socket::SO_REUSEPORT, (char*)&yes, $sizeof(yes));
+
         break;
     }
 
@@ -189,6 +191,7 @@ fn int? _resolve_and_bind(char* host, ushort port)
 
         int yes = 1;
         socket::setsockopt(fd, socket::SOL_SOCKET, socket::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+        socket::setsockopt(fd, socket::SOL_SOCKET, socket::SO_REUSEPORT, (char*)&yes, $sizeof(yes));
 
         if (socket::bind(fd, rp.ai_addr, rp.ai_addrlen) == 0) break; // success
 

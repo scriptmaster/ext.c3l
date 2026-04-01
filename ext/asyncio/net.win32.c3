@@ -290,7 +290,8 @@ fn int? _resolve_and_bind_win(char* host, ushort port)
         if (fd < 0) { rp = rp.ai_next; continue; }
 
         int yes = 1;
-        winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+        // winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+        winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_EXCLUSIVEADDRUSE, (char*)&yes, $sizeof(yes));
 
         // bind to address
         int b = winsock2::bind(sock, rp.ai_addr, (int)rp.ai_addrlen);
@@ -506,7 +507,9 @@ fn Server*? start_server(ClientHandler handler, String host_str, ushort port)
     int fd = (int)sock;
 
     int yes = 1;
-    winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+    // winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&yes, $sizeof(yes));
+    winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_EXCLUSIVEADDRUSE, (char*)&yes, $sizeof(yes));
+
     // set_nonblocking(fd);
 
     int b;

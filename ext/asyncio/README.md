@@ -1,6 +1,6 @@
 # ext::asyncio for C3
 
-This is a C3 port of Python's asyncio library. It follows Python's API, as it is the most approachable among libraries of its kind.
+This is a C3 port of Python's asyncio library. It follows [Python's API](PythonAPI.md), as it is the most approachable among libraries of its kind.
 It is based on C3's [fiber](../fiber/README.md) coroutine.
 
 ### Available module

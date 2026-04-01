@@ -1,7 +1,7 @@
 # ext::aiofiles
 
 Asynchronous, non-blocking file I/O on top of [ext::asyncio](../asyncio/README.md) framework.
-API is mostly like in Python.
+This module follows mostly the [Python's aiofiles API](PythonAPI.md).
 
 ### Available modules
 

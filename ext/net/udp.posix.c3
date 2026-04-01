@@ -21,8 +21,8 @@ fn int detect_ip_version(String ip)
 
 fn UdpSocket? new(int version = socket::AF_INET) 
 {
-    int family = (int)version;
-    UdpSocket sock = (UdpSocket)socket::socket(family, socket::SOCK_DGRAM, 0);
+    // int family = (int)version;
+    UdpSocket sock = (UdpSocket)socket::socket((int)version, socket::SOCK_DGRAM, 0);
     if (sock == -1) {
         return errno::get_fault()~;
     }
@@ -32,19 +32,20 @@ fn UdpSocket? new(int version = socket::AF_INET)
 fn void? UdpSocket.bind(sock, ushort port, String opt_ip = "*") 
 {
     int option = 1; // true
-    int optlen = $sizeof(option);
-    socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEADDR, (void*)&option, optlen);
+    // int optlen = $sizeof(option);
+    socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEADDR, (void*)&option, $sizeof(option));
+    socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEPORT, (void*)&option, $sizeof(option));
 
     int version = detect_ip_version(opt_ip);
     
     if (version == socket::AF_INET6) {
-        SockAddrIn6 adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        SockAddrIn6 adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin6_family = socket::AF_INET6;
         
         if (opt_ip == "::") {
             adr.sin6_addr = {}; // in::in6addr_any;
-            string::memset(&adr.sin6_addr, 0, In6Addr.sizeof);
+            // string::memset(&adr.sin6_addr, 0, In6Addr.sizeof);
 
         } else if (in::inet_pton(socket::AF_INET6, opt_ip.ptr, &adr.sin6_addr) != 1) {
             return errno::get_fault()~;
@@ -56,8 +57,8 @@ fn void? UdpSocket.bind(sock, ushort port, String opt_ip = "*")
             return errno::get_fault()~;
         }
     } else {
-        SockAddrIn adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        SockAddrIn adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin_family = socket::AF_INET;
         
         if (opt_ip == "*") {
@@ -121,8 +122,8 @@ fn isz? UdpSocket.sendto(sock, char[] msgbuf, String ip, ushort port)
     int version = detect_ip_version(ip);
     
     if (version == socket::AF_INET6) {
-        in::SockAddrIn6 adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        in::SockAddrIn6 adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin6_family = socket::AF_INET6;
         adr.sin6_port = in::htons(port);
 
@@ -136,8 +137,8 @@ fn isz? UdpSocket.sendto(sock, char[] msgbuf, String ip, ushort port)
         }
         return len;
     } else {
-        in::SockAddrIn adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        in::SockAddrIn adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin_family = socket::AF_INET;
         adr.sin_port = in::htons(port);
 

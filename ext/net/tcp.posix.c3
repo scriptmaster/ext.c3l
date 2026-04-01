@@ -21,8 +21,8 @@ fn int detect_ip_version(String ip)
 
 fn TcpSocket? new(int version = socket::AF_INET) 
 {
-    int family = (int)version;
-    TcpSocket sock = (TcpSocket)socket::socket(family, socket::SOCK_STREAM, 0);
+    // int family = (int)version;
+    TcpSocket sock = (TcpSocket)socket::socket((int)version, socket::SOCK_STREAM, 0);
     if (sock == -1) {
         return errno::get_fault()~;
     }
@@ -32,19 +32,20 @@ fn TcpSocket? new(int version = socket::AF_INET)
 fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 10) 
 {
     int option = 1; // true
-    int optlen = $sizeof(option);
-    socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEADDR, (void*)&option, optlen);
+    // int optlen = $sizeof(option);
+    socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEADDR, (void*)&option, $sizeof(option));
+    socket::setsockopt(sock, socket::SOL_SOCKET, socket::SO_REUSEPORT, (void*)&option, $sizeof(option));
 
     int version = detect_ip_version(opt_ip);
     
     if (version == socket::AF_INET6) {
-        SockAddrIn6 adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        SockAddrIn6 adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin6_family = socket::AF_INET6;
         
         if (opt_ip == "::") {
-            // adr.sin6_addr = in::in6addr_any;
-            string::memset(&adr.sin6_addr, 0, In6Addr.sizeof);
+            adr.sin6_addr = {}; // in::in6addr_any;
+            // string::memset(&adr.sin6_addr, 0, In6Addr.sizeof);
         } else if (in::inet_pton(socket::AF_INET6, opt_ip.ptr, &adr.sin6_addr) != 1) {
             return errno::get_fault()~;
         }
@@ -55,8 +56,8 @@ fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 1
             return errno::get_fault()~;
         }
     } else {
-        SockAddrIn adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        SockAddrIn adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin_family = socket::AF_INET;
         
         if (opt_ip == "*") {
@@ -127,8 +128,8 @@ fn void? TcpSocket.connect(sock, String ip, ushort port)
     int version = detect_ip_version(ip);
     
     if (version == socket::AF_INET6) {
-        SockAddrIn6 adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        SockAddrIn6 adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin6_family = socket::AF_INET6;
         adr.sin6_port = in::htons(port);
         
@@ -141,8 +142,8 @@ fn void? TcpSocket.connect(sock, String ip, ushort port)
             return errno::get_fault()~;
         }
     } else {
-        SockAddrIn adr;
-        string::memset(&adr, 0, $sizeof(adr));
+        SockAddrIn adr = {};
+        // string::memset(&adr, 0, $sizeof(adr));
         adr.sin_family = socket::AF_INET;
         adr.sin_port = in::htons(port);
         

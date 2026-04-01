@@ -36,22 +36,23 @@ fn TcpSocket? new(int version = winsock2::AF_INET)
 fn int? TcpSocket.listen(sock, ushort port, String opt_ip = "*", int backlog = 10) 
 {
     int option = 1;
-    winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&option, $sizeof(option));
-    
+    // winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_REUSEADDR, (char*)&option, $sizeof(option));
+    winsock2::setsockopt(sock, winsock2::SOL_SOCKET, winsock2::SO_EXCLUSIVEADDRUSE, (char*)&option, $sizeof(option));
+
     int version = detect_ip_version(opt_ip);
     
     if (version == winsock2::AF_INET6) {
-        winsock2::SockAddrIn6 adr;
+        winsock2::SockAddrIn6 adr = {};
         adr.sin6_family = winsock2::AF_INET6;
         
         if (opt_ip == "::") {
             // Bind to all IPv6 addresses
-            winsock2::In6Addr any_addr;
+            // winsock2::In6Addr any_addr = {};
             // Set to in6addr_any equivalent (all zeros)
-            for (int i = 0; i < 16; i++) {
-                any_addr.u.byte[i] = 0;
-            }
-            adr.sin6_addr = any_addr;
+            // for (int i = 0; i < 16; i++) {
+            //     any_addr.u.byte[i] = 0;
+            // }
+            adr.sin6_addr = {}; // any_addr;
         } else if (ws2tcpip::inet_pton(winsock2::AF_INET6, opt_ip.ptr, &adr.sin6_addr) <= 0) {
             return errno::get_fault()~;
         }
@@ -138,7 +139,7 @@ fn void? TcpSocket.connect(sock, String ip, ushort port)
     int version = detect_ip_version(ip);
     
     if (version == winsock2::AF_INET6) {
-        winsock2::SockAddrIn6 adr;
+        winsock2::SockAddrIn6 adr = {};
         adr.sin6_family = winsock2::AF_INET6;
         adr.sin6_port = winsock2::htons(port);
         
@@ -151,7 +152,7 @@ fn void? TcpSocket.connect(sock, String ip, ushort port)
             return errno::get_fault()~;
         }
     } else {
-        winsock2::SockAddrIn adr;
+        winsock2::SockAddrIn adr = {};
         adr.sin_family = winsock2::AF_INET;
         adr.sin_port = winsock2::htons(port);
 
