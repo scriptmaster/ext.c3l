@@ -205,9 +205,9 @@ Asynchronous, non-blocking file I/O on top of [ext::asyncio](ext/asyncio/README.
 
 `ext::mem` is for giving memory allocation macros within a library.
 
-Module | Description |
+| Module | Description |
 |--------|-------------|
-| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free() |
+| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free(), temp_alloc(), temp_malloc(), temp_alloc_array() |
 
 * [ext/mem](ext/mem)
 - More about [Allocation macros](ext/mem/README.md)

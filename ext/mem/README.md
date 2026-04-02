@@ -6,7 +6,7 @@
 
 | Module | Description |
 |--------|-------------|
-| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free() |
+| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free(), temp_alloc(), temp_malloc(), temp_alloc_array() |
 
 This is a part of extended C3 library.
 Back to [ext.c3l](../../README.md) library.
@@ -26,6 +26,12 @@ Type[] p = mem_alloc_array(Type, number) @builtin;
 char[] p = mem_copy(char[] buf) @builtin;
 String p = mem_copy_str(String str) @builtin;
 void mem_free(void* p) @builtin;
+
+// temp allocator within @pool() {..}; scope
+void* p = temp_malloc(size) @builtin;
+Type* p = temp_alloc(Type) @builtin;
+Type[] p = temp_alloc_array(Type, number) @builtin;
+
 ```
 
 

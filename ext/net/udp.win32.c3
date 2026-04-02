@@ -51,7 +51,7 @@ fn void? UdpSocket.bind(sock, ushort port, String opt_ip = "*")
             // for (int i = 0; i < 16; i++) {
             //     any_addr.u.byte[i] = 0;
             // }
-            adr.sin6_addr = = {}; // any_addr;
+            adr.sin6_addr = {}; // any_addr;
         } else if (ws2tcpip::inet_pton(winsock2::AF_INET6, opt_ip.ptr, &adr.sin6_addr) <= 0) {
             return errno::get_fault()~;
         }

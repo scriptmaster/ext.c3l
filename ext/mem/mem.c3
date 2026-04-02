@@ -22,7 +22,7 @@ macro mem_alloc($Type) @builtin
 {
     if (allocx == null) allocx = mem;
     
-    void*? p = allocator::malloc_try(allocx, $Type.sizeof);
+    void*? p = allocator::alloc_try(allocx, $Type);
     if (catch err = p) {
         @assert(false, "memory allocation error");
         unreachable("mem_alloc failed");
@@ -83,3 +83,19 @@ macro mem_free(x) @builtin
     if ((void*)x == null) { warn("mem_free(null)"); return; }
     allocator::free(allocx, x);
 }
+
+macro temp_alloc($Type) @builtin
+{
+    return allocator::alloc(tmem, $Type);
+}
+
+macro temp_malloc(n) @builtin
+{
+    return allocator::malloc(tmem, n);
+}
+
+macro temp_alloc_array($Type, n) @builtin
+{
+    return allocator::alloc_array(tmem, $Type, n);
+}
+
