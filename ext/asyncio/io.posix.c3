@@ -1,6 +1,6 @@
 // io.posix.c3
 
-module ext::asyncio @if(!env::WIN32);
+module ext::asyncio @if(!env::WIN32 && !env::LINUX);
 
 import std::io;
 import c::stdlib;
@@ -48,6 +48,8 @@ fn void io_init() @private
       $case env::DARWIN || env::FREEBSD || env::OPENBSD || env::NETBSD:
         _poll_fd = event::kqueue();
         @assert(_poll_fd >= 0, "asyncio: kqueue failed");
+      $default:
+        _poll_fd = -1; // select-based: no fd needed
     $endswitch
 }
 

@@ -207,21 +207,33 @@ Asynchronous, non-blocking file I/O on top of [ext::asyncio](ext/asyncio/README.
 
 | Module | Description |
 |--------|-------------|
-| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free(), temp_alloc(), temp_malloc(), temp_alloc_array() |
+| `ext::mem` | Allocation macros: set_allocator(), mem_alloc(), mem_malloc(), mem_alloc_array(), mem_copy(), mem_copy_str(), mem_free(), temp_alloc(), temp_malloc(), temp_alloc_array(), temp_free(), LocalAllocator |
 
 * [ext/mem](ext/mem)
 - More about [Allocation macros](ext/mem/README.md)
 
+### Serializer - various encoder/decoder
+
+`ext::serializer` module is to fill missing gaps of C3 std lib by providing various encoders/decoders.
+
+| Module | Description |
+|--------|-------------|
+| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonMap, JsonNull, JsonBool, JsonNumber, String, bool, double, null, decode(), encode() |
+| `ext::serializer::http` | HTTP/1.x parser: `Request`, `Response`, `Url`, `SetCookie`, `FormFile`, `KeyValue`, `parse_request()`, `parse_response()`, decode helpers |
+
+* More about [Serializers, Encode/decoders](ext/serializer/README.md)
+
 
 ## Usage examples
 
-* [../examples/hash](../examples/hash)
-* [../examples/regex](../examples/regex)
-* [../examples/io](../examples/io)
-* [../examples/net](../examples/net)
-* [../examples/fiber](../examples/fiber)
-* [../examples/asyncio](../examples/asyncio)
-* [../examples/aiofiles](../examples/aiofiles)
+* [examples/hash](examples/hash)
+* [examples/regex](examples/regex)
+* [examples/io](examples/io)
+* [examples/net](examples/net)
+* [examples/fiber](examples/fiber)
+* [examples/asyncio](examples/asyncio)
+* [examples/aiofiles](examples/aiofiles)
+* [examples/serializer](example/serializer)
 
 
 ## Platform Support

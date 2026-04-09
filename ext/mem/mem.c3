@@ -99,3 +99,34 @@ macro temp_alloc_array($Type, n) @builtin
     return allocator::alloc_array(tmem, $Type, n);
 }
 
+macro temp_free(x) @builtin
+{
+    // do nothing:
+    // at the end of `@pool() {...};` macro scope,
+    // `tmem` allocated memory gets free'd 
+    // all at once automatically.
+}
+
+alias LocalAllocator = Allocator;
+
+fn void* LocalAllocator.malloc(&self, usz size) @inline
+{
+    void*? a = self.acquire(size, ZERO, 0);
+    if (catch a) return null;
+    return a;
+}
+
+macro LocalAllocator.alloc(&self, $Type)
+{
+    return ($Type*) self.malloc($Type.sizeof);
+}
+
+macro LocalAllocator.alloc_array(&self, $Type, $n)
+{
+    return ($Type[]) self.malloc($Type.sizeof*$n);
+}
+
+fn void LocalAllocator.free(&self, void* a)
+{
+    self.release(a, false);
+}

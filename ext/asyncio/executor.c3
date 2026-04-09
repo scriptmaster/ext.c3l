@@ -22,7 +22,6 @@ fn void _executor_wakeup(void* work)
     if (! w.future.done()) {
         w.future.set_result(null); // notify finish
     }
-    mem_free(w);
 }
 
 fn int _executor_thread(void* work)
@@ -61,8 +60,11 @@ fn void*? EventLoop.run_in_executor(&self, ExecutorFn func, void* arg = null)
     void* r = fut.await()!; // fiber yields here; resumes in _executor_wakeup
 
     self._defer_free_future(fut);
+    
+    void* result = w.result;
+    mem_free(w);
 
-    return w.result;
+    return result;
 }
 
 // Module-level shorthand — uses the currently running loop.
