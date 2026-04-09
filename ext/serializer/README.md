@@ -1,6 +1,8 @@
 # ext::serializer - various encoder/decoder in C3
 
-This module is to fill missing gaps of C3 std lib by providing various encoders/decoders.
+This module is to fill missing gaps of C3 std lib by providing various encoders/decoders. 
+
+* Note: These serializers are highly efficient because they minimize the copy of data, remembering positional info on the given input buffer. So you need to be careful to keep the input buffer available while the parsed object is alive.
 
 # Available module
 
