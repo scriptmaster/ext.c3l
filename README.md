@@ -218,7 +218,7 @@ Asynchronous, non-blocking file I/O on top of [ext::asyncio](ext/asyncio/README.
 
 | Module | Description |
 |--------|-------------|
-| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonMap, JsonNull, JsonBool, JsonNumber, String, bool, double, null, decode(), encode() |
+| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonMap, JsonNull, JsonBool, JsonNumber, String, bool, long, double, null, decode(), encode() |
 | `ext::serializer::http` | HTTP/1.x parser: `Request`, `Response`, `Url`, `SetCookie`, `FormFile`, `KeyValue`, `parse_request()`, `parse_response()`, decode helpers |
 
 * More about [Serializers, Encode/decoders](ext/serializer/README.md)

@@ -6,7 +6,7 @@
 
 | Module | Description |
 |--------|-------------|
-| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonMap, JsonNull, JsonBool, JsonNumber, String, bool, double, null, decode(), encode() |
+| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonMap, JsonNull, JsonBool, JsonNumber, String, bool, long, double, null, decode(), encode() |
 
 ### Files
 
