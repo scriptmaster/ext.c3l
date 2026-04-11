@@ -25,13 +25,13 @@ fn void example_basic()
             "nickname": null
         }`;
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[basic] parse error: %s", err);
             return;
         }
 
-        JsonMap m = obj.as_map()!!;
+        JsonObject m = obj.as_object()!!;
 
         String name     = m.get_string("name")!!;       // "Alice"
 
@@ -45,7 +45,7 @@ fn void example_basic()
             name, age, verified ? "true" : "false", score);
 
         // Checking null
-        JsonObject nick = m.get("nickname")!!;
+        JsonValue nick = m.get("nickname")!!;
         if (nick.is_null()) {
             io::printfn("[basic] nickname is null");
         }
@@ -64,13 +64,13 @@ fn void example_array()
             "scores": [10, 20, 30]
         }`;
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[array] parse error: %s", err);
             return;
         }
 
-        JsonMap   m    = obj.as_map()!!;
+        JsonObject   m    = obj.as_object()!!;
 
         JsonArray tags = m.get_array("tags")!!;
 
@@ -107,15 +107,15 @@ fn void example_nested()
             }
         }`;
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[nested] parse error: %s", err);
             return;
         }
 
-        JsonMap root    = obj.as_map()!!;
-        JsonMap user    = root.get_map("user")!!;
-        JsonMap profile = user.get_map("profile")!!;
+        JsonObject root    = obj.as_object()!!;
+        JsonObject user    = root.get_object("user")!!;
+        JsonObject profile = user.get_object("profile")!!;
 
         long   id     = user.get_int("id")!!;         // 42
         String city   = profile.get_string("city")!!; // "Seoul"
@@ -141,17 +141,17 @@ fn void example_array_of_objects()
             ]
         }`;
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[arr_obj] parse error: %s", err);
             return;
         }
 
-        JsonMap   root  = obj.as_map()!!;
+        JsonObject   root  = obj.as_object()!!;
         JsonArray items = root.get_array("items")!!;
 
         for (usz i = 0; i < items.len(); i++) {
-            JsonMap item  = items.get_map(i)!!;
+            JsonObject item  = items.get_object(i)!!;
             long   id     = item.get_int("id")!!;
             String name   = item.get_string("name")!!;
             double price  = item.get_float("price")!!;
@@ -163,7 +163,7 @@ fn void example_array_of_objects()
 // 
 // Example 5 — type inspection with is_* guards
 // 
-fn void print_value(JsonObject v)
+fn void print_value(JsonValue v)
 {
     if (v.is_null())   { io::print("null");                     return; }
     if (v.is_bool())   { io::print(v.as_bool()!! ? "true" : "false"); return; }
@@ -171,7 +171,7 @@ fn void print_value(JsonObject v)
     if (v.is_float())  { io::printf("%f", v.as_float()!!);      return; }
     if (v.is_string()) { io::printf("%s", v.as_string()!!);     return; }
     if (v.is_array())  { io::print("[array]");                   return; }
-    if (v.is_map())    { io::print("{object}");                  return; }
+    if (v.is_object())    { io::print("{object}");                  return; }
 }
 
 fn void example_type_inspection()
@@ -188,13 +188,13 @@ fn void example_type_inspection()
             "g": {"x": 0}
         }`;
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[types] parse error: %s", err);
             return;
         }
 
-        JsonMap m = obj.as_map()!!;
+        JsonObject m = obj.as_object()!!;
         String[] keys = {"a", "b", "c", "d", "e", "f", "g"};
         foreach (String key : keys) {
             io::printf("[types] %s = ", key);
@@ -219,13 +219,13 @@ fn void example_lenient()
         }`;
 
         // allow_comma=true, allow_comment=true (both are defaults)
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[lenient] parse error: %s", err);
             return;
         }
 
-        JsonMap m = obj.as_map()!!;
+        JsonObject m = obj.as_object()!!;
         io::printfn("[lenient] x=%d  y=%d", m.get_int("x")!!, m.get_int("y")!!);
 
         JsonArray z = m.get_array("z")!!;
@@ -243,8 +243,8 @@ fn void example_strict()
         String valid_src   = `{"key": "value"}`;
         String invalid_src = `{"key": "value",}`;  // trailing comma — not allowed
 
-        JsonObject? obj1 = json::decode(tmem, valid_src,   false, false);
-        JsonObject? obj2 = json::decode(tmem, invalid_src, false, false);
+        JsonValue? obj1 = json::decode(tmem, valid_src,   false, false);
+        JsonValue? obj2 = json::decode(tmem, invalid_src, false, false);
         
         bool ok1 = true;
         if (catch err = obj1) ok1 = false;
@@ -266,7 +266,7 @@ fn void example_encode()
     @pool() {
         String src = `{"name": "Bob", "scores": [5, 10, 15]}`;
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[encode] parse error: %s", err);
             return;
@@ -287,13 +287,13 @@ fn void example_optional_keys()
     @pool() {
         String src = `{"username": "charlie"}`;  // "email" key absent
 
-        JsonObject? obj = json::decode(tmem, src);
+        JsonValue? obj = json::decode(tmem, src);
         if (catch err = obj) {
             io::printfn("[optional] parse error: %s", err);
             return;
         }
 
-        JsonMap m = obj.as_map()!!;
+        JsonObject m = obj.as_object()!!;
 
         String username = m.get_string("username")!!;
         io::printfn("[optional] username: %s", username);
@@ -315,13 +315,13 @@ fn void example_error_handling()
     @pool() {
         String bad_json = `{"broken": }`;
 
-        JsonObject? obj = json::decode(tmem, bad_json);
+        JsonValue? obj = json::decode(tmem, bad_json);
         if (catch err = obj) {
             io::printfn("[errors] caught parse fault: %s", err);
             return;
         }
 
-        JsonMap m = obj.as_map()!!;
+        JsonObject m = obj.as_object()!!;
 
         // Accessing a key that doesn't exist
         long? n = m.get_int("missing");
@@ -330,7 +330,7 @@ fn void example_error_handling()
         }
 
         // Type mismatch
-        JsonObject? name_obj = m.get("name");
+        JsonValue? name_obj = m.get("name");
         if (catch err = name_obj) {
             io::printfn("[errors] caught get fault: %s", err);
             return;

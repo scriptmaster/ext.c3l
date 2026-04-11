@@ -11,9 +11,9 @@ import c::string;
 
 tlocal LocalAllocator localmem = {};
 
-alias JsonObject = any; // void* that remembers the type, of which it's pointing to
-alias JsonArray = List{JsonObject};
-alias JsonMap = HashMap{String,JsonObject};
+alias JsonValue = any; // void* that remembers the type, of which it's pointing to
+alias JsonArray = List{JsonValue};
+alias JsonObject = HashMap{String, JsonValue};
 alias JsonNull = void*;
 alias JsonBool = bool;
 alias JsonNumber = char[];
@@ -115,12 +115,12 @@ fn void JsonDecoder.skip_space(&self) @private
     }
 }
 
-fn JsonObject? decode(Allocator allocx, String text, bool allow_comma=true, bool allow_comment=true)
+fn JsonValue? decode(Allocator allocx, String text, bool allow_comma=true, bool allow_comment=true)
 {
     JsonDecoder* d = decoder_new(allocx, text, allow_comma, allow_comment);
     defer d.free();
 
-    JsonObject obj = d.parse()!; // any
+    JsonValue obj = d.parse()!; // any
 
     d.skip_space();
     if (d.begin+d.pos != d.end) return JSON_TRAILING_GARBAGE~;
@@ -169,16 +169,16 @@ fn char*? find_char(char* buf, char* end, char c) @inline @private
     return JSON_INCOMPLETE~;
 }
 
-fn JsonObject? JsonDecoder.parse(&self)
+fn JsonValue? JsonDecoder.parse(&self)
 {
     return self.parse_value()!;
 }
 
-fn void JsonObject.free(&self)
+fn void JsonValue.free(&self)
 {
     switch (self.type) {
-        case JsonMap:
-            JsonMap* m = (JsonMap*) *self;
+        case JsonObject:
+            JsonObject* m = (JsonObject*) *self;
             m.@each(; key, value) {
                 key.free(localmem);
                 value.free();
@@ -203,7 +203,7 @@ fn void JsonObject.free(&self)
     }
 }
 
-fn JsonObject? JsonDecoder.parse_string(&self)
+fn JsonValue? JsonDecoder.parse_string(&self)
 {
     usz p0 = self.pos;
     @assert(*(self.begin+p0) == '"', "string error");
@@ -237,7 +237,7 @@ const JsonBool TRUE = true;
 const JsonBool FALSE = false;
 const JsonNull NULL = null;
 
-fn JsonObject? JsonDecoder.parse_true(&self)
+fn JsonValue? JsonDecoder.parse_true(&self)
 {
     if (string::strncmp(self.begin+self.pos, "true", 4) != 0) {
         return JSON_INVALID_TOKEN~;
@@ -246,7 +246,7 @@ fn JsonObject? JsonDecoder.parse_true(&self)
     return any_make(&TRUE, bool.typeid);
 }
 
-fn JsonObject? JsonDecoder.parse_false(&self)
+fn JsonValue? JsonDecoder.parse_false(&self)
 {
     if (string::strncmp(self.begin+self.pos, "false", 5) != 0) {
 
@@ -256,7 +256,7 @@ fn JsonObject? JsonDecoder.parse_false(&self)
     return any_make(&FALSE, bool.typeid);
 }
 
-fn JsonObject? JsonDecoder.parse_null(&self)
+fn JsonValue? JsonDecoder.parse_null(&self)
 {
     if (string::strncmp(self.begin+self.pos, "null", 4) != 0) {
 
@@ -282,7 +282,7 @@ fn bool isnum(char c) @inline @private
     return NUM[(usz)c];
 }
 
-fn JsonObject? JsonDecoder.parse_number(&self)
+fn JsonValue? JsonDecoder.parse_number(&self)
 {
     char* p = self.begin+self.pos;
     char* q = p;
@@ -311,7 +311,7 @@ fn JsonObject? JsonDecoder.parse_number(&self)
     return a;
 }
 
-fn JsonObject? JsonDecoder.parse_array(&self)
+fn JsonValue? JsonDecoder.parse_array(&self)
 {
     List{any}* l = localmem.alloc(List{any});
     *l = {};
@@ -345,7 +345,7 @@ fn JsonObject? JsonDecoder.parse_array(&self)
     return a;
 }
 
-fn JsonObject? JsonDecoder.parse_map(&self)
+fn JsonValue? JsonDecoder.parse_object(&self)
 {
 
     HashMap{String,any}* m = localmem.alloc(HashMap{String,any});
@@ -405,7 +405,7 @@ fn JsonObject? JsonDecoder.parse_map(&self)
     return a;
 }
 
-fn JsonObject? JsonDecoder.parse_value(&self)
+fn JsonValue? JsonDecoder.parse_value(&self)
 {
     self.skip_space();
 
@@ -415,7 +415,7 @@ fn JsonObject? JsonDecoder.parse_value(&self)
     switch (c)
     {
         case '{':
-            return self.parse_map()!;
+            return self.parse_object()!;
 
         case '[':
             return self.parse_array()!;
@@ -443,12 +443,12 @@ fn JsonObject? JsonDecoder.parse_value(&self)
     }
 }
 
-fn bool JsonObject.is_null(&self)
+fn bool JsonValue.is_null(&self)
 {
     return (self.type == JsonNull.typeid);
 }
 
-fn bool JsonObject.is_bool(&self)
+fn bool JsonValue.is_bool(&self)
 {
     if (self.type == JsonBool.typeid) {
         return true;
@@ -456,7 +456,7 @@ fn bool JsonObject.is_bool(&self)
     return false;
 }
 
-fn bool JsonObject.is_int(&self)
+fn bool JsonValue.is_int(&self)
 {
     if (self.type == JsonNumber.typeid) {
         char[]* n = (char[]*) *self;
@@ -473,7 +473,7 @@ fn bool JsonObject.is_int(&self)
     return false;
 }
 
-fn bool JsonObject.is_float(&self)
+fn bool JsonValue.is_float(&self)
 {
     if (self.type == JsonNumber.typeid) {
         return ! self.is_int();
@@ -481,7 +481,7 @@ fn bool JsonObject.is_float(&self)
     return false;
 }
 
-fn bool JsonObject.is_string(&self)
+fn bool JsonValue.is_string(&self)
 {
     if (self.type == String.typeid) {
         return true;
@@ -489,37 +489,37 @@ fn bool JsonObject.is_string(&self)
     return false;
 }
 
-fn bool JsonObject.is_array(&self)
+fn bool JsonValue.is_array(&self)
 {
-    if (self.type == List{JsonObject}.typeid) {
+    if (self.type == List{JsonValue}.typeid) {
         return true;
     }
     return false;
 }
 
-fn bool JsonObject.is_map(&self)
+fn bool JsonValue.is_object(&self)
 {
-    if (self.type == HashMap{String, JsonObject}.typeid) {
+    if (self.type == HashMap{String, JsonValue}.typeid) {
         return true;
     }
     return false;
 }
 
-fn bool? JsonObject.as_bool(&self)
+fn bool? JsonValue.as_bool(&self)
 {
     if (! self.is_bool()) return JSON_TYPE_ERROR~;
     JsonBool* b = (JsonBool*) *self;
     return (b == &TRUE);
 }
 
-fn long? JsonObject.as_int(&self)
+fn long? JsonValue.as_int(&self)
 {
     if (! self.is_int()) return JSON_TYPE_ERROR~;
     JsonNumber* n = (String*) *self; // char[]
     return ((String)(*n)).to_long()!;
 }
 
-fn double? JsonObject.as_float(&self)
+fn double? JsonValue.as_float(&self)
 {
     if (! self.is_float()) return JSON_TYPE_ERROR~;
     JsonNumber* n = (JsonNumber*) *self; // char[]
@@ -527,74 +527,74 @@ fn double? JsonObject.as_float(&self)
     return ((String)(*n)).to_double()!;
 }
 
-fn String? JsonObject.as_string(&self)
+fn String? JsonValue.as_string(&self)
 {
     if (! self.is_string()) return JSON_TYPE_ERROR~;
     String* n = (String*) *self;
     return *n;
 }
 
-fn JsonArray? JsonObject.as_array(&self)
+fn JsonArray? JsonValue.as_array(&self)
 {
     if (! self.is_array()) return JSON_TYPE_ERROR~;
     JsonArray* n = (JsonArray*) *self;
     return *n;
 }
 
-fn JsonMap? JsonObject.as_map(&self)
+fn JsonObject? JsonValue.as_object(&self)
 {
-    if (! self.is_map()) return JSON_TYPE_ERROR~;
-    JsonMap* n = (JsonMap*) *self;
+    if (! self.is_object()) return JSON_TYPE_ERROR~;
+    JsonObject* n = (JsonObject*) *self;
     return *n;
 }
 
-fn bool JsonMap.has(&self, String key)
+fn bool JsonObject.has(&self, String key)
 {
     return self.has_key(key);
 }
 
 /*
-fn JsonObject? JsonMap.get(&self, String key)
+fn JsonValue? JsonObject.get(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
     return (*self)[key];
 }
 */
 
-fn String? JsonMap.get_string(&self, String key)
+fn String? JsonObject.get_string(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
     return ((*self)[key]).as_string()!;
 }
 
-fn long? JsonMap.get_int(&self, String key)
+fn long? JsonObject.get_int(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
     return ((*self)[key]).as_int()!;
 }
 
-fn double? JsonMap.get_float(&self, String key)
+fn double? JsonObject.get_float(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
     return ((*self)[key]).as_float()!;
 }
 
-fn bool? JsonMap.get_bool(&self, String key)
+fn bool? JsonObject.get_bool(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
     return ((*self)[key]).as_bool()!;
 }
 
-fn JsonArray? JsonMap.get_array(&self, String key)
+fn JsonArray? JsonObject.get_array(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
     return ((*self)[key]).as_array()!;
 }
 
-fn JsonMap? JsonMap.get_map(&self, String key)
+fn JsonObject? JsonObject.get_object(&self, String key)
 {
     if (!self.has_key(key)) return JSON_KEY_NOT_FOUND~;
-    return ((*self)[key]).as_map()!;
+    return ((*self)[key]).as_object()!;
 }
 
 /*
@@ -604,7 +604,7 @@ fn usz JsonArray.len(&self)
 }
 */
 
-fn JsonObject? JsonArray.at(&self, usz index)
+fn JsonValue? JsonArray.at(&self, usz index)
 {
     return (*self)[index];
 }
@@ -634,9 +634,9 @@ fn JsonArray? JsonArray.get_array(&self, usz index)
     return (*self)[index].as_array();
 }
 
-fn JsonMap? JsonArray.get_map(&self, usz index)
+fn JsonObject? JsonArray.get_object(&self, usz index)
 {
-    return (*self)[index].as_map();
+    return (*self)[index].as_object();
 }
 
 // ---------------------------------------
@@ -761,7 +761,7 @@ fn String unescape_str(String str) @private
 const char[16] HEX_DIGITS @private = "0123456789abcdef";
 
 // Append the JSON encoding of `self` into `buf`.
-fn void JsonObject.encode_into(&self, DString* buf) @private
+fn void JsonValue.encode_into(&self, DString* buf) @private
 {
     switch (self.type) {
         case JsonNull:
@@ -813,11 +813,11 @@ fn void JsonObject.encode_into(&self, DString* buf) @private
             }
             buf.append_char(']');
 
-        case JsonMap:
-            JsonMap* m = (JsonMap*) *self;
+        case JsonObject:
+            JsonObject* m = (JsonObject*) *self;
             buf.append_char('{');
             bool first = true;
-            m.@each(; String key, JsonObject value) {
+            m.@each(; String key, JsonValue value) {
                 if (!first) buf.append_char(',');
                 first = false;
                 buf.append_char('"');
@@ -834,10 +834,10 @@ fn void JsonObject.encode_into(&self, DString* buf) @private
     }
 }
 
-// Serialize a JsonObject back to a JSON string.
+// Serialize a JsonValue back to a JSON string.
 // The returned String is allocated from the module's allocator (localmem).
 // Free it with free_str() when no longer needed.
-fn String JsonObject.encode(&self)
+fn String JsonValue.encode(&self)
 {
     DString buf;
     buf.init(localmem);

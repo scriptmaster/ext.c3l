@@ -1,12 +1,16 @@
 # ext::serializer::json - JSON decoder for C3
 
-`ext::serializer::json` is a JSON decoder for the [ext.c3l](../..README.md) library ecosystem. It parses a JSON string into a tree of `JsonObject` values backed by a caller-supplied allocator, with optional support for trailing commas and comments.
+`ext::serializer::json` is a JSON decoder for the [ext.c3l](../..README.md) library ecosystem. It parses a JSON string into a tree of `JsonValue`s backed by a caller-supplied allocator, with optional support for trailing commas and comments.
+
+* Note: This is highly efficient because they minimize the copy of data, remembering positional info on the given input buffer. So you need to be careful to keep the input buffer available while the parsed object is alive.
+
+* Note: the decoded structure must be read-only, immutable, because it has pointers to input buffer.
 
 # Available module
 
 | Module | Description |
 |--------|-------------|
-| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonMap, JsonNull, JsonBool, JsonNumber, String, bool, long, double, null, decode(), encode() |
+| `ext::serializer::json` | JSON serializer: JsonObject, JsonArray, JsonValue, JsonNull, JsonBool, JsonNumber, String, bool, long, double, null, decode(), encode() |
 
 ### Files
 
@@ -23,9 +27,9 @@ Back to [ext.c3l](../../README.md) library.
 
 | Alias | Underlying type | Represents |
 |-------|-----------------|------------|
-| `JsonObject` | `any` | Any JSON value (tagged union via C3's `any`) |
+| `JsonValue` | `any` | Any JSON value (tagged union via C3's `any`) |
 | `JsonArray` | `List{JsonObject}` | JSON array |
-| `JsonMap` | `HashMap{String, JsonObject}` | JSON object (key-value map) |
+| `JsonObject` | `HashMap{String, JsonObject}` | JSON object (key-value map) |
 | `JsonNull` | `void*` | JSON `null` |
 | `JsonBool` | `bool` | JSON `true` / `false` |
 | `JsonNumber` | `char[]` | JSON number stored as raw text |
@@ -42,17 +46,17 @@ Numbers are kept as raw `char[]` slices and converted on demand via `as_int()` /
 import ext::serializer::json;
 
 // Parse a JSON string.
-// allow_comma   – tolerate trailing commas in arrays and objects (default: true)
+// allow_comma – tolerate trailing commas in arrays and objects (default: true)
 // allow_comment – tolerate // and /* */ comments (default: true)
 // Returns the root JsonObject or propagates a fault on error.
-JsonObject? obj = json::decode(Allocator allocx, String text, bool allow_comma = true, bool allow_comment = true);
+JsonValue? obj = json::decode(Allocator allocx, String text, bool allow_comma = true, bool allow_comment = true);
 ```
 
 **Example**
 
 ```c3
 @pool() {
-    JsonObject? obj = json::decode(tmem, `{"name":"Alice","age":30}`); // `tmem` temporary allocator
+    JsonValue? obj = json::decode(tmem, `{"name":"Alice","age":30}`); // `tmem` temporary allocator
     if (catch err = obj) {
         io::printfn("parse error: %s", err);
         return;
@@ -72,7 +76,7 @@ bool b = obj.is_int();     // true if the number has no decimal point or exponen
 bool b = obj.is_float();   // true if the number has a decimal point or exponent
 bool b = obj.is_string();  // true if the value is a JSON string
 bool b = obj.is_array();   // true if the value is a JSON array
-bool b = obj.is_map();     // true if the value is a JSON object
+bool b = obj.is_object();     // true if the value is a JSON object
 ```
 
 ### JsonObject — value extraction
@@ -83,7 +87,7 @@ long? l = obj.as_int();     // JSON_TYPE_ERROR if not an integer number
 double? d = obj.as_float();   // JSON_TYPE_ERROR if not a float number
 String? s = obj.as_string();  // JSON_TYPE_ERROR if not a string
 JsonArray? a = obj.as_array();   // JSON_TYPE_ERROR if not an array
-JsonMap? m = obj.as_map();     // JSON_TYPE_ERROR if not an object
+JsonObject? m = obj.as_object();     // JSON_TYPE_ERROR if not an object
 ```
 
 ### JsonObject — memory management
@@ -105,13 +109,13 @@ long? n = map.get_int(String key);
 double? d = map.get_float(String key);
 bool? b = map.get_bool(String key);
 JsonArray? a = map.get_array(String key);
-JsonMap? m = map.get_map(String key);
+JsonObject? m = map.get_object(String key);
 ```
 
 **Example**
 
 ```c3
-JsonMap? m = obj.as_map()!;
+JsonObject? m = obj.as_object()!;
 String name = m.get_string("name")!;  // "Alice"
 long age = m.get_int("age")!;      // 30
 ```
@@ -127,7 +131,7 @@ long? n = arr.get_int(usz index);
 double? d = arr.get_float(usz index);
 bool? b = arr.get_bool(usz index);
 JsonArray? a = arr.get_array(usz index);
-JsonMap? m = arr.get_map(usz index);
+JsonObject? m = arr.get_object(usz index);
 ```
 
 **Example**
