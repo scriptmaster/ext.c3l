@@ -11,6 +11,8 @@ build-all:
 	@cd ./examples/io && make build
 	@cd ./examples/fiber && make build
 	@cd ./examples/asyncio && make build
+	@cd ./examples/aiofiles && make build
+	@cd ./examples/serializer && make build
 
 clean:
 	@rm -rf ./build/*
@@ -21,6 +23,8 @@ clean:
 	@cd ./examples/io && make clean
 	@cd ./examples/fiber && make clean
 	@cd ./examples/asyncio && make clean
+	@cd ./examples/aiofiles && make clean
+	@cd ./examples/serializer && make clean
 
 push:
 	@make clean
