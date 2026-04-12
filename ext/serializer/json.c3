@@ -216,7 +216,7 @@ fn JsonValue? JsonDecoder.parse_string(&self)
         // skip \" while accept \\" as string end
         usz n_bs = 0; // num backspaces
         char* r = q-1;
-        while (r >= p && *r == '\r') { n_bs++; r--; }
+        while (r >= p && *r == '\\') { n_bs++; r--; }
         if (n_bs % 2 == 0) break;
         p = q+1;
     } while (p < self.end);
