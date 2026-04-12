@@ -237,9 +237,25 @@ const JsonBool TRUE = true;
 const JsonBool FALSE = false;
 const JsonNull NULL = null;
 
+macro warn_linepos(char* begin, usz pos)
+{
+    int line = 1;
+    int col = 1;
+    for (usz i = 0; i < pos; i++) {
+        if (*(begin*i) == '\n')  {
+            line++;
+            col = 1;
+            continue;
+        }
+        col++;
+    }
+    warn("json line:%d, column:%d", line, col);
+}
+
 fn JsonValue? JsonDecoder.parse_true(&self)
 {
     if (string::strncmp(self.begin+self.pos, "true", 4) != 0) {
+        warn_linepos(self.begin, self.pos);
         return JSON_INVALID_TOKEN~;
     }
     self.pos += 4;
@@ -249,7 +265,7 @@ fn JsonValue? JsonDecoder.parse_true(&self)
 fn JsonValue? JsonDecoder.parse_false(&self)
 {
     if (string::strncmp(self.begin+self.pos, "false", 5) != 0) {
-
+        warn_linepos(self.begin, self.pos);
         return JSON_INVALID_TOKEN~;
     }
     self.pos += 5;
@@ -259,7 +275,7 @@ fn JsonValue? JsonDecoder.parse_false(&self)
 fn JsonValue? JsonDecoder.parse_null(&self)
 {
     if (string::strncmp(self.begin+self.pos, "null", 4) != 0) {
-
+        warn_linepos(self.begin, self.pos);
         return JSON_INVALID_TOKEN~;
     }
     self.pos += 4;
@@ -338,7 +354,7 @@ fn JsonValue? JsonDecoder.parse_array(&self)
             }
             continue;
         }
-
+        warn_linepos(self.begin, self.pos);
         return JSON_INVALID_TOKEN~;
     }
     any a = any_make(l, List{any}.typeid);
@@ -368,7 +384,7 @@ fn JsonValue? JsonDecoder.parse_object(&self)
         char colon = self.peek();
 
         if (colon != ':') {
-
+            warn_linepos(self.begin, self.pos);
             return JSON_INVALID_TOKEN~;
         }
         self.pos++;
@@ -397,7 +413,7 @@ fn JsonValue? JsonDecoder.parse_object(&self)
             }
             continue;
         }
-
+        warn_linepos(self.begin, self.pos);
         return JSON_INVALID_TOKEN~;
     }
 
