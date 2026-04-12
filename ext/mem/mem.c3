@@ -48,7 +48,7 @@ macro mem_alloc_array($Type, n) @builtin
 {
     if (allocx == null) allocx = mem;
   
-    void* p = allocx.acquire($Type.sizeof*n, ZERO, 0);
+    void*? p = allocx.acquire($Type.sizeof*n, ZERO, 0);
     if (catch err = p) {
         @assert(false, "memory allocation error");
         unreachable("mem_alloc_array failed");
