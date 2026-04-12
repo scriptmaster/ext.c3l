@@ -242,7 +242,7 @@ macro warn_linepos(char* begin, usz pos)
     int line = 1;
     int col = 1;
     for (usz i = 0; i < pos; i++) {
-        if (*(begin*i) == '\n')  {
+        if (*(begin+i) == '\n')  {
             line++;
             col = 1;
             continue;
