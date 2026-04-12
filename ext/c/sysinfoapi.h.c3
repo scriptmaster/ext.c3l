@@ -232,14 +232,14 @@ enum ComputerNameFormat : int {
     MAX
 }
 
-enum LogicalProcessorRelationship: const ushort {
-    PROCESSOR_CORE,
-    NUMA_NODE,
-    CACHE,
-    PROCESSOR_PACKAGE,
-    GROUP,
-    ALL = 0xFFFF
-}
+// enum LogicalProcessorRelationship: const ushort 
+const ushort PROCESSOR_CORE = 0;
+const ushort NUMA_NODE = 1;
+const ushort CACHE = 2;
+const ushort PROCESSOR_PACKAGE = 3;
+const ushort GROUP = 4;
+const ALL = 0xFFFF;
+
 
 enum ProcessorCacheType {
     UNIFIED,

@@ -41,11 +41,10 @@ extern fn int fputc(char c, CFile stream);
 extern fn int feof(CFile stream);
 // File Positioning
 
-enum Whence: int (int val) {
-    SEEK_SET = 0,
-    SEEK_CUR = 1, 
-    SEEK_END = 2
-}
+
+const SEEK_SET = 0;
+const SEEK_CUR = 1; 
+const SEEK_END = 2;
 
 extern fn int fseek(CFile stream, long offset, int whence);
 extern fn long ftell(CFile stream);
