@@ -129,18 +129,20 @@ ParseResult? result = simdjson::parse(Allocator alloc, char[] input, bool allow_
 **Example**
 
 ```c3
+import ext::serializer::simdjson;
+
 @pool() {
     char[] src = `{"name":"Alice","scores":[10,20,30]}`;
-    ParseResult? r = simdjson::parse(tmem, src);
-    if (catch err = r) {
+    ParseResult? result = simdjson::parse(tmem, src);
+    if (catch err = result) {
         io::printfn("parse error: %s", err);
         return;
     }
-    defer r.free();
+    // defer result.free();
 
-    JsonValue root = r.root();
+    JsonValue root = result.root();
     // access values via root...
-};
+}; // result gets free'd here
 ```
 
 ---
@@ -158,6 +160,8 @@ The `ParseResult` owns only the `tape` array. Strings and numbers are zero-copy 
 ### `JsonValue` — type inspection
 
 ```c3
+JsonValue v = result.root();
+
 TapeType t = v.type();       // raw tape type of this entry
 bool b = v.is_string();      // true if STRING
 bool b = v.is_number();      // true if NUMBER
@@ -171,6 +175,8 @@ bool b = v.is_false();       // true if FALSE
 ### `JsonValue` — value extraction
 
 ```c3
+JsonValue v = result.root();
+
 bool     b = v.as_bool();      // true when type == TRUE, false otherwise (no fault)
 String   s = v.as_str();       // zero-copy slice; raw JSON escapes are preserved
 String   s = v.raw_num();      // raw source slice of a NUMBER (e.g. "-3.14e+2")
@@ -192,8 +198,10 @@ Numbers are stored as raw `char[]` source slices and converted on demand. No pre
 ### `JsonValue` — object access
 
 ```c3
-usz       n   = v.len();         // number of key-value pairs (0 if not an object)
-JsonValue? child = v.get(String key);  // linear key scan; TYPE_MISMATCH or KEY_NOT_FOUND on failure
+JsonValue v = result.root();
+
+usz n   = v.len(); // number of key-value pairs (0 if not an object)
+JsonValue? child = v.get(String key); // linear key scan; TYPE_MISMATCH or KEY_NOT_FOUND on failure
 ```
 
 **Fault**
@@ -207,7 +215,7 @@ JsonValue? child = v.get(String key);  // linear key scan; TYPE_MISMATCH or KEY_
 
 ```c3
 JsonValue? name_val = root.get("name");
-String name = name_val.as_str();  // "Alice"
+String name = name_val.as_str(); // "Alice"
 ```
 
 ---
@@ -215,7 +223,7 @@ String name = name_val.as_str();  // "Alice"
 ### `JsonValue` — array access
 
 ```c3
-usz        n   = v.len();       // number of elements (0 if not an array)
+usz n = v.len(); // number of elements (0 if not an array)
 JsonValue? elem = v.at(usz i);  // index-based access; TYPE_MISMATCH or INDEX_OUT_OF_RANGE on failure
 ```
 
