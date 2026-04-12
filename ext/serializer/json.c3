@@ -356,7 +356,7 @@ fn JsonValue? JsonDecoder.parse_array(&self)
         l.push(a);
 
         self.skip_space();
-        char c = self.peek();
+        c = self.peek();
         if (c == ']') {
             self.pos++;
             break;
@@ -390,7 +390,7 @@ fn JsonValue? JsonDecoder.parse_object(&self)
     self.pos++; // skip '{'
     while (self.begin+self.pos < self.end) {
         self.skip_space();
-        char q = self.peek();
+        char c = self.peek();
         if (c == '}') { // empty map
             self.pos++;
             break;
@@ -405,7 +405,7 @@ fn JsonValue? JsonDecoder.parse_object(&self)
             }
         }
         
-        if (q != '"') {
+        if (c != '"') {
             return JSON_INVALID_TOKEN~;
         }
         String* s = (String*) self.parse_string()!;
@@ -427,7 +427,7 @@ fn JsonValue? JsonDecoder.parse_object(&self)
 
        
         self.skip_space();
-        char c = self.peek();
+        c = self.peek();
 
         if (c == '}') {
             self.pos++;
