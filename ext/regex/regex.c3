@@ -5,6 +5,7 @@ module ext::regex;
 import std::collections::list;
 import slre;
 import std::io;
+import ext::mem;
 
 const int MAX_GROUP = 10;
 struct RegEx {
@@ -12,7 +13,6 @@ struct RegEx {
     slre::SlreCap[MAX_GROUP] caps;
     String expr;
     String str;
-    Allocator allocx;
 }
 
 struct RegMatch {
@@ -41,8 +41,7 @@ macro void warn(String fmt, args...)
   io::printf("%s,%s: ", $$FILE, $$LINE); io::printfn(fmt, ...args);
 }
 
-macro tfree(x) => allocator::free(tmem, x);
-macro afree(x) => allocator::free(x.allocx, x);
+tlocal LocalAllocator allocx = {};
 
 fn fault err_fault(int err) @private
 {
@@ -60,23 +59,25 @@ fn fault err_fault(int err) @private
     return GENERAL_ERROR;
 }
 
-fn String brace(Allocator allocx, String expr) @private
+fn String brace(Allocator alloc, String expr) @private
 {
-    String x = (String)allocator::alloc_array(allocx, char, expr.len+2);
+    allocx = alloc;
+    String x = (String)allocx.alloc_array(char, expr.len+2);
     x[0] = '(';
     x[expr.len+1] = ')';
     x[1:expr.len] = expr[0:expr.len];
     return x;
 }
 
-fn RegEx*? new_compile(Allocator allocx, String expr, bool ignore_case = false) 
+fn RegEx*? new_compile(Allocator alloc, String expr, bool ignore_case = false) 
 {
     if (expr.len == 0) {
         return EMPTY_EXPR~;
     }
-    RegEx* reg = allocator::alloc(allocx, RegEx);
-    reg.allocx = allocx;
-    reg.expr = brace(allocx, expr);
+    allocx = alloc;
+    RegEx* reg = allocx.alloc(RegEx);
+
+    reg.expr = brace(alloc, expr);
     
     // Initialize RegexInfo
     reg.info.flags = ignore_case ? slre::IGNORE_CASE: 0;
@@ -87,7 +88,7 @@ fn RegEx*? new_compile(Allocator allocx, String expr, bool ignore_case = false)
     
     int err = slre::compile((char*)&reg.expr[0], (int)reg.expr.len, &reg.info);
     if (err < 0) {
-        afree(reg);
+        allocx.free(reg);
         return err_fault(err)~;
     }
     
@@ -96,8 +97,8 @@ fn RegEx*? new_compile(Allocator allocx, String expr, bool ignore_case = false)
 
 fn void RegEx.free(&self)
 {
-    self.expr.free(self.allocx);
-    afree(self);
+    self.expr.free(allocx);
+    allocx.free(self);
 }
 
 fn int? RegEx.match(&self, String str, int* start = null, int* len = null)

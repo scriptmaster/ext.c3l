@@ -22,7 +22,7 @@ macro mem_alloc($Type) @builtin
 {
     if (allocx == null) allocx = mem;
     
-    void*? p = allocator::alloc_try(allocx, $Type);
+    void*? p = allocx.acquire($Type.sizeof, ZERO, 0);
     if (catch err = p) {
         @assert(false, "memory allocation error");
         unreachable("mem_alloc failed");
@@ -35,7 +35,7 @@ macro mem_malloc(n) @builtin
 {
     if (allocx == null) allocx = mem;
   
-    void*? p = allocator::malloc_try(allocx, n);
+    void*? p = allocx.acquire(n, ZERO, 0);
     if (catch err = p) {
         @assert(false, "memory allocation error");
         unreachable("mem_malloc failed");
@@ -48,12 +48,12 @@ macro mem_alloc_array($Type, n) @builtin
 {
     if (allocx == null) allocx = mem;
   
-    $Type[]? p = allocator::alloc_array_try(allocx, $Type, n);
+    void* p = allocx.acquire($Type.sizeof*n, ZERO, 0);
     if (catch err = p) {
         @assert(false, "memory allocation error");
         unreachable("mem_alloc_array failed");
     } else {
-        return ($Type[])p;
+        return (($Type*)p)[0:n];
     }
 }
 
@@ -61,7 +61,7 @@ macro mem_copy(char[] str) @builtin
 {
     if (allocx == null) allocx = mem;
   
-    char*? p = allocator::malloc_try(allocx, str.len);
+    char*? p = allocx.acquire(str.len, ZERO, 0);
     if (catch err = p) {
         @assert(false, "memory allocation error");
         unreachable("mem_copy failed");
@@ -81,22 +81,25 @@ macro mem_free(x) @builtin
     if (allocx == null) allocx = mem;
     
     if ((void*)x == null) { warn("mem_free(null)"); return; }
-    allocator::free(allocx, x);
+    allocx.release(x, false);
 }
 
 macro temp_alloc($Type) @builtin
 {
-    return allocator::alloc(tmem, $Type);
+    return ($Type*) temp_malloc($Type.sizeof);
 }
 
 macro temp_malloc(n) @builtin
 {
-    return allocator::malloc(tmem, n);
+    void*? p = tmem.acquire(n, ZERO, 0);
+    if (catch p) return null;
+    return p;
 }
 
 macro temp_alloc_array($Type, n) @builtin
 {
-    return allocator::alloc_array(tmem, $Type, n);
+    void* p = temp_malloc($Type.sizeof * n);
+    return (($Type*)p)[0:n];
 }
 
 macro temp_free(x) @builtin
@@ -109,9 +112,9 @@ macro temp_free(x) @builtin
 
 alias LocalAllocator = Allocator;
 
-fn void* LocalAllocator.malloc(&self, usz size) @inline
+fn char* LocalAllocator.malloc(&self, usz size) @inline
 {
-    void*? a = self.acquire(size, ZERO, 0);
+    char*? a = self.acquire(size, ZERO, 0);
     if (catch a) return null;
     return a;
 }
@@ -121,9 +124,10 @@ macro LocalAllocator.alloc(&self, $Type)
     return ($Type*) self.malloc($Type.sizeof);
 }
 
-macro LocalAllocator.alloc_array(&self, $Type, $n)
+macro LocalAllocator.alloc_array(&self, $Type, n)
 {
-    return ($Type[]) self.malloc($Type.sizeof*$n);
+    void* p = self.malloc($Type.sizeof*n);
+    return (($Type*)p)[0:n];
 }
 
 fn void LocalAllocator.free(&self, void* a)

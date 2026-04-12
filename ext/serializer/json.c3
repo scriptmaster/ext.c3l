@@ -128,10 +128,12 @@ fn JsonValue? decode(Allocator allocx, String text, bool allow_comma=true, bool 
     return obj;
 }
 
-macro char* find_in_8_char(char* buf, char c) @private
+const CHUNK = 16;
+
+macro char* find_in_chunk1(char* buf, char c) @private
 {
-    char[<8>] vector_c = c;
-    bool[<8>] matches = (*(char[<8>]*)buf).comp_eq(vector_c);
+    char[<CHUNK>] vector_c = c;
+    bool[<CHUNK>] matches = (*(char[<CHUNK>]*)buf).comp_eq(vector_c);
     uint mask = matches.mask_to_int();
     return mask != 0 ? buf + mask.ctz() : null;
 }
@@ -154,10 +156,10 @@ macro char* find_in_8_char(char* buf, char c) @private
 
 fn char*? find_char(char* buf, char* end, char c) @inline @private
 {
-    while (end - buf >= 8) {
-        char* out = find_in_8_char(buf, c);
+    while (end - buf >= CHUNK) {
+        char* out = find_in_chunk1(buf, c);
         if (out == null) {
-            buf += 8;
+            buf += CHUNK;
             continue;
         }
         return out;

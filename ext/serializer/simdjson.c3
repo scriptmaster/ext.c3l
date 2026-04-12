@@ -112,7 +112,7 @@ fn ushort Scanner.comment_mask(&self, Chunk* v, ushort str_mask)
     {
         if (nl != 0)
         {
-            uint nl_bit = (uint)$$ctz(nl);
+            uint nl_bit = (uint)nl.ctz();
             self.in_comment = false;
             return range_mask(0, nl_bit);
         }
@@ -124,12 +124,12 @@ fn ushort Scanner.comment_mask(&self, Chunk* v, ushort str_mask)
     ushort dbl = sl & (ushort)(sl >> 1);
     if (dbl == 0) return 0;
 
-    uint cs = (uint)$$ctz(dbl);
+    uint cs = (uint)dbl.ctz();
 
     ushort nl_after = nl & (ushort)(~((1u << cs) - 1u));
     if (nl_after != 0)
     {
-        uint nl_bit = (uint)$$ctz(nl_after);
+        uint nl_bit = (uint)nl_after.ctz();
         return range_mask(cs, nl_bit);
     }
 
@@ -209,7 +209,7 @@ fn usz[] scan(Allocator alloc, char[] input, bool allow_comma=true, bool allow_c
         ushort m = s_mask;
         while (m != 0)
         {
-            uint bit = (uint)$$ctz(m);
+            uint bit = (uint)m.ctz();
             indices.push(base + bit);
             m &= m - 1;
         }
