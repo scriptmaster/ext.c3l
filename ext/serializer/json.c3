@@ -454,7 +454,7 @@ fn JsonValue? JsonDecoder.parse_value(&self)
             return self.parse_number()!;
 
         default:
-
+            warn_linepos(self.begin, self.pos);
             return JSON_EXPECTED_VALUE~;
     }
 }
