@@ -95,10 +95,23 @@ struct OBuf {
 
 fn void OBuf.put(&self, String str) 
 {
-    if (self.size <= self.cursor+str.len) return;
+    if (self.size <= self.cursor+str.len) {
+        warn("buf size overflow");
+        return;
+    }
     
     self.out[self.cursor:str.len] = str[0::str.len];
     self.cursor += str.len;
+}
+
+fn void OBuf.putc(&self, char c) 
+{
+    if (self.size <= self.cursor+1) {
+        warn("buf size overflow");
+        return;
+    }
+    
+    self.out[self.cursor++] = c;
 }
 
 // Build the HTTP/1.1 Upgrade request line + headers into out[].

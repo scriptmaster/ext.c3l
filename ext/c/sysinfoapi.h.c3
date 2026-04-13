@@ -233,6 +233,7 @@ enum ComputerNameFormat : int {
 }
 
 // enum LogicalProcessorRelationship: const ushort 
+alias LogicalProcessorRelationship = ushort;
 const ushort PROCESSOR_CORE = 0;
 const ushort NUMA_NODE = 1;
 const ushort CACHE = 2;

@@ -389,17 +389,29 @@ void trans.close();
 ### Examples
 
 * [../../examples/asyncio/sample1.c3](../../examples/asyncio/sample1.c3)
+  * asyncio::run(), asyncio::gather(), asyncio::get_running_loop(),  loop.create_task(), asyncio::sleep_ms()
 * [../../examples/asyncio/sample2.c3](../../examples/asyncio/sample2.c3)
+  * loop.create_future(), future.add_done_callback(), future.wait_for()
 * [../../examples/asyncio/sample3.c3](../../examples/asyncio/sample3.c3)
+  * loop.time(), loop.time(), loop.call_soon(), loop.call_later(), loop.call_at(), asyncio::sleep(), loop.run_forever(), loop.is_closed(), loop.close()
 * [../../examples/asyncio/sample4.c3](../../examples/asyncio/sample4.c3)
+  * future.set_result(), CallbackHandle.cancel()
 * [../../examples/asyncio/sample5.c3](../../examples/asyncio/sample5.c3)
+  * loop.call_soon_threadsafe()
 * [../../examples/asyncio/sample6.c3](../../examples/asyncio/sample6.c3)
+  * asyncio::sleep_zero(), lock.aquire(), lock.release(), queue.put(), queue.get() 
 * [../../examples/asyncio/sample7.c3](../../examples/asyncio/sample7.c3)
+  * semaphore.acquire(), semaphore.release(), event.wait(), event.set(), channel.send(), channel.recv()
 * [../../examples/asyncio/sample8.c3](../../examples/asyncio/sample8.c3)
+  * task.set_exception(), TaskGroup.wait()
 * [../../examples/asyncio/sample9.c3](../../examples/asyncio/sample9.c3)
+  * EchoServer(Protocol), EchoClient(Protocol)
 * [../../examples/asyncio/sample10.c3](../../examples/asyncio/sample10.c3)
+  * asyncio::start_server(), server.serve_forever(), asyncio::open_connection(), stream.readline(), stream.write()
 * [../../examples/asyncio/sample11.c3](../../examples/asyncio/sample11.c3)
+  * UdpEchoServer(DatagramProtocol), UdpEchoClient(DatagramProtocol)
 * [../../examples/asyncio/sample12.c3](../../examples/asyncio/sample12.c3)
+  * asyncio::bind_endpoint(), datagram.recvfrom(), datagram.sendto(), loop.sock_sendto(), loop.sock_recvfrom()
 
 
 This is a part of extended C3 library.

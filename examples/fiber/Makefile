@@ -6,6 +6,7 @@ build:
 	@make fiber_test
 
 clean:
+	-@rm -f *.exe *.pdb
 	-@rm -f fiber_test
 
 C3C = c3c compile
@@ -15,9 +16,12 @@ FIBER = $(EXT)/fiber/*.c3
 MEM = $(EXT)/mem/*.c3 $(EXT)/debug/*.c3
 LIBS = $(FIBER) $(MEM) $(LIBC)
 
+TARGET ?= linux
+ifeq ($(TARGET),win)
+	T = --target windows-x64
+else
+	T =
+endif
+
 fiber_test: fiber_test.c3
-	$(C3C) $^ $(LIBS) -o $@
-
-fiber_test.exe: fiber_test.c3
-	$(C3C) $^ $(LIBS) -o $@ --target windows-x64 --winsdk ~/p/msvc_sdk/x64
-
+	$(C3C) $^ $(LIBS) -o $@ $(T)

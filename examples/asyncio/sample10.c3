@@ -18,6 +18,17 @@ fn String bcat(char[] buf, String... args) @inline
     return (String)buf[0..n-1];
 }
 
+fn int strncasecmp(char* a, char* b, usz n)
+{
+    $if $defined(env::WIN32):
+        return string::_strnicmp(a, b, n);
+    $endif
+    
+    $if !$defined(env::WIN32):
+        return string::strncasecmp(a, b, n);
+    $endif
+}
+
 fn void echo_handler(asyncio::Stream* stream)
 {
     io::printfn("[server] client connected, send welcome");
@@ -39,13 +50,13 @@ fn void echo_handler(asyncio::Stream* stream)
         }
         io::printfn("[server] received: %s", (String)cmd[0:n]);
 
-        if (string::strncasecmp(&cmd[0], "QUIT", 4) == 0) {
+        if (strncasecmp(&cmd[0], "QUIT", 4) == 0) {
             String resp = "+OK Server closing connection.\n";
             stream.write(resp);
             break;
         }
         
-        if (string::strncasecmp(&cmd[0], "STOP", 4) == 0) {
+        if (strncasecmp(&cmd[0], "STOP", 4) == 0) {
             String resp = "+OK Server stopping.\n";
             stream.write(resp);
             

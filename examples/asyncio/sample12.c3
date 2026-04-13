@@ -18,6 +18,17 @@ fn String bcat(char[] buf, String... args) @inline
     return (String)buf[0..n-1];
 }
 
+fn int strncasecmp(char* a, char* b, usz n)
+{
+    $if $defined(env::WIN32):
+        return string::_strnicmp(a, b, n);
+    $endif
+    
+    $if !$defined(env::WIN32):
+        return string::strncasecmp(a, b, n);
+    $endif
+}
+
 fn void server_coro()
 {
     EventLoop* loop = asyncio::get_running_loop();
@@ -43,7 +54,7 @@ fn void server_coro()
         }
         io::printfn("[server] recvd:%s, from:%s:%d", (String)buf[0:n], (String)ip[0:iplen], port);
 
-        if (string::strncasecmp(&buf[0], "STOP", 4) == 0) {
+        if (strncasecmp(&buf[0], "STOP", 4) == 0) {
             String resp = bcat(&respbuf, "+OK shutdown");
             io::printfn("[server] send:%s, to:%s:%d", resp, (String)ip[0:iplen], port);
     

@@ -17,6 +17,7 @@ build:
 	make sample12
 
 clean:
+	-@rm -f *.exe *.pdb
 	-@rm -f sample1
 	-@rm -f sample2
 	-@rm -f sample3
@@ -38,32 +39,37 @@ FIBER = $(EXT)/fiber/*.c3
 ASYNCIO = $(EXT)/asyncio/*.c3
 MEM = $(EXT)/mem/*.c3 $(EXT)/debug/*.c3
 
-T = --target windows-x64 --winsdk ~/p/msvc_sdk/x64
-T = 
+TARGET ?= linux
+ifeq ($(TARGET),win)
+	T = --target windows-x64
+else
+	T =
+endif
+
 SAN = --sanitize=address
 SAN = 
 LIBS = $(LIBC) $(MEM) $(FIBER) $(ASYNCIO)
 
 sample1: sample1.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample2: sample2.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample3: sample3.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample4: sample4.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample5: sample5.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample6: sample6.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample7: sample7.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 sample8: sample8.c3
 	$(C3C) $^ $(LIBS) -o $@ $(T)

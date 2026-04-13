@@ -277,9 +277,9 @@ fn void Parser.close_scope(&self, TapeType close_type)
     self.emit(close_type, open_tape, 0);       // END.offset -> START tape index
 }
 
-fn bool Parser.at_end(&self) @inline @private => self.idx >= self.indices.len;
+fn bool Parser.at_end(&self) @inline => self.idx >= self.indices.len;
 
-fn char Parser.peek(&self) @inline @private
+fn char Parser.peek(&self) @inline
 {
     return self.at_end() ? '\0' : self.input[self.indices[self.idx]];
 }

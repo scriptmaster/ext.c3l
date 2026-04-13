@@ -1,6 +1,6 @@
 // fiber.asm.c3
 
-module ext::thread::fiber @if(env::X86_64 || env::AARCH64);
+module ext::thread::fiber @if(!env::WIN32 && (env::X86_64 || env::AARCH64));
 
 import c::unistd; // sysconf
 import c::sys::mman; // mprotect

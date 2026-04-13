@@ -55,7 +55,7 @@ fn bool Stream.at_eof(&self) @inline
     return self.eof && self.rbuf_start == self.rbuf_end;
 }
 
-fn bool Stream.fill(&self) @inline @private
+fn bool Stream.fill(&self) @inline
 {
     if (self.eof) return false;
     
@@ -83,7 +83,7 @@ fn bool Stream.fill(&self) @inline @private
     return false;
 }
 
-fn usz Stream.available(&self) @inline @private
+fn usz Stream.available(&self) @inline
 {
     return self.rbuf_end - self.rbuf_start;
 }

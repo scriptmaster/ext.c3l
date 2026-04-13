@@ -1,6 +1,6 @@
 // net.win32.c3
 
-module ext::asyncio @if(env::WIN32);
+module ext::asyncio @if(env::WIN32) @link("ws2_32");
 
 import std::io;
 import c::stdio;
@@ -101,9 +101,9 @@ fn int? _resolve_and_connect_win(char* host, ushort port)
     hints.ai_socktype = winsock2::SOCK_STREAM;
 
     ws2tcpip::AddrInfo* res = null;
-    if (ws2tcpip::getAddrInfo(host, &port_str[0], &hints, &res) != 0) { return IO_ERROR~;
+    if (ws2tcpip::getaddrinfo(host, &port_str[0], &hints, &res) != 0) { return IO_ERROR~;
     }
-    defer ws2tcpip::freeAddrInfo(res);
+    defer ws2tcpip::freeaddrinfo(res);
 
     int result = -1;
     ws2tcpip::AddrInfo* rp = res;
@@ -227,10 +227,10 @@ fn int? _resolve_and_datagram(char* host, ushort port)
 
     ws2tcpip::AddrInfo* res = null;
     char* bind_host = (host != null && host[0] != 0) ? host : null;
-    if (ws2tcpip::getAddrInfo(bind_host, &port_str[0], &hints, &res) != 0) {
+    if (ws2tcpip::getaddrinfo(bind_host, &port_str[0], &hints, &res) != 0) {
         return IO_ERROR~;
     }
-    defer ws2tcpip::freeAddrInfo(res);
+    defer ws2tcpip::freeaddrinfo(res);
 
     int result = -1;
     ws2tcpip::AddrInfo* rp = res;
@@ -275,10 +275,10 @@ fn int? _resolve_and_bind_win(char* host, ushort port)
 
     ws2tcpip::AddrInfo* res = null;
     char* bind_host = (host != null && host[0] != 0) ? host : null;
-    if (ws2tcpip::getAddrInfo(bind_host, &port_str[0], &hints, &res) != 0) {
+    if (ws2tcpip::getaddrinfo(bind_host, &port_str[0], &hints, &res) != 0) {
         return IO_ERROR~;
     }
-    defer ws2tcpip::freeAddrInfo(res);
+    defer ws2tcpip::freeaddrinfo(res);
 
     int result = -1;
     ws2tcpip::AddrInfo* rp = res;

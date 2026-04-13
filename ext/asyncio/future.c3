@@ -451,7 +451,7 @@ fn void _task_wakeup(Future* fut, CallbackCtx ctx)
 }
 
 // Advance one step of a Task's execution
-fn void Task.step(&self) @private
+fn void Task.step(&self)
 {
     if (self.running_step) {
         return;

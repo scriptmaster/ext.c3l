@@ -1,9 +1,9 @@
 // io.win32.c3
 
-module ext::asyncio @if(env::WIN32);
+module ext::asyncio @if(env::WIN32) @link("ws2_32");
 
 import std::io;
-
+import std::collections::map;
 import c::stdio;
 import c::stdlib;
 import c::string;
@@ -242,8 +242,9 @@ fn void register_read(int fd, Future* future, ulong offset) @private
             _op_free(op);
         }
     } else {
-        op.ov.offset = curPos[h];
-        op.ov.offsetHigh = curPos[h] >> 32;
+        ulong pos = io_tell((int)(iptr)h);
+        op.ov.offset = (uint)pos;
+        op.ov.offsetHigh = (uint)(pos >> 32);
         winbase::Bool rc = winbase::readFile(h, &op.buf[0], IOCP_BUF_SIZE, null, &op.ov);
         if (rc) return;
         if (winbase::getLastError() != winbase::ERROR_IO_PENDING) {
@@ -258,7 +259,7 @@ fn void register_read(int fd, Future* future, ulong offset) @private
             // If you started at 'ol.Offset' and wrote 'bytesTransferred',
             // your new "Tell" position is:
             ulong newPos = ((ulong)op.ov.offsetHigh << 32 | op.ov.offset) + bytesTransferred;
-            curPos[h] = newPos;
+            curPos[(int)(iptr)h] = newPos;
         }
     }
 }
@@ -288,7 +289,7 @@ fn void _start_write(int fd, void* data, usz len, Future* future, ulong offset)
 
     if (!is_sock) {
         op.ov.offset = (winbase::DWord)(offset & 0xFFFFFFFF);
-        op.ov.offset_high = (winbase::DWord)(offset >> 32);
+        op.ov.offsetHigh = (winbase::DWord)(offset >> 32);
     }
     
     usz copy_len = len < IOCP_BUF_SIZE ? len : IOCP_BUF_SIZE;
@@ -313,8 +314,9 @@ fn void _start_write(int fd, void* data, usz len, Future* future, ulong offset)
             _op_free(op);
         }
     } else {
-        op.ov.offset = curPos[h];
-        op.ov.offsetHigh = curPos[h] >> 32;
+        ulong pos = io_tell((int)(iptr)h);
+        op.ov.offset = (uint)pos;
+        op.ov.offsetHigh = (uint)(pos >> 32);
         winbase::Bool rc = winbase::writeFile(h, &op.buf[0], (winbase::DWord)copy_len, null, &op.ov);
         if (rc) return;
         if (winbase::getLastError() != winbase::ERROR_IO_PENDING) {
@@ -329,7 +331,7 @@ fn void _start_write(int fd, void* data, usz len, Future* future, ulong offset)
             // If you started at 'ol.Offset' and wrote 'bytesTransferred',
             // your new "Tell" position is:
             ulong newPos = ((ulong)op.ov.offsetHigh << 32 | op.ov.offset) + bytesTransferred;
-            curPos[h] = newPos;
+            curPos[(int)(iptr)h] = newPos;
         }
     }
 }
@@ -535,12 +537,12 @@ fn usz? async_recvfrom(int fd, void* buf, usz len, char* ip_str, usz* ip_len, us
         ushort family = ((winsock2::SockAddrIn*)&op.from_addr).sin_family;
         if (family == (ushort)winsock2::AF_INET6) {
             winsock2::SockAddrIn6* a6 = (winsock2::SockAddrIn6*)&op.from_addr;
-            ws2tcpip::inetNtop(winsock2::AF_INET6, &a6.sin6_addr, ip_str, 46);
+            ws2tcpip::inet_ntop(winsock2::AF_INET6, &a6.sin6_addr, ip_str, 46);
             *ip_len = (usz)string::strlen(ip_str);
             *port = winsock2::ntohs(a6.sin6_port);
         } else {
             winsock2::SockAddrIn* a4 = (winsock2::SockAddrIn*)&op.from_addr;
-            ws2tcpip::inetNtop(winsock2::AF_INET, &a4.sin_addr, ip_str, 16);
+            ws2tcpip::inet_ntop(winsock2::AF_INET, &a4.sin_addr, ip_str, 16);
             *ip_len = (usz)string::strlen(ip_str);
             *port = winsock2::ntohs(a4.sin_port);
         }
@@ -559,12 +561,12 @@ fn usz? async_sendto(int fd, void* buf, usz len, char* ip_str, ushort port)
     winsock2::SockAddrIn a4 = {};
     winsock2::SockAddrIn6 a6 = {};
 
-    if (ws2tcpip::inetPton(winsock2::AF_INET6, ip_str, &a6.sin6_addr) == 1) {
+    if (ws2tcpip::inet_pton(winsock2::AF_INET6, ip_str, &a6.sin6_addr) == 1) {
         a6.sin6_family = (ushort)winsock2::AF_INET6;
         a6.sin6_port = winsock2::htons(port);
         dest_addr = (winsock2::SockAddr*)&a6;
         dest_len = $sizeof(a6);
-    } else if (ws2tcpip::inetPton(winsock2::AF_INET, ip_str, &a4.sin_addr) == 1) {
+    } else if (ws2tcpip::inet_pton(winsock2::AF_INET, ip_str, &a4.sin_addr) == 1) {
         a4.sin_family = (ushort)winsock2::AF_INET;
         a4.sin_port = winsock2::htons(port);
         dest_addr = (winsock2::SockAddr*)&a4;
@@ -628,7 +630,7 @@ fn usz? async_sendto(int fd, void* buf, usz len, char* ip_str, ushort port)
 fn Char16*? utf8to16(String path, Char16[] wpath) @private
 {
     if (path.len == 0) return errno::F_INVAL~;
-    Char16[] p2 = path.to_utf16(_allox)!;
+    Char16[] p2 = path.to_utf16(tmem)!;
     defer free(p2);
     
     if (p2.len >= wpath.len-1) return errno::F_BAD_LENGTH~;
@@ -689,10 +691,10 @@ fn int? open_file(String path, String mode)
     // For append mode, seek to end
     if (mode[0] == 'a') {
         // windows::setFilePointerEx(h, 0, null, windows::FILE_END);
-        winbase::Overlapped ol = {0};
+        winbase::Overlapped ol = {};
         ol.offset = 0xFFFFFFFF;     // Special value for "End of File"
         ol.offsetHigh = 0xFFFFFFFF;
-        ulong file_size;
+        long file_size;
         winbase::getFileSizeEx(h, &file_size);
         curPos[(int)(iptr)h] = file_size;
     }
@@ -746,14 +748,14 @@ fn void close_file(int fd)
 {
     unregister(fd);
 
-    if (_is_socket(fd)) {
-        winsock2::closesocket((winsock2::Socket)fd);
+    if (_is_socket((winbase::Handle)(iptr)fd)) {
+        winsock2::closesocket((winsock2::Socket)(iptr)fd);
     } else {
         winbase::closeHandle((winbase::Handle)(iptr)fd);
     }
 }
 
-tlocal Hashmap{int,ulong} curPos; // remembers current position after every file operation
+tlocal HashMap{int,ulong} curPos; // remembers current position after every file operation
 
 fn long io_seek(int fd, long pos, int whence)
 {
@@ -762,35 +764,39 @@ fn long io_seek(int fd, long pos, int whence)
     } else if (whence == 1) {
         curPos[fd] += pos;
     } else {
-        ulong size;
-        winbase::getFileSizeEx((winbase::Handle)fd, &size);
+        long size;
+        winbase::getFileSizeEx((winbase::Handle)(iptr)fd, &size);
         curPos[fd] = size+pos;
     }
-    return (long)curPos[fd];
+    return (long)io_tell(fd);
 }
 
 fn ulong io_tell(int fd)
 {
-    return curPos[fd];
+    ulong? pos = curPos[fd];
+    if (catch err = pos) {
+        return 0;
+    }
+    return pos;;
 }
 
 fn int io_truncate(int fd, long pos)
 {
-    winbase::setFilePointerEx((winbase::Handle)fd, pos, null, winbase::FILE_BEGIN);
-    winbase::setEndOfFile((winbase::Handle)fd);
+    winbase::setFilePointerEx((winbase::Handle)(iptr)fd, pos, null, winbase::FILE_BEGIN);
+    winbase::setEndOfFile((winbase::Handle)(iptr)fd);
     return 0;
 }
 
 fn void io_flush(int fd)
 {
-    winbase::flushFileBuffers((winbase::Handle) fd);
+    winbase::flushFileBuffers((winbase::Handle) (iptr)fd);
 }
 
 fn ulong io_size(int fd)
 {
-    ulong size;
-    winbase::getFileSizeEx((winbase::Handle) fd, &size);
-    return size;
+    long size;
+    winbase::getFileSizeEx((winbase::Handle) (iptr)fd, &size);
+    return (ulong) size;
 }
 
 fn int io_stdin() 

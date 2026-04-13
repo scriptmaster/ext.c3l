@@ -4,15 +4,18 @@ all:
 	@echo "make pull"
 	@echo "make push"
 
+build-win:
+	make build-all TARGET=win
+
 build-all:
-	@cd ./examples/regex && make build
-	@cd ./examples/net && make build
-	@cd ./examples/hash && make build
-	@cd ./examples/io && make build
-	@cd ./examples/fiber && make build
-	@cd ./examples/asyncio && make build
-	@cd ./examples/aiofiles && make build
-	@cd ./examples/serializer && make build
+	@cd ./examples/regex && make build TARGET=$(TARGET)
+	@cd ./examples/net && make build TARGET=$(TARGET)
+	@cd ./examples/hash && make build TARGET=$(TARGET)
+	@cd ./examples/io && make build TARGET=$(TARGET)
+	@cd ./examples/fiber && make build TARGET=$(TARGET)
+	@cd ./examples/asyncio && make build TARGET=$(TARGET)
+	@cd ./examples/aiofiles && make build TARGET=$(TARGET)
+	@cd ./examples/serializer && make build TARGET=$(TARGET)
 
 clean:
 	@rm -rf ./build/*

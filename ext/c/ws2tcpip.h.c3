@@ -321,12 +321,12 @@ const int ADDR_ANY = 0;
 const uint SCOPEID_UNSPECIFIED = 0;
 
 // Address resolution functions
-extern fn int getAddrInfo(
+extern fn int getaddrinfo(
     char* node_name,
     char* service_name,
     AddrInfo* hints,
     AddrInfo** result
-) @cname("GetAddrInfo");
+) @cname("getaddrinfo");
 
 extern fn int getAddrInfoW(
     short* node_name,
@@ -391,9 +391,9 @@ extern fn int getAddrInfoExOverflowSafeW(
     Handle* name_handle
 ) @cname("GetAddrInfoExOverflowSafeW");
 
-extern fn void freeAddrInfo(
+extern fn void freeaddrinfo(
     AddrInfo* ai
-) @cname("FreeAddrInfo");
+) @cname("freeaddrinfo");
 
 extern fn void freeAddrInfoW(
     AddrInfoW* ai
