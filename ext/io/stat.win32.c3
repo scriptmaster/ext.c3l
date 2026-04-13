@@ -5,7 +5,9 @@ module ext::io::stat @if(env::WIN32);
 import c::errno;
 import c::ioapiset;
 import c::windows;
+import c::winbase;
 import c::fileapi;
+import c::sys::stat;
 
 fn Char16*? utf8to16(String path, Char16[] wpath) @private
 {
@@ -32,7 +34,7 @@ fn bool exists(String path)
     Char16*? name = utf8to16(path, &wpath);
     if (catch err = name) return false;
  
-    windows::Dword attrs = windows::getFileAttributesW(name);
+    winbase::DWord attrs = winbase::getFileAttributesW(name);
     return attrs != windows::INVALID_FILE_ATTRIBUTES;
 }
 
@@ -41,7 +43,7 @@ fn usz? size(String path)
     Char16[260] wpath;
     Char16* name = utf8to16(path, &wpath)!;
     
-    Win32FileAttributeData file_info;
+    fileapi::Win32FileAttributeData file_info;
     if (!fileapi::getFileAttributesExW(name, 0, &file_info)) {
         return errno::get_fault()~;
     }
@@ -55,7 +57,7 @@ fn long? last_modified(String path)
     Char16[260] wpath;
     Char16* name = utf8to16(path, &wpath)!;
     
-    Win32FileAttributeData file_info;
+    fileapi::Win32FileAttributeData file_info;
     if (!fileapi::getFileAttributesExW(name, 0, &file_info)) {
         return errno::get_fault()~;
     }
@@ -125,7 +127,7 @@ fn usz? read_link(String path, char[] output)
         return errno::get_fault()~;
     }
     
-    ReparseDataBuffer* reparse = (ReparseDataBuffer*)&buffer;
+    ioapiset::ReparseDataBuffer* reparse = (ioapiset::ReparseDataBuffer*)&buffer;
     
     if ((reparse.reparseTag != ioapiset::IO_REPARSE_TAG_SYMLINK)) {
         return errno::GENERAL_ERR~;
@@ -242,7 +244,7 @@ fn void? link(String old, String new) @maydiscard
     Char16[260] wpath2;
     Char16* wnew = utf8to16(new, &wpath2)!;
 
-    windows::Bool r = windows::CreateHardLinkW(wnew, wold, null);
+    windows::Bool r = winbase::createHardLinkW(wnew, wold, null);
     if (! r) {
         return errno::get_fault()~;
     }
@@ -259,7 +261,7 @@ fn void? symlink(String old, String new) @maydiscard
     int flag = 0; // file 
     if (is_dir(old)) flag = 1;
     
-    windows::Bool r = windows::CreateSymbolicLinkW(wnew, wold, 1);
+    windows::Bool r = winbase::createSymbolicLinkW(wnew, wold, 1);
     if (! r) {
         return errno::get_fault()~;
     }

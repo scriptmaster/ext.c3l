@@ -10,6 +10,11 @@ import c::windows;
 import std::io;
 import ext::io::stat;
 import std::collections::list;
+import c::sys::stat;
+import c::string;
+import ext::mem;
+
+tlocal LocalAllocator localmem = {};
 
 const int MAX_PATH = 1024;
 
@@ -242,11 +247,14 @@ struct DirIterator {
 struct DirEntry {
     String path;
     String name;
+    Allocator allocx;
 }
 
 
 fn DirIterator? scan_dir(Allocator allocx, String path)
 {
+    localmem = allocx;
+    
     if (path.len+2 >= MAX_PATH) return errno::F_BAD_LENGTH~;
 
     if (path[path.len-1] == '\\') {
@@ -265,15 +273,21 @@ fn DirIterator? scan_dir(Allocator allocx, String path)
     
     Char16[MAX_PATH + 2] p2;
     Char16* spath = utf8to16((String)p1[0..pos], &p2)!;
-
- 
-    return { .handle = 0, .spath = spath_copy, .path = path.copy(allocx), .allocx = allocx };
+    usz len = 0;
+    for (usz i = 0; i < MAX_PATH; i++) {
+        if (p2[i] == 0) {
+            len = i; break;
+        }
+    }
+    Char16* spath_copy = (Char16*)localmem.malloc(2*len+1);
+    mem::copy(spath_copy, spath, len*2+2);
+    return { .handle = (windows::Handle)0, .spath = spath_copy, .path = path.copy(allocx), .allocx = allocx };
 }
 
 fn void DirIterator.close(&self)
 {
     self.path.free(self.allocx);
-    allocator::free(self.allocx, self.spath);
+    localmem.free(self.spath);
     windows::findClose(self.handle);
 }
 
@@ -282,7 +296,7 @@ fn DirEntry? DirIterator.next(&self)
     while (true) {
         windows::Win32FindDataW find_data;
 
-        if (self.handle == 0) {
+        if (self.handle == (windows::Handle)(iptr)0) {
             windows::Handle handle = windows::findFirstFileW(self.spath, &find_data);
             
             if (handle == windows::INVALID_HANDLE_VALUE) {
@@ -314,6 +328,7 @@ fn DirEntry? DirIterator.next(&self)
         return {
             .path = self.path,
             .name = name_str.copy(self.allocx),
+            .allocx = self.allocx,
         };
     }
     return NO_MORE_ENTRY~;

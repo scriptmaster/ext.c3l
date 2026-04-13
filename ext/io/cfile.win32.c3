@@ -4,8 +4,13 @@
 module ext::io::cfile @if(env::WIN32);
 
 import c::windows;
+import c::winbase;
 import c::errno;
 import ext::io::stat;
+import c::sys::stat;
+import ext::mem;
+
+tlocal LocalAllocator localmem = {};
 
 struct File
 {
@@ -65,7 +70,7 @@ fn File? open(String fname, String mode)
     winbase::DWord share = winbase::FILE_SHARE_READ;
    
     File f;
-    f.fp = windows::createFileW(name, access, share, null, disposition, flags, null);
+    f.fp = windows::createFileW(name, access, share, null, disposition, 0, null);
     if (f.fp == windows::INVALID_HANDLE_VALUE) return errno::get_fault()~;
     
     // For append mode, seek to end
@@ -185,9 +190,11 @@ fn bool File.eof(&self)
 
 fn char[]? load(Allocator allocx, String file)
 {
+    localmem = allocx;
+    
     long n = size(file)!;
     
-    char[] buf = allocator::new_array(allocx, char, n);
+    char[] buf = localmem.alloc_array(char, n);
     defer (catch err) { free(buf); }
     
     File fp = open(file, "r")!;
