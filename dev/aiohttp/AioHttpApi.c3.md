@@ -10,7 +10,7 @@ Two modules: client(`ext::aiohttp`) and server(`ext::aiohttp::web`).
 | Module | File | Description |
 |------|------|------|
 | `ext::aiohttp` | `aiohttp.types.c3` | Shared Types: Url, Headers, Cookie, ClientTimeout, TlsConfig, BasicAuth, WsMessage, FormData |
-| `ext::aiohttp` | `aiohttp.c3` | HTTP Client: ClientSession, TcpConnector, ClientResponse, ClientWs |
+| `ext::aiohttp` | `aiohttp.client.c3` | HTTP Client: ClientSession, TcpConnector, ClientResponse, ClientWs |
 | `ext::aiohttp::web` | `aiohttp.web.c3` | HTTP Server: Application, Router, Request, Response, StreamResponse, FileResponse, WebSocketResponse, AppRunner, TcpSite |
 
 ---
@@ -200,7 +200,7 @@ fn void FormData.add_str(&self, String name, String value);
 
 ---
 
-## HTTP Client (`aiohttp.c3`)
+## HTTP Client (`aiohttp.client.c3`)
 
 ```c3
 module ext::aiohttp;
@@ -795,7 +795,7 @@ fn void main() {
 | File | Module | Description |
 |------|------|------|
 | `aiohttp.types.c3` | `ext::aiohttp` | Shared Types (Url, Headers, Cookie, CookieJar, ClientTimeout, TlsConfig, BasicAuth, WsMessage, FormData) |
-| `aiohttp.c3`       | `ext::aiohttp` | Client (TcpConnector, ClientSession, ClientResponse, ClientWs) |
+| `aiohttp.client.c3`       | `ext::aiohttp` | Client (TcpConnector, ClientSession, ClientResponse, ClientWs) |
 | `aiohttp.web.c3`   | `ext::aiohttp::web` | Server (Application, Router, Request, Response, StreamResponse, FileResponse, WebSocketResponse, AppRunner, TcpSite) |
 
 Back to [ext.c3l](../../README.md) library.

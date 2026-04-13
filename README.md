@@ -34,18 +34,28 @@ sudo make install
 In your C3 project directory, fetch the library by:
 
 ```bash
+# fetch from the source
 c3l fetch https://github.com/nomota/ext.c3l
+
+# to update to latest version
+c3l update ext.c3l
 ```
 
 This will download the library as a zip-packed file: `lib/ext.c3l`.
 
-And in your `project.json`
+And in your `project.json`, "ext" gets added like this.
 ```json
     "dependancies": [ "ext" ],
 ```
 
 Now it's ready to be used in your project.
 
+You can compile your code like this.
+
+```bash
+# put `--lib ext` to compile command
+c3c compile --lib ext yourcode.c3
+```
 
 ## Available library modules
 
