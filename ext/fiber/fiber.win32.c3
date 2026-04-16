@@ -15,20 +15,37 @@ struct Fiber {
 
 tlocal Fiber* running = null;
 tlocal Fiber primary;
+tlocal bool converted_thread = false;
 
 alias Coroutine = fn void();
 
 fn void thunk(void* coentry) @callconv("stdcall") @private
 {
     ((Coroutine)coentry)();
+    if (running != null && running != &primary && !running.done) {
+        done();
+    }
 }
 
 fn void init(Allocator allocx=mem, bool debug=true) @private
 {
     if (running != null) return;
     primary.wfiber = winbase::convertThreadToFiber(null);
+    @assert(primary.wfiber != null, "fiber::init(): ConvertThreadToFiber failed");
+    converted_thread = true;
     // active_ = winbase::getCurrentFiber();
     running = &primary;
+}
+
+fn void deinit()
+{
+    if (running == null) return;
+    if (converted_thread) {
+        winbase::convertFiberToThread();
+        converted_thread = false;
+    }
+    primary = {};
+    running = null;
 }
 
 fn Fiber* active() 
@@ -42,6 +59,7 @@ fn Fiber* create(uint stack_size, Coroutine coroutine)
     if (running == null) init();
     Fiber* fiber = mem_alloc(Fiber);
     fiber.wfiber = winbase::createFiber(stack_size, &thunk, (void*)coroutine);
+    @assert(fiber.wfiber != null, "fiber::create(): CreateFiber failed");
     fiber.done = false;
     return fiber;
 }
@@ -71,4 +89,3 @@ fn void done()
     running.done = true;
     yield();
 }
-

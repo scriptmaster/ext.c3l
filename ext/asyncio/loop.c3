@@ -690,6 +690,7 @@ fn void EventLoop.close(&self)
     self._flush_deferred_future_frees();
     self._flush_deferred_task_frees();
 
+    fiber::deinit();
     io_destroy();
 }
 

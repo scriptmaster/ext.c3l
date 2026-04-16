@@ -138,3 +138,8 @@ fn void done()
     yield();
 }
 
+fn void deinit()
+{
+    running = null;
+    primary = {};
+}

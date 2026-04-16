@@ -210,3 +210,9 @@ fn void done()
     check_canary(running);
     yield();
 }
+
+fn void deinit()
+{
+    running = null;
+    primary = {};
+}

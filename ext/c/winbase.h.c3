@@ -1006,6 +1006,7 @@ extern fn Bool tlsFree(DWord dw_tls_index) @cname("TlsFree");
 
 // Fiber
 extern fn void* convertThreadToFiber(void* lp_parameter) @cname("ConvertThreadToFiber");
+extern fn Bool convertFiberToThread() @cname("ConvertFiberToThread");
 extern fn void* createFiber(uptr dw_stack_size, LPFiberStartRoutine lp_start_address, void* lp_parameter) @cname("CreateFiber");
 extern fn void deleteFiber(void* lp_fiber) @cname("DeleteFiber");
 extern fn void switchToFiber(void* lp_fiber) @cname("SwitchToFiber");
