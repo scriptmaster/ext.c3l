@@ -23,8 +23,7 @@ fn void thunk(void* coentry) @callconv("stdcall") @private
 {
     ((Coroutine)coentry)();
     // If user coroutine returns without calling done(), finish safely instead of returning from the fiber entrypoint.
-    // Skip primary fiber because done() is only valid for secondary coroutine fibers.
-    if (running != null && running != &primary && !running.done) {
+    if (!running.done) {
         done();
     }
 }
@@ -41,10 +40,7 @@ fn void init(Allocator allocx=mem, bool debug=true) @private
 
 fn void deinit()
 {
-    if (running == null) {
-        converted_thread = false;
-        return;
-    }
+    if (running == null) return;
     if (converted_thread) {
         converted_thread = false;
         @assert(winbase::convertFiberToThread() != 0, "fiber::deinit(): ConvertFiberToThread failed");
