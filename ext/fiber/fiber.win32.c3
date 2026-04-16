@@ -41,7 +41,10 @@ fn void init(Allocator allocx=mem, bool debug=true) @private
 
 fn void deinit()
 {
-    if (running == null) return;
+    if (running == null) {
+        converted_thread = false;
+        return;
+    }
     if (converted_thread) {
         converted_thread = false;
         @assert(winbase::convertFiberToThread() != 0, "fiber::deinit(): ConvertFiberToThread failed");
