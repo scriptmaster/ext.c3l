@@ -140,6 +140,6 @@ fn void done()
 
 fn void deinit()
 {
-    running = null;
     primary = {};
+    running = null;
 }

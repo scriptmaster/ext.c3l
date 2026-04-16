@@ -22,6 +22,7 @@ alias Coroutine = fn void();
 fn void thunk(void* coentry) @callconv("stdcall") @private
 {
     ((Coroutine)coentry)();
+    // If user coroutine returns without calling done(), finish safely instead of returning from the fiber entrypoint.
     if (running != null && running != &primary && !running.done) {
         done();
     }
@@ -41,7 +42,7 @@ fn void deinit()
 {
     if (running == null) return;
     if (converted_thread) {
-        winbase::convertFiberToThread();
+        @assert(winbase::convertFiberToThread() != 0, "fiber::deinit(): ConvertFiberToThread failed");
         converted_thread = false;
     }
     primary = {};
