@@ -4,6 +4,7 @@ module ext::thread::fiber @if(env::WIN32);
 
 import c::winbase;
 import ext::mem;
+import ext::debug;
 
 alias FiberProc = fn void(void* param);
 alias WinFiber = void*;
