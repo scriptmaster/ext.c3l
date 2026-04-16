@@ -16,7 +16,6 @@ struct Fiber {
 
 tlocal Fiber* running = null;
 tlocal Fiber primary;
-tlocal bool converted_thread = false;
 
 alias Coroutine = fn void();
 
@@ -31,18 +30,12 @@ fn void init(Allocator allocx=mem, bool debug=true) @private
     if (running != null) return;
     primary.wfiber = winbase::convertThreadToFiber(null);
     @assert(primary.wfiber != null, "fiber::init(): ConvertThreadToFiber failed");
-    converted_thread = true;
-    // active_ = winbase::getCurrentFiber();
     running = &primary;
 }
 
 fn void deinit()
 {
     if (running == null) return;
-    if (converted_thread) {
-        @assert(winbase::convertFiberToThread() != 0, "fiber::deinit(): ConvertFiberToThread failed");
-        converted_thread = false;
-    }
     primary = {};
     running = null;
 }
