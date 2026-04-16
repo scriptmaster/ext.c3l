@@ -213,6 +213,7 @@ fn void done()
 
 fn void deinit()
 {
+    // Called by asyncio loop shutdown to reset thread-local fiber state.
     primary = {};
     running = null;
 }
