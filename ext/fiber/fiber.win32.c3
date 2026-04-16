@@ -42,10 +42,10 @@ fn void deinit()
 {
     if (running == null) return;
     if (converted_thread) {
-        bool ok = winbase::convertFiberToThread() != 0;
-        @assert(ok, "fiber::deinit(): ConvertFiberToThread failed");
-        if (ok) converted_thread = false;
+        @assert(winbase::convertFiberToThread() != 0, "fiber::deinit(): ConvertFiberToThread failed");
+        converted_thread = false;
     }
+    primary.wfiber = null;
     primary = {};
     running = null;
 }
