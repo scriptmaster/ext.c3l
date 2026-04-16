@@ -22,10 +22,7 @@ alias Coroutine = fn void();
 fn void thunk(void* coentry) @callconv("stdcall") @private
 {
     ((Coroutine)coentry)();
-    // If user coroutine returns without calling done(), finish safely instead of returning from the fiber entrypoint.
-    if (running != null && !running.done) {
-        done();
-    }
+    @assert(running != null && running.done, "fiber::thunk(): coroutine returned without calling fiber::done()");
 }
 
 fn void init(Allocator allocx=mem, bool debug=true) @private
@@ -42,7 +39,7 @@ fn void deinit()
 {
     if (running == null) return;
     if (converted_thread) {
-        @assert(winbase::convertFiberToThread() != 0, "fiber::deinit(): ConvertFiberToThread failed");
+        if (winbase::convertFiberToThread() == 0) return;
         converted_thread = false;
     }
     primary = {};
