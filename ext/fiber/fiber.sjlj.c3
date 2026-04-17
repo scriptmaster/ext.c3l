@@ -241,6 +241,8 @@ fn void switch_to(Fiber* fiber) @nosanitize("address")
 
 fn void yield() @nosanitize("address")
 {
+    if (running == &primary) return;
+    check_canary(running);
     if (setjmp::sigsetjmp(&running.context, 1) == 0) {
         running = &primary;
         setjmp::siglongjmp(&running.context, 1);
