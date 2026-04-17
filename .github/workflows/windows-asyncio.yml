@@ -51,307 +51,75 @@ jobs:
       - name: Verify c3c installation
         run: c3c --version
 
-      # ── 3. Compile samples ───────────────────────────────────────────────────
-      # Each sample is a separate step so the matrix of pass/fail is visible.
-      # 'continue-on-error: true' means a bad compile still shows the others.
+      # ── 3. Debug build (samples 1–12) ────────────────────────────────────────
+      # Uses default optimization (O0 / debug). $build::is_debug = true.
+      # Networking samples (9–12) are compiled but not run (live sockets).
 
-      - name: "Compile sample1 (concurrent counters)"
+      - name: "Build all samples (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample1.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample1
+        run: make build TARGET=win
 
-      - name: "Compile sample2 (Future / timeout)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample2.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample2
+      # ── 4. Run samples 1–8 (debug) ───────────────────────────────────────────
+      # Each sample is a separate step so the pass/fail matrix is visible.
 
-      - name: "Compile sample3 (call_soon / call_later / run_forever)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample3.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample3
-
-      - name: "Compile sample4 (CallbackHandle.cancel / create_future lifecycle)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample4.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample4
-
-      - name: "Compile sample5 (call_soon_threadsafe)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample5.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample5
-
-      - name: "Compile sample6 (Lock / Queue)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample6.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample6
-
-      - name: "Compile sample7 (Semaphore / Event / Channel)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample7.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample7
-
-      - name: "Compile sample8 (TaskGroup)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample8.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample8
-
-      # Networking samples – compile only; skip running (they open
-      # live TCP/UDP sockets and would block indefinitely in CI).
-      - name: "Compile sample9 (Protocol / EchoServer)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample9.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample9
-
-      - name: "Compile sample10 (TCP start_server / open_connection)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample10.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample10
-
-      - name: "Compile sample11 (DatagramProtocol / UDP echo)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample11.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample11
-
-      - name: "Compile sample12 (UDP bind / sendto / recvfrom)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile sample12.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample12
-
-      # ── 4. Run samples 1–8 ───────────────────────────────────────────────────
-      # Networking samples (9–12) are excluded: they open live sockets and
-      # would block indefinitely without an actual peer.
-
-      - name: "Run sample1"
+      - name: "Run sample1 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample1.exe
 
-      - name: "Run sample2"
+      - name: "Run sample2 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample2.exe
 
-      - name: "Run sample3"
+      - name: "Run sample3 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample3.exe
 
-      - name: "Run sample4"
+      - name: "Run sample4 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample4.exe
 
-      - name: "Run sample5"
+      - name: "Run sample5 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample5.exe
 
-      - name: "Run sample6"
+      - name: "Run sample6 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample6.exe
 
-      - name: "Run sample7"
+      - name: "Run sample7 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample7.exe
 
-      - name: "Run sample8"
+      - name: "Run sample8 (debug)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
         run: ./sample8.exe
 
-      # ── 5. Compile samples 1–8 (release) ─────────────────────────────────────
-      # Release builds compile with optimisations enabled (-O3 / --rel).
-      # Leak and assertion instrumentation is disabled by $build::is_debug = false.
+      # ── 5. Release build (samples 1–12) ──────────────────────────────────────
+      # Uses -Os optimisation. $build::is_debug = false, so all debug
+      # instrumentation (@debug_leak, @assert) is compiled out entirely.
+      # The same output names are reused; previous debug binaries are overwritten.
 
-      - name: "Compile sample1 (release)"
+      - name: "Build all samples (release)"
         working-directory: examples/asyncio
         continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample1.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample1_rel
-
-      - name: "Compile sample2 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample2.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample2_rel
-
-      - name: "Compile sample3 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample3.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample3_rel
-
-      - name: "Compile sample4 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample4.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample4_rel
-
-      - name: "Compile sample5 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample5.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample5_rel
-
-      - name: "Compile sample6 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample6.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample6_rel
-
-      - name: "Compile sample7 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample7.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample7_rel
-
-      - name: "Compile sample8 (release)"
-        working-directory: examples/asyncio
-        continue-on-error: true
-        run: |
-          EXT=../../ext
-          c3c compile --rel sample8.c3 \
-            $EXT/c/*.c3 \
-            $EXT/mem/*.c3 $EXT/debug/*.c3 \
-            $EXT/fiber/*.c3 \
-            $EXT/asyncio/*.c3 \
-            -o sample8_rel
+        run: make build TARGET=winrel
 
       # ── 6. Run samples 1–8 (release) ─────────────────────────────────────────
 
@@ -359,46 +127,46 @@ jobs:
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample1_rel.exe
+        run: ./sample1.exe
 
       - name: "Run sample2 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample2_rel.exe
+        run: ./sample2.exe
 
       - name: "Run sample3 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample3_rel.exe
+        run: ./sample3.exe
 
       - name: "Run sample4 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample4_rel.exe
+        run: ./sample4.exe
 
       - name: "Run sample5 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample5_rel.exe
+        run: ./sample5.exe
 
       - name: "Run sample6 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample6_rel.exe
+        run: ./sample6.exe
 
       - name: "Run sample7 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample7_rel.exe
+        run: ./sample7.exe
 
       - name: "Run sample8 (release)"
         working-directory: examples/asyncio
         continue-on-error: true
         timeout-minutes: 2
-        run: ./sample8_rel.exe
+        run: ./sample8.exe

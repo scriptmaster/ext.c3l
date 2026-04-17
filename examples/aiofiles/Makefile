@@ -20,12 +20,22 @@ ASYNCIO = $(EXT)/asyncio/*.c3
 AIOFILES = $(EXT)/aiofiles/*.c3
 
 LIBS = $(AIOFILES) $(ASYNCIO) $(FIBER) $(IO) $(MEM) $(LIBC)
+
+TARGET ?= linux
+ifeq ($(TARGET),winrel)
+	T = --target windows-x64 -Os
+else ifeq ($(TARGET),win)
+	T = --target windows-x64
+else
+	T =
+endif
+
 SAN = --sanitize=address
 SAN =
 
 aio_sample: aio_sample.c3
-	$(C3C) $^ $(LIBS) -o $@ $(SAN)
+	$(C3C) $^ $(LIBS) -o $@ $(SAN) $(T)
 
 aio_tempfile: aio_tempfile.c3
-	$(C3C) $^ $(LIBS) -o $@ $(SAN)
+	$(C3C) $^ $(LIBS) -o $@ $(SAN) $(T)
 
