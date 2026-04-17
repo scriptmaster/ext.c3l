@@ -43,7 +43,7 @@ fn void? list_dir(String path, int depth = 0) @maydiscard
 
 fn void main()
 {
-  @assert_leak() {
+  @check_leak() {
     list_dir("..")!!;
   };
 }

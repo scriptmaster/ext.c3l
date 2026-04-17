@@ -199,7 +199,7 @@ fn void main_coro()
 
 fn void main()
 {
-  @assert_leak() {
+  @check_leak() {
     asyncio::run(&main_coro);
   };
 }
