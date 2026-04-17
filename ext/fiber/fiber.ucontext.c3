@@ -36,7 +36,7 @@ fn Fiber* active()
 }
 
 const char[] CANARY = "CANARYCANARYCANARYCANARY"; // 24 bytes
-fn Fiber* create(uint stack_size, Coroutine coroutine) 
+fn Fiber* create(uint stack_size, Coroutine coroutine) @nosanitize("address")
 {
     if (running == null) init();
  
@@ -112,7 +112,7 @@ fn usz stack_used(Fiber* fiber)
     return stack_size-untouched;
 }
     
-fn void switch_to(Fiber* fiber) 
+fn void switch_to(Fiber* fiber) @nosanitize("address")
 {
     if (fiber == null || fiber.done) return;
     if (running != &primary) check_canary(running);
@@ -124,7 +124,7 @@ fn void switch_to(Fiber* fiber)
     }
 }
 
-fn void yield()
+fn void yield() @nosanitize("address")
 {
     if (running == &primary) return;
     check_canary(running);

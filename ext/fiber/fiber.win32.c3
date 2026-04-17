@@ -46,7 +46,7 @@ fn Fiber* active()
     return running;
 }
 
-fn Fiber* create(uint stack_size, Coroutine coroutine) 
+fn Fiber* create(uint stack_size, Coroutine coroutine) @nosanitize("address")
 {
     if (running == null) init();
     Fiber* fiber = mem_alloc(Fiber);
@@ -63,7 +63,7 @@ fn void delete(Fiber* fiber)
     mem_free(fiber);
 }
 
-fn void switch_to(Fiber* fiber) 
+fn void switch_to(Fiber* fiber) @nosanitize("address")
 {
     if (fiber == null || fiber.done) return;
     running = fiber;

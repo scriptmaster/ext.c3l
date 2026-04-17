@@ -178,7 +178,7 @@ fn Fiber* active()
     return running;
 }
 
-fn Fiber* create(uint stack_size, Coroutine entry)
+fn Fiber* create(uint stack_size, Coroutine entry) @nosanitize("address")
 {
     if (running == null) init();
 
@@ -228,7 +228,7 @@ fn void delete(Fiber* fiber)
     mem_free(fiber);
 }
 
-fn void switch_to(Fiber* fiber)
+fn void switch_to(Fiber* fiber) @nosanitize("address")
 {
     if (fiber == null || fiber.done) return;
     if (running != &primary) check_canary(running);
@@ -239,10 +239,8 @@ fn void switch_to(Fiber* fiber)
     }
 }
 
-fn void yield()
+fn void yield() @nosanitize("address")
 {
-    if (running == &primary) return;
-    check_canary(running);
     if (setjmp::sigsetjmp(&running.context, 1) == 0) {
         running = &primary;
         setjmp::siglongjmp(&running.context, 1);

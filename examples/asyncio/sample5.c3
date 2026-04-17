@@ -97,7 +97,7 @@ fn void main_coro()
 
 fn void main()
 {
-  @check_leak() {
+  @debug_leak() {
     EventLoop* loop = asyncio::new_event_loop();
     asyncio::set_event_loop(loop);
 
