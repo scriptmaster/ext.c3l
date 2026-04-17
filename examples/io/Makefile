@@ -20,7 +20,9 @@ MEM = $(EXT)/mem/*.c3 $(EXT)/debug/*.c3
 LIBS = $(LIBC) $(IO) $(LIBC) $(MEM)
 
 TARGET ?= linux
-ifeq ($(TARGET),win)
+ifeq ($(TARGET),winrel)
+	T = --target windows-x64 -Os
+else ifeq ($(TARGET),win)
 	T = --target windows-x64
 else
 	T =

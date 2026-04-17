@@ -19,15 +19,25 @@ MEM = $(EXT)/debug/*.c3 $(EXT)/mem/*.c3
 SERIALIZER = $(EXT)/serializer/*.c3
 
 LIBS = $(SERIALIZER) $(MEM) $(LIBC)
+
+TARGET ?= linux
+ifeq ($(TARGET),winrel)
+	T = --target windows-x64 -Os
+else ifeq ($(TARGET),win)
+	T = --target windows-x64
+else
+	T =
+endif
+
 SAN = --sanitize=address
 #SAN =
 
 http_sample: http_sample.c3
-	$(C3C) $^ $(LIBS) -o $@ $(SAN)
+	$(C3C) $^ $(LIBS) -o $@ $(SAN) $(T)
 
 json_sample: json_sample.c3
-	$(C3C) $^ $(LIBS) -o $@ $(SAN)
+	$(C3C) $^ $(LIBS) -o $@ $(SAN) $(T)
 
 simdjson_sample: simdjson_sample.c3
-	$(C3C) $^ $(LIBS) -o $@ $(SAN)
+	$(C3C) $^ $(LIBS) -o $@ $(SAN) $(T)
 

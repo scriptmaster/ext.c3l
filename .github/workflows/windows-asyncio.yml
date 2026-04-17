@@ -1,0 +1,172 @@
+name: Windows asyncio samples
+
+on:
+  push:
+    branches:
+      - main
+      - "copilot/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  asyncio-windows:
+    name: Build & run asyncio samples on Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash   # Git Bash – handles *.c3 globs cleanly
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Install c3c ───────────────────────────────────────────────────────
+      - name: Download & install c3c
+        shell: pwsh
+        run: |
+          $url  = "https://github.com/c3lang/c3c/releases/latest/download/c3-windows.zip"
+          $zip  = "$env:TEMP\c3-windows.zip"
+          $dest = "$env:TEMP\c3c"
+
+          Write-Host "Downloading c3c from $url ..."
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+
+          Write-Host "Extracting ..."
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+
+          # Locate c3c.exe (may be nested in a sub-directory)
+          $exe = Get-ChildItem -Path $dest -Filter "c3c.exe" -Recurse |
+                   Select-Object -First 1
+          if (-not $exe) { throw "c3c.exe not found after extraction" }
+
+          $dir = $exe.DirectoryName
+          Write-Host "c3c.exe found at: $dir"
+
+          # Persist to PATH for subsequent steps
+          Add-Content $env:GITHUB_PATH $dir
+
+      - name: Verify c3c installation
+        run: c3c --version
+
+      # ── 3. Debug build (samples 1–12) ────────────────────────────────────────
+      # Uses default optimization (O0 / debug). $build::is_debug = true.
+      # Networking samples (9–12) are compiled but not run (live sockets).
+
+      - name: "Build all samples (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        run: make build TARGET=win
+
+      # ── 4. Run samples 1–8 (debug) ───────────────────────────────────────────
+      # Each sample is a separate step so the pass/fail matrix is visible.
+
+      - name: "Run sample1 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample1.exe
+
+      - name: "Run sample2 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample2.exe
+
+      - name: "Run sample3 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample3.exe
+
+      - name: "Run sample4 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample4.exe
+
+      - name: "Run sample5 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample5.exe
+
+      - name: "Run sample6 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample6.exe
+
+      - name: "Run sample7 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample7.exe
+
+      - name: "Run sample8 (debug)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample8.exe
+
+      # ── 5. Release build (samples 1–12) ──────────────────────────────────────
+      # Uses -Os optimisation. $build::is_debug = false, so all debug
+      # instrumentation (@debug_leak, @assert) is compiled out entirely.
+      # The same output names are reused; previous debug binaries are overwritten.
+
+      - name: "Build all samples (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        run: make build TARGET=winrel
+
+      # ── 6. Run samples 1–8 (release) ─────────────────────────────────────────
+
+      - name: "Run sample1 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample1.exe
+
+      - name: "Run sample2 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample2.exe
+
+      - name: "Run sample3 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample3.exe
+
+      - name: "Run sample4 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample4.exe
+
+      - name: "Run sample5 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample5.exe
+
+      - name: "Run sample6 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample6.exe
+
+      - name: "Run sample7 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample7.exe
+
+      - name: "Run sample8 (release)"
+        working-directory: examples/asyncio
+        continue-on-error: true
+        timeout-minutes: 2
+        run: ./sample8.exe

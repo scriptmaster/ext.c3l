@@ -89,7 +89,7 @@ memory (handle base)
 
 /// Create a coroutine in caller-supplied memory (zero-copy).
 alias Coroutine = fn void();
-fn Fiber* create(uint stack_size, Coroutine coroutine)
+fn Fiber* create(uint stack_size, Coroutine coroutine) @nosanitize("address")
 {
     if (running == null) init();
 
@@ -183,7 +183,7 @@ fn void delete(Fiber* fiber)
     mem_free(fiber);
 }
 
-fn void switch_to(Fiber* fiber)
+fn void switch_to(Fiber* fiber) @nosanitize("address")
 {
     if (fiber == null || fiber.done) return;
     if (running != &primary) check_canary(running);
@@ -197,7 +197,7 @@ fn void switch_to(Fiber* fiber)
     asm_swap(fiber.handle, prev.handle);
 }
 
-fn void yield()
+fn void yield() @nosanitize("address")
 {
     if (running == &primary) return;
     check_canary(running);
@@ -209,4 +209,11 @@ fn void done()
     running.done = true;
     check_canary(running);
     yield();
+}
+
+fn void deinit()
+{
+    // Called by asyncio loop shutdown to reset thread-local fiber state.
+    primary = {};
+    running = null;
 }

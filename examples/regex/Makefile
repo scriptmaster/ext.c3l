@@ -21,16 +21,25 @@ REGEX = $(EXT)/regex/*.c3
 MEM = $(EXT)/mem/*.c3 $(EXT)/debug/*.c3
 LIBS = $(MEM) $(REGEX) $(LIBC)
 
+TARGET ?= linux
+ifeq ($(TARGET),winrel)
+	T = --target windows-x64 -Os
+else ifeq ($(TARGET),win)
+	T = --target windows-x64
+else
+	T =
+endif
+
 slre: slre.c slre_test.c
 	cc $^ -o $@
 
 slre_test: slre_test.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 regex_test: regex_test.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 regex_example: regex_example.c3
-	$(C3C) $^ $(LIBS) -o $@
+	$(C3C) $^ $(LIBS) -o $@ $(T)
 
 

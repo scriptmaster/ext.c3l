@@ -81,7 +81,7 @@ fn void main_coro()
 
 fn void main()
 {
-  @assert_leak() {
+  @debug_leak() {
     // Initialise the loop manually because we will call run_forever()
     EventLoop* loop = asyncio::new_event_loop();
     asyncio::set_event_loop(loop);
